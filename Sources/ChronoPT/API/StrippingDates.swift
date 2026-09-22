@@ -28,10 +28,23 @@ extension String {
             while let lead = leadIn(before: start) {
                 start = lead
             }
+            // A bracket the date opened closes with it, and one it closes
+            // opens with it: "15h (BRT)", "(UTC-03:00) 10h".
+            var end = span.upperBound
+            if self[start..<end].filter({ $0 == ")" }).count > self[start..<end].filter({ $0 == "(" }).count,
+                let opening = self[..<start].lastIndex(where: { !$0.isWhitespace }), self[opening] == "("
+            {
+                start = opening
+            }
+            if self[start..<end].filter({ $0 == "(" }).count > self[start..<end].filter({ $0 == ")" }).count,
+                let closing = self[end...].firstIndex(where: { !$0.isWhitespace }), self[closing] == ")"
+            {
+                end = index(after: closing)
+            }
             if let last = cuts.last, last.upperBound >= start {
-                cuts[cuts.count - 1] = last.lowerBound..<Swift.max(last.upperBound, span.upperBound)
+                cuts[cuts.count - 1] = last.lowerBound..<Swift.max(last.upperBound, end)
             } else {
-                cuts.append(start..<span.upperBound)
+                cuts.append(start..<end)
             }
         }
 
@@ -138,7 +151,9 @@ extension String {
                 text.append(character)
             }
         }
-        return text.trimmingCharacters(
+        let trimmed = text.trimmingCharacters(
             in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-–—")))
+        // Punctuation with no word left: "ter., 29 de set." leaves ".".
+        return trimmed.contains(where: { $0.isLetter || $0.isNumber }) ? trimmed : ""
     }
 }

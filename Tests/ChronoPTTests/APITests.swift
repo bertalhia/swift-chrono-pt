@@ -254,4 +254,14 @@ struct APITests {
     func strippingOpeningPhrases(_ example: (text: String, stripped: String)) {
         #expect(strip(example.text) == example.stripped)
     }
+
+    @Test(
+        "strippingDates takes the brackets around a date",
+        arguments: [
+            ("reunião às 15h (BRT)", "reunião"), ("prova (28/09)", "prova"),
+            ("call às 9 (horário de Brasília) com o time", "call com o time"), ("(UTC-03:00) 10h", ""),
+        ])
+    func strippingBrackets(_ example: (text: String, stripped: String)) {
+        #expect(strip(example.text) == example.stripped)
+    }
 }

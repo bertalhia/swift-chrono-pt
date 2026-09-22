@@ -44,6 +44,7 @@ enum DayRules {
         let near = Neighbours(found)
         let candidates =
             (found + ranges(of: near, in: source, times: times) + weekdaysWithDates(of: near, in: source)
+            + datesWithWeekdays(of: near, in: source)
             + offsets(of: near, in: source) + lengths(of: near, in: source)
             + limits(of: near, in: source, times: times) + withins(of: near, in: source))
             .filter { candidate in
@@ -132,8 +133,10 @@ enum DayRules {
         if text == "24/7" { return true }
         if let before = source.word(before: range.lowerBound), scoreWords.contains(before) { return true }
         let next = source.words(after: range.upperBound, count: 2)
-        // A time after it makes it a date: "25/09 14h".
-        guard let first = next.first, first.first?.isNumber != true else { return false }
+        // A time or a weekday after it makes it a date: "25/09 14h", "28/9
+        // (seg)", "02/10 sexta-feira".
+        guard let first = next.first, first.first?.isNumber != true, weekdays[first] == nil, first != "ter"
+        else { return false }
         if ["de", "da", "do", "das", "dos"].contains(first) {
             return !(next.count > 1 && TimeRules.partsOfDay.contains(next[1]))
         }
@@ -390,6 +393,26 @@ enum DayRules {
         return next > 0 && times[next - 1].range.contains(index)
     }
 
+    /// A date followed by its weekday: "15/10, quinta", "28/9 (seg)",
+    /// "02/10 sexta-feira". The date decides, as when the weekday comes first.
+    private static func datesWithWeekdays(of near: Neighbours, in source: TextSource) -> [Candidate] {
+        near.byStart.flatMap { date -> [Candidate] in
+            guard date.piece.value.isDate else { return [] }
+            var found: [Candidate] = []
+            for weekday in near.starting(from: date.piece.range.upperBound) {
+                guard source.hasNoWord(in: date.piece.range.upperBound..<weekday.piece.range.lowerBound)
+                else {
+                    break
+                }
+                guard case .weekday = weekday.piece.value else { continue }
+                let range = date.piece.range.lowerBound..<weekday.piece.range.upperBound
+                let piece = Piece(range: range, value: date.piece.value, priority: 1)
+                found.append(Candidate(piece: piece, hint: date.hint == .date ? .date : .none))
+            }
+            return found
+        }
+    }
+
     /// The candidates in text order, so a joining step looks only at the
     /// ones next to where it stands instead of at every pair.
     struct Neighbours {
@@ -570,6 +593,17 @@ enum DayRules {
                 source.endsPhrase(at: match.range.upperBound)
             else { continue }
             add(match.range, .weekdayAndDay(weekday, day: day), hint: .date)
+        }
+
+        // "ter" is the verb "to have"; followed by its full stop or a comma it
+        // is Tuesday, as calendars write it before a date: "ter., 29 de set.".
+        // Alone it only anchors that date.
+        for match in source.matches(of: tuesdayAbbreviation, whenAny: ["ter"])
+        where ",.".contains(
+            source.originalText(
+                match.range.upperBound..<source.normalized.index(after: match.range.upperBound)))
+        {
+            add(match.range, .weekday(3, week: nil), hint: .anchor)
         }
 
         for match in source.matches(of: numericDate, whenContains: "/") {

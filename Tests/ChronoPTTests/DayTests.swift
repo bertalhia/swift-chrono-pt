@@ -789,4 +789,24 @@ struct DayTests {
         #expect(found.text == example.text)
         #expect(ymd(found.start.date) == example.day)
     }
+
+    @Test(
+        "A date followed by its weekday is that date",
+        arguments: [
+            ("15/10, quinta", [2026, 10, 15]), ("28/9 (seg)", [2026, 9, 28]),
+            ("02/10 sexta-feira", [2026, 10, 2]),
+            ("ter., 29 de set.", [2026, 9, 29]),
+        ])
+    func dateWithWeekdayAfter(_ example: (text: String, day: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(parse(example.text).count == 1)
+        #expect(strip(example.text).isEmpty)
+    }
+
+    @Test("\"ter\" without its full stop is the verb")
+    func terVerb() throws {
+        let found = try #require(interpret("vou ter 25 de outubro livre"))
+        #expect(found.text == "25 de outubro")
+    }
 }

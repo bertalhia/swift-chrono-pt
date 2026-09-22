@@ -38,7 +38,7 @@ date always gives the same result.
 |---|---|
 | Relative day | hoje, hj, amanhã, amn, depois de amanhã, daqui 2 dias, em três semanas, daqui um mês |
 | Weekday | sexta que vem, próxima sexta, nesta quinta, na terça-feira, sábado, quarta da semana que vem, sexta dia 25, sexta 25, na seg, prox sexta, a primeira segunda-feira de outubro, na última sexta do mês, sexta q vem, próx. segunda, sexta próxima, a partir de segunda |
-| Date | 25/09, 25/09/2026, 25-12-2027, 25.12.2027, 10/out, 2026-10-15, 15 de outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze, 1º/10, dia 1° |
+| Date | 25/09, 25/09/2026, 25-12-2027, 25.12.2027, 10/out, 2026-10-15, 15 de outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze, 1º/10, dia 1°, 02/10 sexta-feira |
 | Period | esta semana, semana que vem, fim de semana, no meio da semana, este mês, mês que vem, no início do mês, no meio do mês, fim do mês, primeira quinzena de outubro, em outubro, março de 2027, dez/2027, 12/2027, no próximo trimestre, primeiro semestre, ano que vem, fim do ano, fim de outubro, meados de outubro, na primeira semana de outubro, dia 25 do mês que vem, semana que vem na terça, em outubro do ano que vem, semana q vem |
 | Holiday | no natal, véspera de natal, no ano novo, na páscoa, no carnaval, sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais |
 | Clock time | às 9, 14h, 9h30, 10:30, 15:30h, 9am, 7:30 pm, umas 8 da noite, lá pras 3, por volta de 15h, perto do meio-dia, 15h BRT, 16h GMT-3, às 9 horário de Brasília, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, meio dia e 15, à meia-noite, 15hrs30 |

@@ -262,6 +262,11 @@ extension DayRules {
         }
     }
 
+    // "ter." before a date
+    static var tuesdayAbbreviation: Regex<Substring> {
+        RegexCache.regex { #/\bter\b(?= )/#.wordBoundaryKind(.simple) }
+    }
+
     // "25/09", "dia 25/09/2026", "5/1/27"
     static var numericDate: Regex<(Substring, Substring, Substring, Substring?)> {
         RegexCache.regex {
