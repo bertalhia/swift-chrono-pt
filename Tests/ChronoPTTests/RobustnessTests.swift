@@ -116,6 +116,15 @@ struct RobustnessTests {
         let elapsed = ContinuousClock().measure { _ = parse(text) }
         #expect(elapsed < .seconds(1))
     }
+
+    @Test("Counting many business days works each year's holidays out once")
+    func manyBusinessDays() throws {
+        let clock = ContinuousClock()
+        var found: ChronoPT.Match?
+        let elapsed = clock.measure { found = interpret("prazo em 999 dias úteis") }
+        #expect(ymd(try #require(found).start.date) == [2030, 9, 19])
+        #expect(elapsed < .seconds(1))
+    }
 }
 
 /// SplitMix64: the same seed gives the same text on every run.

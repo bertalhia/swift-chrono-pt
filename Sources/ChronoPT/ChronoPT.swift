@@ -78,9 +78,15 @@ public enum ChronoPT {
     }
 
     static func interpret(_ context: Context) -> ChronoPT.Match? {
-        guard let day = context.days.first(where: { context.resolve($0) != nil }) else {
-            return context.times.lazy.compactMap { context.combine(nil, $0) }.first
+        // The first day that gives a date; building its result resolves it,
+        // so it is not resolved twice.
+        for day in context.days {
+            if let match = interpret(day, in: context) { return match }
         }
+        return context.times.lazy.compactMap { context.combine(nil, $0) }.first
+    }
+
+    private static func interpret(_ day: Piece<DayRules.Value>, in context: Context) -> ChronoPT.Match? {
         if let ends = context.endpoints(of: day, skipping: []) { return context.combine(day, ends.range) }
         let attachedIndex = context.nearbyTimes(day.range).first {
             context.fits(context.times[$0], with: day)

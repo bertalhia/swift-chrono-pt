@@ -357,10 +357,11 @@ extension DayRules {
             // Counting from today, skipping weekends and the days the banks close.
             var date = today
             var left = count
+            var bank = BankDays(calendar: calendar)
             while left > 0 {
                 guard let next = calendar.date(byAdding: .day, value: 1, to: date) else { return nil }
                 date = next
-                if isBusinessDay(date, calendar: calendar) { left -= 1 }
+                if bank.isOpen(date) { left -= 1 }
             }
             return (date, nil)
 
@@ -499,13 +500,29 @@ extension DayRules {
     /// Carnival Monday and Tuesday and Corpus Christi count as closed, the way
     /// the bank calendar does.
     static func isBusinessDay(_ day: Date, calendar: Calendar) -> Bool {
-        let weekday = calendar.component(.weekday, from: day)
-        guard weekday != 1, weekday != 7 else { return false }
-        let year = calendar.component(.year, from: day)
-        return !bankHolidays(in: year, calendar: calendar).contains(calendar.startOfDay(for: day))
+        var days = BankDays(calendar: calendar)
+        return days.isOpen(day)
     }
 
-    /// The first business day from this one, in that direction.
+    /// The days the banks open, with each year's holidays worked out once
+    /// however many days a count walks through: "em 999 dias úteis".
+    struct BankDays {
+        let calendar: Calendar
+        private var holidays: [Int: Set<Date>] = [:]
+
+        init(calendar: Calendar) {
+            self.calendar = calendar
+        }
+
+        mutating func isOpen(_ day: Date) -> Bool {
+            let weekday = calendar.component(.weekday, from: day)
+            guard weekday != 1, weekday != 7 else { return false }
+            let year = calendar.component(.year, from: day)
+            if holidays[year] == nil { holidays[year] = bankHolidays(in: year, calendar: calendar) }
+            return !(holidays[year]?.contains(calendar.startOfDay(for: day)) ?? false)
+        }
+    }
+
     /// Where a day falls inside a period: the weekday in the period's week,
     /// the day in its month, the date in its year, the part of its month or
     /// week. `nil` when the two don't fit together.
@@ -553,8 +570,9 @@ extension DayRules {
         case .nthBusinessDayOfMonth(let place):
             var date = place > 0 ? firstOfMonth : lastOfMonth
             var left = abs(place)
+            var bank = BankDays(calendar: calendar)
             while true {
-                if isBusinessDay(date, calendar: calendar) {
+                if bank.isOpen(date) {
                     left -= 1
                     if left == 0 { return (date, nil) }
                 }
@@ -574,18 +592,6 @@ extension DayRules {
         default:
             return nil
         }
-    }
-
-    static func businessDay(from day: Date, forward: Bool, calendar: Calendar) -> Date? {
-        var date = day
-        for _ in 0...10 {
-            if isBusinessDay(date, calendar: calendar) { return date }
-            guard let next = calendar.date(byAdding: .day, value: forward ? 1 : -1, to: date) else {
-                return nil
-            }
-            date = next
-        }
-        return nil
     }
 
     /// The national holidays the banks close on, as dates in that year.
