@@ -756,4 +756,25 @@ struct DayTests {
     func countIsNotARange() {
         #expect(interpret("de 3 a 5 pessoas") == nil)
     }
+
+    @Test(
+        "Chat spellings",
+        arguments: [
+            ("semana q vem", [2026, 9, 28]), ("sexta q vem", [2026, 9, 25]),
+            ("fim do mês q vem", [2026, 10, 31]),
+            ("próx. segunda", [2026, 9, 28]), ("prox. semana", [2026, 9, 28]),
+            ("sexta próxima", [2026, 9, 25]),
+            ("domingo próximo", [2026, 9, 27]), ("dia 1°", [2026, 10, 1]), ("1º/10", [2026, 10, 1]),
+        ])
+    func chatSpellings(_ example: (text: String, day: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.day)
+    }
+
+    @Test("The weekday before last")
+    func weekdayBeforeLast() throws {
+        let found = try #require(interpret("sábado retrasado", options: ChronoPT.Options(allowsPast: true)))
+        #expect(ymd(found.start.date) == [2026, 9, 12])
+    }
 }

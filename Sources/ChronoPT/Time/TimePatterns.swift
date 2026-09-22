@@ -334,7 +334,7 @@ extension TimeRules {
         >
     {
         RegexCache.regex {
-            #/\b(?:(as|a|ate as|pelas|la pelas|la pras|la para as|por volta das|em torno das|perto das|a partir das|das|umas|pras|por volta de|em torno de|perto de|cerca de) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)(?:(:|h)(\d{2})(?:hrs|hr|hs|h|min|m)?\b|( ?(?:hrs|hr|hs|horas|hora|h))\b|\b)(?: e (meia|(?:vinte|trinta|quarenta|cinquenta) e (?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)|vinte|trinta|quarenta|cinquenta|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|cinco|\d{1,2})\b)?(?: (?:da|de|pela) (manha|tarde|noite|madrugada)\b| ?(am|pm)\b)?/#
+            #/\b(?:(as|a|ate as|pelas|la pelas|la pras|la para as|por volta das|em torno das|perto das|a partir das|das|umas|pras|por volta de|em torno de|perto de|cerca de) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)(?:(:|hrs|hr|hs|h)(\d{2})(?:hrs|hr|hs|h|min|m)?\b|( ?(?:hrs|hr|hs|horas|hora|h))\b|\b)(?: e (meia|(?:vinte|trinta|quarenta|cinquenta) e (?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)|vinte|trinta|quarenta|cinquenta|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|cinco|\d{1,2})\b)?(?: (?:da|de|pela) (manha|tarde|noite|madrugada)\b| ?(am|pm)\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }

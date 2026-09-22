@@ -66,7 +66,9 @@ extension DayRules {
         /// A holiday, in the year the text gave: "no natal de 2027".
         case holiday(Holiday, year: Int?)
         /// The last time that weekday came, before today: "sexta passada".
-        case lastWeekday(Int)
+        /// The last time that weekday came, or the one before with `weeks: 2`:
+        /// "sexta passada", "sábado retrasado".
+        case lastWeekday(Int, weeks: Int)
         /// Weeks, months or years back: 1 is "semana passada", 2 "semana
         /// retrasada".
         case lastWeek(Int)

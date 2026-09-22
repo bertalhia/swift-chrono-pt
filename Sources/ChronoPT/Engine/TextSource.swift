@@ -205,7 +205,7 @@ struct TextSource {
         if simple.unicodeScalars.allSatisfy(\.properties.isGraphemeExtend) { return " " }
         if "–—".contains(simple) { return "-" }
         // Ordinal indicators read as the letter they stand for: "1º", "6ª".
-        if simple == "º" { return "o" }
+        if simple == "º" || simple == "°" { return "o" }
         if simple == "ª" { return "a" }
         return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
     }

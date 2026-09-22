@@ -700,4 +700,9 @@ struct TimeTests {
     func halfADay(_ text: String) {
         #expect(interpret(text) == nil)
     }
+
+    @Test("Hours written with \"hrs\" before the minutes", arguments: ["15hrs30", "às 15hrs30"])
+    func hrsBeforeMinutes(_ text: String) throws {
+        #expect(hm(try #require(interpret(text)).start.date) == [15, 30])
+    }
 }

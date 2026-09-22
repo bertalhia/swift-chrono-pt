@@ -126,13 +126,13 @@ extension DayRules {
             guard let month = calendar.date(byAdding: .month, value: months, to: today) else { return nil }
             return lastDayOfMonth(month, calendar: calendar).map { ($0, nil) }
 
-        case .lastWeekday(let weekday):
+        case .lastWeekday(let weekday, let weeks):
             return calendar.nextDate(
                 after: today,
                 matching: DateComponents(weekday: weekday),
                 matchingPolicy: .nextTime,
                 direction: .backward
-            ).map { ($0, nil) }
+            ).flatMap { calendar.date(byAdding: .day, value: -7 * (weeks - 1), to: $0) }.map { ($0, nil) }
 
         case .lastWeek(let weeks):
             // Monday to Sunday of a week before this one.

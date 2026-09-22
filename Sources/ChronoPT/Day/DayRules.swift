@@ -154,6 +154,12 @@ enum DayRules {
         return day <= (month == 2 ? (leap ? 29 : 28) : daysInMonth[month - 1])
     }
 
+    /// Chat spelling as the tables write it: "semana q vem" is "semana que
+    /// vem", and "prox.  semana" has one space.
+    static func chat(_ text: Substring) -> String {
+        text.split(separator: " ").joined(separator: " ").replacingOccurrences(of: " q vem", with: " que vem")
+    }
+
     /// A day in the month the words after it name: none for this month's,
     /// "do mês que vem", or a month by name with its year.
     private static func inMonth(_ inner: Value, next: Substring?, named: Substring?, year: Substring?)
@@ -453,7 +459,8 @@ enum DayRules {
             guard let name = match.output.1 ?? match.output.2, let day = weekdays[String(name)] else {
                 continue
             }
-            add(match.range, .lastWeekday(day))
+            // "sábado retrasado" is the one before last.
+            add(match.range, .lastWeekday(day, weeks: match.output.3?.hasPrefix("retrasad") == true ? 2 : 1))
         }
 
         for match in source.matches(of: everyDay, whenAny: everyDayWords) {
@@ -548,7 +555,7 @@ enum DayRules {
             else { continue }
             // "sexta que vem" is next week's; "sexta dessa semana" is this one.
             let week: Int? =
-                next.map {
+                next.map(chat).map {
                     $0.contains("semana que vem") || $0.contains("proxima semana")
                         ? 1 : $0.contains("dessa semana") || $0.contains("desta semana") ? 0 : nil
                 } ?? nil
@@ -788,7 +795,7 @@ enum DayRules {
 
         for match in source.matches(of: namedPeriod, whenAny: periodWords) {
             let value: Value =
-                switch match.output.1 {
+                switch chat(match.output.1) {
                 case "fim de semana que vem", "final de semana que vem", "proximo fim de semana",
                     "proximo final de semana":
                     .weekend(weeks: 1)

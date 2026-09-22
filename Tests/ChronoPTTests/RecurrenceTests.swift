@@ -237,4 +237,9 @@ struct RecurrenceTests {
         #expect(found.recurrence?.rate == .init(count: 3, per: .daily))
         #expect(found.recurrence?.description == "FREQ=WEEKLY;BYDAY=TU (3 per day)")
     }
+
+    @Test("Every day, in chat", arguments: ["td dia", "tds os dias"])
+    func everyDayInChat(_ text: String) throws {
+        #expect(try #require(interpret(text)).recurrence == .daily())
+    }
 }
