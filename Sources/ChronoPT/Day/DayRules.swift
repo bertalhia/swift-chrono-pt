@@ -45,7 +45,7 @@ enum DayRules {
         let candidates =
             (found + ranges(of: near, in: source) + weekdaysWithDates(of: near, in: source)
             + offsets(of: near, in: source) + lengths(of: near, in: source)
-            + limits(of: near, in: source, times: times))
+            + limits(of: near, in: source, times: times) + withins(of: near, in: source))
             .filter { candidate in
                 switch candidate.hint {
                 case .none: return true
@@ -146,6 +146,64 @@ enum DayRules {
         guard (1...12).contains(month), day >= 1 else { return false }
         let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
         return day <= (month == 2 ? (leap ? 29 : 28) : daysInMonth[month - 1])
+    }
+
+    /// A day in the month the words after it name: none for this month's,
+    /// "do mês que vem", or a month by name with its year.
+    private static func inMonth(_ inner: Value, next: Substring?, named: Substring?, year: Substring?) -> Value {
+        if next != nil { return .within(inner, .nextMonth) }
+        if let named, let month = months[String(named)] {
+            return .within(inner, .month(month, year: year.flatMap { Int($0) }))
+        }
+        return inner
+    }
+
+    /// A day next to the period it falls in, in either order: "semana que
+    /// vem, na quarta", "quarta da semana que vem", "dia 25 do mês que vem",
+    /// "em outubro, dia 5", "dia 20 de outubro do ano que vem".
+    private static func withins(of near: Neighbours, in source: TextSource) -> [Candidate] {
+        near.byStart.flatMap { inner -> [Candidate] in
+            guard nests(inner.piece.value) else { return [] }
+            let after = near.starting(from: inner.piece.range.upperBound).prefix { outer in
+                source.onlyConnectors(between: inner.piece.range, and: outer.piece.range)
+            }
+            let before = near.ending(by: inner.piece.range.lowerBound).prefix { outer in
+                source.onlyConnectors(between: outer.piece.range, and: inner.piece.range)
+            }
+            return (Array(after) + Array(before)).compactMap { outer in
+                guard holds(outer.piece.value, inner.piece.value) else { return nil }
+                let range =
+                    min(inner.piece.range.lowerBound, outer.piece.range.lowerBound)..<max(
+                        inner.piece.range.upperBound, outer.piece.range.upperBound)
+                let piece = Piece(range: range, value: Value.within(inner.piece.value, outer.piece.value), priority: 1)
+                return Candidate(piece: piece, hint: .none)
+            }
+        }
+    }
+
+    /// The days that can sit inside a period.
+    private static func nests(_ value: Value) -> Bool {
+        switch value {
+        case .weekday(_, nil), .dayOfMonth, .date(_, _, nil), .month(_, nil): true
+        default: false
+        }
+    }
+
+    /// Whether the period can hold the day: a week holds a weekday, a month
+    /// a day of the month, a year a date or a month.
+    private static func holds(_ outer: Value, _ inner: Value) -> Bool {
+        switch (inner, outer) {
+        case (.weekday, .nextWeek), (.weekday, .thisWeek), (.weekday, .lastWeek), (.weekday, .weeks):
+            true
+        case (.dayOfMonth, .nextMonth), (.dayOfMonth, .thisMonth), (.dayOfMonth, .lastMonth),
+            (.dayOfMonth, .month), (.dayOfMonth, .months):
+            true
+        case (.date, .nextYear), (.date, .lastYear), (.date, .years), (.month, .nextYear), (.month, .lastYear),
+            (.month, .years):
+            true
+        default:
+            false
+        }
     }
 
     /// A joined candidate needs its date when a part did: a range ending on
@@ -591,13 +649,38 @@ enum DayRules {
         }
 
         for match in source.matches(of: namedBusinessDay, whenAny: businessWords) {
-            let value: Value =
-                switch match.output.1 {
-                case "primeiro dia util": .firstBusinessDayOfMonth
-                case "ultimo dia util": .lastBusinessDayOfMonth
-                default: .businessDays(1)
+            add(match.range, .businessDays(1))
+        }
+
+        for match in source.matches(of: nthBusinessDay, whenAny: businessWords) {
+            let (_, ordinal, next, _, named, year) = match.output
+            let place = ordinal.first?.isNumber == true ? Int(ordinal.dropLast()) : ordinals[String(ordinal)]
+            guard let place, place != 0 else { continue }
+            add(match.range, inMonth(.nthBusinessDayOfMonth(place), next: next, named: named, year: year))
+        }
+
+        for match in source.matches(of: nthWeekdayInMonth, whenAny: monthWords.union(["mes"])) {
+            let (_, ordinal, name, next, _, named, year) = match.output
+            guard let place = ordinals[String(ordinal)], let weekday = weekdays[String(name)] else { continue }
+            add(match.range, inMonth(.nthWeekdayOfMonth(place, weekday: weekday), next: next, named: named, year: year))
+        }
+
+        for match in source.matches(of: weekOfMonth, whenAny: ["semana"]) {
+            let (_, ordinal, next, _, named, year) = match.output
+            guard let place = ordinals[String(ordinal)], (-1...4).contains(place) else { continue }
+            add(match.range, inMonth(.weekOfMonth(place), next: next, named: named, year: year))
+        }
+
+        for match in source.matches(of: partOfMonth, whenAny: monthWords) {
+            let (_, part, named, year) = match.output
+            guard let month = months[String(named)] else { continue }
+            let inner: Value =
+                switch part {
+                case "inicio", "comeco": .dayOfMonth(1)
+                case "fim", "final": .endOfMonth(months: 0)
+                default: .dayOfMonth(15)
                 }
-            add(match.range, value)
+            add(match.range, .within(inner, .month(month, year: year.flatMap { Int($0) })))
         }
 
         for match in source.matches(of: wholeMonth, whenAny: monthWords) {
@@ -661,6 +744,12 @@ enum DayRules {
                 case "meio do ano", "metade do ano": .middleOfYear
                 case "fim do ano", "final do ano": .endOfYear
                 case "durante a semana": .workWeek
+                case "inicio da semana que vem", "comeco da semana que vem": .within(.startOfWeek, .nextWeek)
+                case "meio da semana que vem": .within(.middleOfWeek, .nextWeek)
+                case "fim da semana que vem", "final da semana que vem": .within(.endOfWeek, .nextWeek)
+                case "inicio do ano que vem", "comeco do ano que vem": .within(.startOfYear, .nextYear)
+                case "meio do ano que vem": .within(.middleOfYear, .nextYear)
+                case "fim do ano que vem", "final do ano que vem": .within(.endOfYear, .nextYear)
                 case "comeco da semana", "inicio da semana": .startOfWeek
                 case "meio da semana", "metade da semana": .middleOfWeek
                 case "fim da semana", "final da semana": .endOfWeek

@@ -648,4 +648,67 @@ struct DayTests {
         #expect(found.text == "15h")
         #expect(!found.start.knownComponents.contains(.timeZone))
     }
+
+    @Test(
+        "A day inside the period next to it",
+        arguments: [
+            ("reunião semana que vem, na quarta às 15h", reference(2026, 9, 21), [2026, 9, 30], [15, 0]),
+            ("semana que vem na terça", reference(2026, 9, 21), [2026, 9, 29], [12, 0]),
+            ("sexta semana que vem", reference(2026, 9, 21), [2026, 10, 2], [12, 0]),
+            ("na próxima semana, quinta de manhã", reference(2026, 9, 21), [2026, 10, 1], [9, 0]),
+            ("daqui a duas semanas na sexta", reference(2026, 9, 21), [2026, 10, 9], [12, 0]),
+            ("dia 25 do mês que vem", reference(2026, 9, 21), [2026, 10, 25], [12, 0]),
+            ("no dia 5 do próximo mês", reference(2026, 9, 5), [2026, 10, 5], [12, 0]),
+            ("em outubro, dia 5", reference(2026, 9, 21), [2026, 10, 5], [12, 0]),
+            ("dia 20 de outubro do ano que vem", reference(2026, 9, 21), [2027, 10, 20], [12, 0]),
+        ])
+    func dayInsidePeriod(_ example: (text: String, reference: Date, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text, reference: example.reference))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+    }
+
+    @Test("A month inside next year")
+    func monthInsideNextYear() throws {
+        let found = try #require(interpret("em outubro do ano que vem"))
+        #expect(ymd(found.start.date) == [2027, 10, 1])
+        #expect(ymd(found.end?.date) == [2027, 10, 31])
+    }
+
+    @Test("A past weekday inside last week")
+    func weekdayInsideLastWeek() throws {
+        let found = try #require(
+            interpret("na semana passada na terça", options: ChronoPT.Options(allowsPast: true)))
+        #expect(ymd(found.start.date) == [2026, 9, 15])
+    }
+
+    @Test(
+        "A named day in a month",
+        arguments: [
+            ("primeiro dia útil de dezembro", [2026, 12, 1], []),
+            ("último dia útil de outubro", [2026, 10, 30], []),
+            ("salário cai no 5º dia útil", [2026, 10, 7], []),
+            ("no quinto dia útil do mês", [2026, 10, 7], []),
+            ("a primeira segunda-feira de outubro", [2026, 10, 5], []),
+            ("a primeira segunda do mês que vem", [2026, 10, 5], []),
+            ("na última sexta do mês", [2026, 9, 25], []),
+            ("no último domingo de outubro", [2026, 10, 25], []),
+            ("fim de outubro", [2026, 10, 31], []),
+            ("fim do mês de outubro", [2026, 10, 31], []),
+            ("começo de novembro", [2026, 11, 1], []),
+            ("meados de outubro", [2026, 10, 15], []),
+            ("no início de novembro de 2027", [2027, 11, 1], []),
+            ("na primeira semana de outubro", [2026, 10, 1], [2026, 10, 7]),
+            ("segunda semana de outubro", [2026, 10, 8], [2026, 10, 14]),
+            ("na última semana do mês", [2026, 9, 24], [2026, 9, 30]),
+            ("no início da semana que vem", [2026, 9, 28], [2026, 9, 29]),
+            ("no fim da semana que vem", [2026, 10, 1], [2026, 10, 2]),
+            ("fim do ano que vem", [2027, 12, 31], []),
+        ])
+    func namedDayInMonth(_ example: (text: String, start: [Int], end: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.start)
+        #expect(ymd(found.end?.date) == example.end)
+        #expect(example.text.hasSuffix(found.text))
+    }
 }

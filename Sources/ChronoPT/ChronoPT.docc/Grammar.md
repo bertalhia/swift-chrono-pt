@@ -22,8 +22,14 @@ mean more than one thing.
   sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais.
 - Counted from another date: dois dias antes do natal, véspera do ano novo,
   uma semana depois do dia 10.
+- A day inside the period next to it: semana que vem, na quarta; sexta semana
+  que vem; daqui a duas semanas na sexta; dia 25 do mês que vem; em outubro,
+  dia 5; dia 20 de outubro do ano que vem.
+- A named day in a month: a primeira segunda-feira de outubro, na última sexta
+  do mês, fim de outubro, meados de outubro, começo de novembro, na primeira
+  semana de outubro, no início da semana que vem.
 - Business days: em 5 dias úteis, no próximo dia útil, primeiro dia útil do
-  mês. Weekends, national holidays, Carnival Monday and Tuesday and Corpus
+  mês, 5º dia útil, último dia útil de outubro. Weekends, national holidays, Carnival Monday and Tuesday and Corpus
   Christi are skipped, as the banks do.
 
 ## Times

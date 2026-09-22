@@ -154,10 +154,47 @@ extension DayRules {
         }
     }
 
-    // "no próximo dia útil", "primeiro dia útil do mês", "último dia útil"
-    static var namedBusinessDay: Regex<(Substring, Substring)> {
+    // "no próximo dia útil"
+    static var namedBusinessDay: Regex<Substring> {
         RegexCache.regex {
-            #/\b(?:no |ate o |o )?(proximo dia util|primeiro dia util|ultimo dia util)(?: do mes)?\b/#
+            #/\b(?:no |ate o |o )?proximo dia util\b/#.wordBoundaryKind(.simple)
+        }
+    }
+
+    // "primeiro dia útil do mês", "5º dia útil", "último dia útil de outubro"
+    static var nthBusinessDay:
+        Regex<(Substring, Substring, Substring?, Substring?, Substring?, Substring?)>
+    {
+        RegexCache.regex {
+            #/\b(?:(?:no|o|ate o) )?(\d{1,2}o|primeiro|segundo|terceiro|quarto|quinto|sexto|setimo|oitavo|nono|decimo|ultimo|penultimo) dia util(?: (?:do|de) (?:(proximo mes|mes que vem)|(mes)|(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?))?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "a primeira segunda-feira de outubro", "na última sexta do mês"
+    static var nthWeekdayInMonth:
+        Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?, Substring?)>
+    {
+        RegexCache.regex {
+            #/\b(?:(?:na|no|a|o|em) )?(primeira|primeiro|segunda|segundo|terceira|terceiro|quarta|quarto|quinta|quinto|ultima|ultimo|penultima|penultimo|[1-5][ao]) (segunda|terca|quarta|quinta|sexta|sabado|domingo)(?:-feira| feira)? (?:do|de) (?:(proximo mes|mes que vem)|(mes)|(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "na primeira semana de outubro", "na última semana do mês"
+    static var weekOfMonth:
+        Regex<(Substring, Substring, Substring?, Substring?, Substring?, Substring?)>
+    {
+        RegexCache.regex {
+            #/\b(?:(?:na|a) )?(primeira|segunda|terceira|quarta|ultima|[1-4]a) semana (?:do|de) (?:(proximo mes|mes que vem)|(mes)|(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "fim de outubro", "meados de outubro", "início de novembro de 2027"
+    static var partOfMonth: Regex<(Substring, Substring, Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(?:no|em|ate o|ate|la para o|pro) )?(inicio|comeco|meio|meados|metade|fim|final) (?:de|do mes de) (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -305,7 +342,7 @@ extension DayRules {
 
     static var namedPeriod: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|ultimo fim de semana|ultimo final de semana|semana passada|semana retrasada|mes passado|mes retrasado|ano passado|ano retrasado)\b/#
+            #/\b(inicio da semana que vem|comeco da semana que vem|meio da semana que vem|fim da semana que vem|final da semana que vem|inicio do ano que vem|comeco do ano que vem|meio do ano que vem|fim do ano que vem|final do ano que vem|esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|ultimo fim de semana|ultimo final de semana|semana passada|semana retrasada|mes passado|mes retrasado|ano passado|ano retrasado)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -420,6 +457,7 @@ extension DayRules {
         "primeiro": 1, "segundo": 2, "terceiro": 3, "quarto": 4, "quinto": 5, "sexto": 6,
         "primeira": 1, "segunda": 2, "terceira": 3, "quarta": 4, "quinta": 5, "ultima": -1, "ultimo": -1,
         "penultima": -2, "penultimo": -2,
+        "setimo": 7, "oitavo": 8, "nono": 9, "decimo": 10,
         "1o": 1, "2o": 2, "3o": 3, "4o": 4, "5o": 5, "6o": 6, "1a": 1, "2a": 2, "3a": 3, "4a": 4, "5a": 5,
     ]
     static let offsetWords: Set<String> = ["antes", "depois", "apos", "vespera", "antevespera"]

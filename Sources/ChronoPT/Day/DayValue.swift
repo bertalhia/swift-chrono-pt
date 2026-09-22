@@ -50,8 +50,19 @@ extension DayRules {
         /// Days the banks are open: "em 5 dias úteis", "no próximo dia útil",
         /// "primeiro dia útil do mês", "último dia útil do mês".
         case businessDays(Int)
-        case firstBusinessDayOfMonth
-        case lastBusinessDayOfMonth
+        /// The business day in that place in the month: 1 is "primeiro dia
+        /// útil", 5 "5º dia útil", -1 "último dia útil". This month's, or the
+        /// next one's once it has gone by.
+        case nthBusinessDayOfMonth(Int)
+        /// A weekday in its place in the month, once: "a primeira segunda do
+        /// mês", "na última sexta do mês".
+        case nthWeekdayOfMonth(Int, weekday: Int)
+        /// A week of the month, from its first day: 1 is days 1 to 7, -1 the
+        /// last seven days. "na primeira semana de outubro".
+        case weekOfMonth(Int)
+        /// A day inside a period: "semana que vem, na quarta", "dia 25 do mês
+        /// que vem", "fim de outubro", "dia 20 de outubro do ano que vem".
+        indirect case within(Value, Value)
         /// A holiday, in the year the text gave: "no natal de 2027".
         case holiday(Holiday, year: Int?)
         /// The last time that weekday came, before today: "sexta passada".
@@ -123,6 +134,7 @@ extension DayRules {
             case .lastWeekday, .lastWeek, .lastMonth, .lastYear: true
             case .range(let from, let to): from.isPast || to.isPast
             case .shifted(let base, _), .lasting(let base, _): base.isPast
+            case .within(let inner, let outer): inner.isPast || outer.isPast
             default: false
             }
         }
@@ -168,8 +180,10 @@ extension DayRules {
             case .days, .weeks, .months, .years, .thisWeek, .nextWeek, .weekend, .lastWeek, .endOfMonth,
                 .workWeek:
                 [.day, .month, .year]
-            case .weekday, .lastWeekday:
+            case .weekday, .lastWeekday, .nthWeekdayOfMonth:
                 [.day, .month, .year, .weekday]
+            case .within(let inner, _):
+                inner.knownComponents.contains(.weekday) ? [.day, .month, .year, .weekday] : [.day, .month, .year]
             case .weekdayAndDay:
                 [.day, .weekday]
             case .date(_, _, let year):
@@ -181,7 +195,7 @@ extension DayRules {
             case .nextYear, .lastYear:
                 [.year]
             case .startOfYear, .middleOfYear, .endOfYear, .startOfWeek, .middleOfWeek, .endOfWeek,
-                .businessDays, .firstBusinessDayOfMonth, .lastBusinessDayOfMonth:
+                .businessDays, .nthBusinessDayOfMonth, .weekOfMonth:
                 [.day, .month, .year]
             case .month(_, let year), .yearPart(_, _, let year):
                 year == nil ? [.month] : [.month, .year]

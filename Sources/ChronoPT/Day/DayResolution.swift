@@ -364,20 +364,24 @@ extension DayRules {
             }
             return (date, nil)
 
-        case .firstBusinessDayOfMonth, .lastBusinessDayOfMonth:
-            // The next one to come: the month rolls over once this month's has gone by.
-            for months in 0...1 {
-                guard let month = calendar.date(byAdding: .month, value: months, to: today),
-                    let first = calendar.dateInterval(of: .month, for: month)?.start,
-                    let last = lastDayOfMonth(month, calendar: calendar)
-                else { return nil }
-                let day =
-                    value == .firstBusinessDayOfMonth
-                    ? businessDay(from: first, forward: true, calendar: calendar)
-                    : businessDay(from: last, forward: false, calendar: calendar)
-                if let day, day >= today { return (day, nil) }
+        case .nthBusinessDayOfMonth, .nthWeekdayOfMonth, .weekOfMonth:
+            // This month's, or the next month's once it has gone by; a week
+            // under way runs from today.
+            for months in 0...12 {
+                guard let day = calendar.date(byAdding: .month, value: months, to: today),
+                    let first = calendar.dateInterval(of: .month, for: day)?.start,
+                    let last = lastDayOfMonth(first, calendar: calendar),
+                    let found = inside(value, span: (first, last), calendar: calendar)
+                else { continue }
+                if (found.end ?? found.start) >= today {
+                    return found.end.map { fromToday((found.start, $0), today: today) } ?? found
+                }
             }
             return nil
+
+        case .within(let inner, let outer):
+            guard let span = resolve(outer, reference: reference, calendar: calendar) else { return nil }
+            return inside(inner, span: span, calendar: calendar)
 
         case .holiday(let holiday, let year?):
             return days(of: holiday, in: year, calendar: calendar)
@@ -502,6 +506,67 @@ extension DayRules {
     }
 
     /// The first business day from this one, in that direction.
+    /// Where a day falls inside a period: the weekday in the period's week,
+    /// the day in its month, the date in its year, the part of its month or
+    /// week. `nil` when the two don't fit together.
+    static func inside(_ inner: Value, span: (start: Date, end: Date?), calendar: Calendar) -> (start: Date, end: Date?)? {
+        let first = span.start
+        let year = calendar.component(.year, from: first)
+        let month = calendar.component(.month, from: first)
+        let weekday = calendar.component(.weekday, from: first)
+        let monday = calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: first)
+        guard let firstOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
+            let lastOfMonth = lastDayOfMonth(firstOfMonth, calendar: calendar)
+        else { return nil }
+        func day(_ offset: Int, from start: Date?) -> Date? {
+            start.flatMap { calendar.date(byAdding: .day, value: offset, to: $0) }
+        }
+        switch inner {
+        case .weekday(let weekday, _):
+            return day((weekday + 5) % 7, from: monday).map { ($0, nil) }
+        case .startOfWeek, .middleOfWeek, .endOfWeek:
+            let (from, to) = inner == .startOfWeek ? (0, 1) : inner == .middleOfWeek ? (2, 2) : (3, 4)
+            guard let start = day(from, from: monday), let end = day(to, from: monday) else { return nil }
+            return (start, start == end ? nil : end)
+        case .dayOfMonth(let dayNumber):
+            guard DayRules.isValidDate(day: dayNumber, month: month, year: year) else { return nil }
+            return calendar.date(from: DateComponents(year: year, month: month, day: dayNumber)).map { ($0, nil) }
+        case .endOfMonth(months: 0):
+            return (lastOfMonth, nil)
+        case .date(let dayNumber, let dateMonth, nil):
+            guard DayRules.isValidDate(day: dayNumber, month: dateMonth, year: year) else { return nil }
+            return calendar.date(from: DateComponents(year: year, month: dateMonth, day: dayNumber)).map { ($0, nil) }
+        case .month(let named, nil):
+            return resolve(.month(named, year: year), reference: first, calendar: calendar)
+        case .startOfYear, .middleOfYear, .endOfYear:
+            let (dateMonth, dayNumber) = inner == .startOfYear ? (1, 1) : inner == .middleOfYear ? (6, 30) : (12, 31)
+            return calendar.date(from: DateComponents(year: year, month: dateMonth, day: dayNumber)).map { ($0, nil) }
+        case .nthBusinessDayOfMonth(let place):
+            var date = place > 0 ? firstOfMonth : lastOfMonth
+            var left = abs(place)
+            while true {
+                if isBusinessDay(date, calendar: calendar) {
+                    left -= 1
+                    if left == 0 { return (date, nil) }
+                }
+                guard let next = day(place > 0 ? 1 : -1, from: date),
+                    calendar.isDate(next, equalTo: firstOfMonth, toGranularity: .month)
+                else { return nil }
+                date = next
+            }
+        case .nthWeekdayOfMonth(let place, let weekday):
+            return nthWeekday(place, weekday, inMonthOf: firstOfMonth, calendar: calendar).map { ($0, nil) }
+        case .weekOfMonth(let place):
+            let start = place > 0 ? day(7 * (place - 1), from: firstOfMonth) : day(-6, from: lastOfMonth)
+            guard let start, let end = day(6, from: start),
+                calendar.isDate(start, equalTo: firstOfMonth, toGranularity: .month)
+            else { return nil }
+            return (start, min(end, lastOfMonth))
+        default:
+            return nil
+        }
+    }
+
     static func businessDay(from day: Date, forward: Bool, calendar: Calendar) -> Date? {
         var date = day
         for _ in 0...10 {
