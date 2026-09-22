@@ -56,6 +56,7 @@ extension ChronoPT {
                 }
             }
 
+            /// Writes `{"until": <date>}` or `{"count": 5}`.
             public func encode(to encoder: any Encoder) throws {
                 var container = encoder.container(keyedBy: CodingKeys.self)
                 switch self {
@@ -69,11 +70,14 @@ extension ChronoPT {
         /// month: "toda segunda" is every Monday, "toda última sexta do mês"
         /// the Friday at -1.
         public struct Weekday: Sendable, Hashable, Codable {
+            /// Monday to Sunday.
             public var weekday: Locale.Weekday
             /// 1 for the first in the month, -1 for the last; `nil` for every
             /// one.
             public var ordinal: Int?
 
+            /// That weekday, every one or in one place; see ``every(_:)`` and
+            /// ``nth(_:_:)``.
             public init(_ weekday: Locale.Weekday, ordinal: Int? = nil) {
                 self.weekday = weekday
                 self.ordinal = ordinal
@@ -95,15 +99,19 @@ extension ChronoPT {
         /// dia" is 3 per day, also inside a weekly rule ("toda terça, 3 vezes
         /// ao dia"). RFC 5545 has no field for it; an app picks the hours.
         public struct Rate: Sendable, Hashable, Codable {
+            /// How many times, at least 1.
             public var count: Int
+            /// In each of which unit: `.daily` for "ao dia".
             public var per: Frequency
 
+            /// A count in each unit; a count below 1 gives 1.
             public init(count: Int, per: Frequency) {
                 self.count = max(1, count)
                 self.per = per
             }
         }
 
+        /// The unit it repeats in: days for "todo dia", weeks for "toda terça".
         public var frequency: Frequency
 
         /// Every how many units, at least 1: 2 for "de 2 em 2 semanas".
@@ -135,6 +143,9 @@ extension ChronoPT {
         /// Where it stops: "até dezembro", "por 10 dias", "5 vezes".
         public var end: End?
 
+        /// A rule with these fields; an interval below 1 gives 1. The static
+        /// factories build the common ones: ``daily(every:)``,
+        /// ``weekly(every:on:)``, ``monthly(every:day:)``.
         public init(
             frequency: Frequency,
             interval: Int = 1,
@@ -259,6 +270,8 @@ extension ChronoPT {
             case frequency, interval, weekdays, daysOfMonth, months, timesOfDay, rate, end
         }
 
+        /// Reads the form ``encode(to:)`` writes, and throws a
+        /// `DecodingError` for a value no rule can hold.
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             func refuse(_ key: CodingKeys, _ reason: String) -> DecodingError {

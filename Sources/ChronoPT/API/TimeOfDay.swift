@@ -30,6 +30,7 @@ extension ChronoPT {
             self.minute = 0
         }
 
+        /// Earlier in the day comes first.
         public static func < (lhs: Self, rhs: Self) -> Bool {
             (lhs.hour, lhs.minute) < (rhs.hour, rhs.minute)
         }
@@ -43,6 +44,8 @@ extension ChronoPT {
             case hour, minute
         }
 
+        /// Reads `{"hour": 18, "minute": 30}` or a bare hour, `7`, and throws
+        /// a `DecodingError` for a time outside the clock.
         public init(from decoder: any Decoder) throws {
             if let hour = try? decoder.singleValueContainer().decode(Int.self) {
                 guard let time = Self(hour: hour) else {
@@ -66,6 +69,7 @@ extension ChronoPT {
             self = time
         }
 
+        /// Writes `{"hour": 18, "minute": 30}`.
         public func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(hour, forKey: .hour)

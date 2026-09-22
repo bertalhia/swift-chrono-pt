@@ -24,7 +24,8 @@ always gives the same result.
 ### Reference date and calendar
 
 Relative expressions ("amanhã", "daqui 2 horas") are computed from
-`reference`. Weekdays, midnight and the time zone come from `calendar`. Pass
+`reference`. Midnight and the time zone come from `calendar`; a week runs
+Monday to Sunday whatever its `firstWeekday` says. Pass
 both explicitly in tests and on servers:
 
 ```swift

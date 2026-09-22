@@ -10,8 +10,6 @@ import Foundation
 /// A small grammar in the style of chrono (github.com/wanasit/chrono): rules
 /// find day pieces ("amanhã", "sexta que vem", "dia 30") and time pieces
 /// ("às 9", "no almoço", "de madrugada"), then a day and a time are joined.
-/// A new case is a new rule in `DayRules` or a new row in the `TimeRules`
-/// table, without touching the rest.
 ///
 /// Everything is computed from `reference` and `calendar`: the same text with
 /// the same reference always gives the same answer, on any OS version.

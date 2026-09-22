@@ -6,7 +6,7 @@ extension ChronoPT {
         /// Read past dates: "ontem", "anteontem", "sexta passada", "na última
         /// sexta", "semana passada", "mês passado", "há 2 dias", "2 horas
         /// atrás". Off by default, since a reminder in the past is useless. A
-        /// date that only names a day, such as "dia 15" or "sexta", still
+        /// date that only names a day, such as "dia 15" or "na sexta", still
         /// means the next one.
         public var allowsPast: Bool
 
@@ -52,6 +52,7 @@ extension ChronoPT {
             moments = try container.decodeIfPresent([String: TimeOfDay].self, forKey: .moments) ?? [:]
         }
 
+        /// Writes `allowsPast`, `defaultHour` and `moments`.
         public func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(allowsPast, forKey: .allowsPast)

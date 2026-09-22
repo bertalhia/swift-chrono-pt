@@ -159,8 +159,8 @@ paid?.start.date  // yesterday at 9:00
 ```
 
 `allowsPast` covers words that point back, such as "ontem", "sexta passada"
-or "há 2 dias". A date that only names a day, such as "dia 15" or "sexta",
-still means the next one.
+or "há 2 dias". A date that only names a day, such as "dia 15" or "na
+sexta", still means the next one.
 
 `moments` adds your app's own phrases, with the hour each one means. They read
 like "no almoço", and win over a built-in phrase written the same way:
@@ -262,12 +262,15 @@ Documentation**.
 
 - **`nil` means no date.** Nothing throws: `interpret` returns `nil` and `parse`
   an empty array when the text has no date in it.
-- **Any thread.** `parse`, `interpret`, `strippingDates` and `Parser` are pure
-  functions, safe from any thread or actor, and every result is `Sendable`.
-  Each thread keeps its own compiled regexes, so the first call on a new
-  thread takes about 10 ms longer.
-- **Cost.** In a release build on Apple silicon: 0.28 ms for a one-line note,
-  28 ms for 7.7 KB of notes full of dates, 2.3 ms for 10 KB of text with none.
+- **Any thread.** `parse`, `interpret`, `strippingDates` and `Parser` depend
+  only on what you pass: give them a `reference` and the same text always
+  gives the same answer; the default, `.now`, reads the clock. They are safe
+  from any thread or actor, and every result is `Sendable`. Each thread keeps
+  its own compiled regexes, so the first call on a new thread takes about
+  10 ms longer.
+- **Cost.** In a release build on Apple silicon: 0.04 ms for a one-line note,
+  3.6 ms for 10 KB of text with no dates, 28 ms for 7 KB of notes with a date
+  on every line.
 - **Highlighting.** For UIKit, `NSRange(match.range, in: text)`. For SwiftUI,
   convert each of `match.ranges`, which includes a time said apart from its
   day:
@@ -302,9 +305,11 @@ Documentation**.
 - A time with no day is today, or tomorrow if that time has passed. A
   repeating date works the same way: "toda segunda às 9" said on a Monday at
   10:00 is next Monday.
-- A weekday is the next one, not counting today: "sexta" said on a Friday is
-  next week's.
-- Spoken "às 7" is 19:00, the way people say it, and written "7h" is 7:00.
+- A weekday is the next one, not counting today: "na sexta" said on a Friday
+  is next week's.
+- A spoken hour from 1 to 7 reads as afternoon or evening, and from 8 to 11 as
+  morning, the way people say it: "às 7" is 19:00, "às 9" is 9:00. Written
+  "7h" is 7:00.
   `start.alternative` holds the other reading, 7:00, so a UI can offer it. A
   part of the day decides: "de manhã, às 7" and "amanhã de manhã, reunião às
   7" are 7:00.
@@ -338,6 +343,29 @@ Documentation**.
   18:00 for the afternoon, 18:00 to midnight for the night, and midnight to
   6:00 for "a madrugada toda". "o dia todo" needs a day: "choveu o dia todo"
   is not a date.
+
+## Stability
+
+From 1.0.0, versions follow [semantic versioning](https://semver.org):
+
+- A patch release (1.0.1) fixes bugs. A fix can change an answer that was
+  wrong; that is what it fixes.
+- A minor release (1.1.0) adds: phrases the parser now reads, so a text that
+  gave nothing may give a date, and new API. It removes and changes nothing
+  public.
+- A major release (2.0.0) may break the API. Anything deprecated in 1.x stays
+  until then.
+
+What 1.x keeps:
+
+- The public API, source compatible.
+- The `Codable` forms of `Options`, `Recurrence` and `TimeOfDay`, so saved
+  data keeps decoding, and `Recurrence.rrule`. `description` and
+  `debugDescription` are for people and may change.
+- `Recurrence.Frequency` and `Recurrence.End` are closed: no case is added in
+  1.x, so a `switch` over them stays exhaustive.
+- Swift 6.0, iOS 16, macOS 13, watchOS 9, tvOS 16 and visionOS 1 as the
+  minimum. Raising them is a major release.
 
 ## Not supported yet
 

@@ -1,7 +1,8 @@
 # Changelog
 
-Versions follow [semantic versioning](https://semver.org). While the package is
-`0.x`, a minor release may break the API and a patch release may not.
+Versions follow [semantic versioning](https://semver.org). Up to 0.x, a minor
+release could break the API and a patch release could not. From 1.0.0, see
+Stability in the README.
 
 ## 0.11.0
 
@@ -27,6 +28,7 @@ Versions follow [semantic versioning](https://semver.org). While the package is
   `.hourly(every:)` and `.minutely(every:)` build the common ones. One reading
   has one value: "diariamente" and "a cada 1 dia" are both `.daily()`.
 - `Recurrence.description` is its `rrule`: "FREQ=WEEKLY;BYDAY=MO,WE".
+- `Recurrence` JSON saved by 0.9.0 no longer decodes.
 
 ### Added
 

@@ -142,6 +142,8 @@ extension ChronoPT.Match {
 }
 
 extension ChronoPT.Match: CustomDebugStringConvertible {
+    /// The text and the dates, for the debugger and logs: `"amanhã às 9" →
+    /// 2026-09-22T12:00:00Z`. Not a format to parse.
     public var debugDescription: String {
         let ending = end.map { " to \($0.date.ISO8601Format())" } ?? ""
         let repeating = recurrence.map { ", repeating \($0)" } ?? ""

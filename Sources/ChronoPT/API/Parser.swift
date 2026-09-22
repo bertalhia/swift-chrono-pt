@@ -12,9 +12,13 @@ extension ChronoPT {
     public struct Parser: Sendable, Hashable {
         /// Where midnight falls and which time zone the dates are in.
         public var calendar: Calendar
+
+        /// How the text is read; see ``ChronoPT/Options``.
         public var options: Options
 
-        public init(calendar: Calendar = .current, options: Options = Options()) {
+        /// A parser with this calendar and these options. The default
+        /// calendar follows the user's settings as they change.
+        public init(calendar: Calendar = .autoupdatingCurrent, options: Options = Options()) {
             self.calendar = calendar
             self.options = options
         }

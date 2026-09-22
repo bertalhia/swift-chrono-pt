@@ -35,7 +35,7 @@ zone, the result you got and the result you expected.
 | File | What it does |
 |---|---|
 | `ChronoPT.swift` | The entry points, `parse` and `interpret` |
-| `API/` | The public types: `ParsedResult`, `ParsedDate`, `ParseOptions`, `Recurrence` |
+| `API/` | The public types: `Match`, `PartialDate`, `Options`, `Parser`, `Recurrence`, `TimeOfDay`, and `strippingDates` |
 | `Engine/TextSource.swift` | Normalized text with a position map, word lookups, and the words that open and close a range |
 | `Engine/Piece.swift` | A match with its position, and overlap removal |
 | `Engine/SpokenNumber.swift` | Spelled-out numbers |
@@ -58,9 +58,10 @@ swift test
 
 ## Versioning
 
-Semantic versioning through git tags, which Swift Package Manager reads. While
-the version is `0.x`, a minor release (`0.2.0`) may break the API and a patch
-release (`0.1.1`) may not.
+Semantic versioning through git tags, which Swift Package Manager reads. From
+1.0.0, the Stability section of the README says what each kind of release may
+change: a new phrase is a minor release, a changed or removed public symbol a
+major one.
 
 ## Pull requests
 
