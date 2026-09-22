@@ -73,6 +73,47 @@ struct APITests {
         #expect(found.debugDescription.contains("2026-09-22"))
     }
 
+    @Test("A parser keeps its calendar and options")
+    func parser() throws {
+        let parser = ChronoPT.Parser(
+            calendar: saoPaulo, options: ChronoPT.Options(allowsPast: true, defaultHour: 9))
+        let found = try #require(parser.interpret("paguei ontem", reference: monday))
+        #expect(ymd(found.start.date) == [2026, 9, 20])
+        #expect(hm(found.start.date) == [9, 0])
+        #expect(parser.parse("amanhã e depois de amanhã", reference: monday).count == 2)
+        #expect(parser.strippingDates(from: "comprar pão amanhã", reference: monday) == "comprar pão")
+        #expect(
+            parser.interpret("dentista sexta às 14h", reference: monday) == interpret("dentista sexta às 14h")
+        )
+    }
+
+    @Test(
+        "An hour that does not say morning or evening gives the other reading",
+        arguments: [
+            ("amanhã às 7", [2026, 9, 22], [19, 0], [2026, 9, 22], [7, 0]),
+            ("amanhã às 9", [2026, 9, 22], [9, 0], [2026, 9, 22], [21, 0]),
+            ("às 7", [2026, 9, 21], [19, 0], [2026, 9, 22], [7, 0]),
+        ])
+    func ambiguousHour(_ example: (text: String, day: [Int], time: [Int], otherDay: [Int], otherTime: [Int]))
+        throws
+    {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        let other = try #require(found.start.alternative)
+        #expect(ymd(other) == example.otherDay)
+        #expect(hm(other) == example.otherTime)
+    }
+
+    @Test(
+        "An hour that says morning or evening has no other reading",
+        arguments: [
+            "amanhã às 7 da manhã", "amanhã de manhã, às 7", "amanhã às 14h", "amanhã às 7h", "amanhã",
+        ])
+    func unambiguousHour(_ text: String) throws {
+        #expect(try #require(interpret(text)).start.alternative == nil)
+    }
+
     @Test("A recurrence prints the same way every time")
     func stableDescription() throws {
         let found = try #require(interpret("às quartas e segundas às 7h"))

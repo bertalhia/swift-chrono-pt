@@ -35,6 +35,17 @@ struct ReadmeTests {
         #expect(hm(chore.start.date) == [20, 0])
         #expect(chore.recurrence == .weekly(on: [.tuesday]))
 
+        let parser = ChronoPT.Parser(calendar: saoPaulo, options: .init(defaultHour: 9))
+        #expect(
+            ymd(try #require(parser.interpret("pagar o aluguel dia 5", reference: monday)).start.date) == [
+                2026, 10, 5,
+            ])
+        #expect(parser.strippingDates(from: "comprar pão amanhã", reference: monday) == "comprar pão")
+
+        let spoken = try #require(interpret("amanhã às 7"))
+        #expect(hm(spoken.start.date) == [19, 0])
+        #expect(hm(try #require(spoken.start.alternative)) == [7, 0])
+
         let water = try #require(interpret("regar as plantas a cada 15 dias"))
         #expect(water.recurrence == .every(DateComponents(day: 15)))
 

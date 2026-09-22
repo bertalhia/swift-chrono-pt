@@ -67,9 +67,16 @@ extension ChronoPT {
         /// `.hour` but not `.minute`, and a weekday adds `.weekday`.
         public let knownComponents: Set<Calendar.Component>
 
-        public init(date: Date, knownComponents: Set<Calendar.Component>) {
+        /// The other reading of an hour that did not say morning or evening:
+        /// "às 7" is 19:00, and 7:00 is the alternative, the next time it
+        /// comes. `nil` when the text settled it ("às 7 da manhã", "de manhã,
+        /// às 7", "7h", "14h") or gave no hour. A UI can offer it as a choice.
+        public let alternative: Date?
+
+        public init(date: Date, knownComponents: Set<Calendar.Component>, alternative: Date? = nil) {
             self.date = date
             self.knownComponents = knownComponents
+            self.alternative = alternative
         }
 
         /// Whether the text gave a time: "às 9", "de manhã", "daqui 2 horas".

@@ -98,6 +98,7 @@ struct Context {
             }
             let date: Date?
             let end: Date?
+            var alternative: Date?
             switch time.value {
             case .fromNow(let minutes):
                 date = reference.addingTimeInterval(Double(minutes) * 60)
@@ -105,6 +106,7 @@ struct Context {
             case .at(let clock):
                 date = clock.on(days.start, calendar: calendar)
                 end = days.end.flatMap { clock.on($0, calendar: calendar) }
+                alternative = time.alternative.flatMap { $0.on(days.start, calendar: calendar) }
             case .between(let start, let until):
                 date = start.on(days.start, calendar: calendar)
                 end = until.on(days.end ?? days.start, calendar: calendar)
@@ -123,7 +125,8 @@ struct Context {
             let ranges = spans.sorted { $0.lowerBound < $1.lowerBound }
             return result(
                 ChronoPT.PartialDate(
-                    date: date, knownComponents: day.value.knownComponents.union(time.knownComponents)),
+                    date: date, knownComponents: day.value.knownComponents.union(time.knownComponents),
+                    alternative: alternative),
                 end: end.map {
                     ChronoPT.PartialDate(
                         date: $0, knownComponents: day.value.endKnownComponents.union(time.knownComponents))
@@ -145,8 +148,14 @@ struct Context {
             guard let day = upcomingDay(for: clock), let date = clock.on(day, calendar: calendar) else {
                 return nil
             }
+            // The other reading's next time: "às 7" at 10:00 is 19:00 today,
+            // or 7:00 tomorrow.
+            let alternative = time.alternative.flatMap { other in
+                upcomingDay(for: other).flatMap { other.on($0, calendar: calendar) }
+            }
             return result(
-                ChronoPT.PartialDate(date: date, knownComponents: known), end: nil, range: time.range)
+                ChronoPT.PartialDate(date: date, knownComponents: known, alternative: alternative), end: nil,
+                range: time.range)
         case .between(let start, let until):
             guard let day = upcomingDay(for: start), let date = start.on(day, calendar: calendar) else {
                 return nil

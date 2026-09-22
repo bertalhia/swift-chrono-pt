@@ -53,6 +53,13 @@ Past dates ("ontem", "sexta passada", "há 2 dias") count only with
 with every date taken out, along with the word that introduced it, which is
 what a notes app keeps as the title.
 
+### An hour that did not say morning or evening
+
+"às 7" reads as 19:00, the way people say it, and
+``ChronoPT/PartialDate/alternative`` holds the other reading, 7:00, so a UI
+can offer it. A part of the day or a written hour ("de manhã, às 7", "7h")
+settles it, and the alternative is `nil`.
+
 ### Dates without a time
 
 When the text gives only a day, ``ChronoPT/PartialDate/date`` is noon of that day, or
@@ -66,6 +73,7 @@ midnight shifts of daylight saving time.
 - ``ChronoPT/interpret(_:reference:calendar:options:)``
 - ``ChronoPT/parse(_:reference:calendar:options:)``
 - ``ChronoPT/strippingDates(from:reference:calendar:options:)``
+- ``ChronoPT/Parser``
 - ``ChronoPT/Options``
 
 ### Results

@@ -153,6 +153,17 @@ ChronoPT.strippingDates(from: "dentista sexta às 14h, reunião dia 30")
 // "dentista, reunião"
 ```
 
+### A parser set up once
+
+An app that reads many texts the same way can keep the calendar and options
+in one place; only the reference date changes, and it defaults to now.
+
+```swift
+let parser = ChronoPT.Parser(calendar: calendar, options: .init(defaultHour: 9))
+parser.interpret("pagar o aluguel dia 5")
+parser.strippingDates(from: "comprar pão amanhã")  // "comprar pão"
+```
+
 ### Reference date and calendar
 
 Relative expressions are computed from `reference`, which defaults to now.
@@ -190,6 +201,7 @@ public struct ChronoPT.PartialDate: Sendable, Hashable {
     public let knownComponents: Set<Calendar.Component>  // what the text fixed
     public var hasTime: Bool                             // the text gave an hour
     public var hasDay: Bool                              // the text gave a day
+    public let alternative: Date?                        // 7:00 for "às 7", read as 19:00
     public func dateComponents(in: Calendar) -> DateComponents
 }
 ```
@@ -223,7 +235,8 @@ Documentation**.
   10:00 is next Monday.
 - A weekday is the next one, not counting today: "sexta" said on a Friday is
   next week's.
-- Spoken "às 7" is 19:00, the way people say it, and written "7h" is 7:00. A
+- Spoken "às 7" is 19:00, the way people say it, and written "7h" is 7:00.
+  `start.alternative` holds the other reading, 7:00, so a UI can offer it. A
   part of the day decides: "de manhã, às 7" and "amanhã de manhã, reunião às
   7" are 7:00.
 - In a range, an ambiguous end is the first reading after the start: "das 7

@@ -16,6 +16,10 @@ extension TimeRules {
         /// apart: "amanhã de manhã, reunião às 7".
         var settledRange: Range<String.Index>?
 
+        /// The other half of the day for an hour that did not say which: 7:00
+        /// for "às 7", which reads as 19:00.
+        var alternative: Clock?
+
         /// "há 2 horas": counts only with `ChronoPT.Options.allowsPast`.
         var isPast: Bool {
             if case .fromNow(let minutes) = value { minutes < 0 } else { false }
@@ -167,8 +171,14 @@ extension TimeRules {
         }
 
         if let clock {
-            let time = time(minutes: minutes(of: clock, period: period?.hour))
-            return Expression(range: range, value: .at(time), needsDay: false, pieces: group)
+            let chosen = minutes(of: clock, period: period?.hour)
+            var expression = Expression(
+                range: range, value: .at(time(minutes: chosen)), needsDay: false, pieces: group)
+            if clock.ambiguous, period == nil {
+                expression.alternative = time(
+                    minutes: chosen >= 12 * 60 ? chosen - 12 * 60 : chosen + 12 * 60)
+            }
+            return expression
         }
         if let period {
             return Expression(
