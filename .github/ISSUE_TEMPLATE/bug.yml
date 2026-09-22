@@ -47,4 +47,10 @@ body:
     id: version
     attributes:
       label: Version
-      placeholder: 0.8.0
+      placeholder: 0.10.0
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where the text came from, such as a typed note or dictation, and what your app does with the date
