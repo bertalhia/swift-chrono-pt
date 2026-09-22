@@ -682,4 +682,22 @@ struct TimeTests {
         #expect(hm(other) == [7, 0])
         #expect(ymd(try #require(interpret("toda segunda às 7")).start.alternative) == [2026, 9, 28])
     }
+
+    @Test(
+        "\"meio dia\" without a hyphen is noon next to a day or with minutes",
+        arguments: [
+            ("amanhã meio dia", [2026, 9, 22], [12, 0]), ("sexta meio dia", [2026, 9, 25], [12, 0]),
+            ("meio dia e meia", [2026, 9, 21], [12, 30]), ("meio dia e 15", [2026, 9, 21], [12, 15]),
+        ])
+    func noonWithoutHyphen(_ example: (text: String, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.text == example.text)
+    }
+
+    @Test("Half a day is not noon", arguments: ["meio dia de folga", "trabalhei meio dia"])
+    func halfADay(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
 }

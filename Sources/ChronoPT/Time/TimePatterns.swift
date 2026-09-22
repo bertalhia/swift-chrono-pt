@@ -207,9 +207,15 @@ extension TimeRules {
     static func noonAndMidnight(in source: TextSource) -> [Piece<Value>] {
         source.matches(of: noonOrMidnight, whenAny: noonWords).compactMap { match in
             let (_, prefix, word, minuteWords) = match.output
-            // "Meio dia" as two words without "ao" may mean half a day: "meio dia de folga".
-            if word == "meio dia", prefix == nil { return nil }
             let minute = minuteWords.map { $0 == "meia" ? 30 : SpokenNumber.value($0) ?? 0 } ?? 0
+            // "meio dia" as two words, with no preposition or minutes, may be
+            // half a day: "meio dia de folga" is not a time, "trabalhei meio
+            // dia" neither. Next to a day it is noon: "amanhã meio dia".
+            if word == "meio dia", prefix == nil, minuteWords == nil {
+                let next = source.words(after: match.range.upperBound, count: 1).first
+                if ["de", "do", "da"].contains(next) { return nil }
+                return Piece(range: match.range, value: .period(hour: 12, minute: 0, needsDay: true))
+            }
             let midnight = word.hasPrefix("meia")
             return Piece(
                 range: match.range,
