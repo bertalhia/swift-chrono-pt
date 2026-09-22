@@ -88,7 +88,11 @@ An `EKRecurrenceRule` has no times of day: for "todo dia às 8h e às 20h",
 make one event for each of ``ChronoPT/Recurrence/timesOfDay``. A
 ``ChronoPT/Recurrence/rate`` ("3x ao dia") has no field in any rule: the app
 picks the hours. For an iCalendar file or a CalDAV server,
-``ChronoPT/Recurrence/rrule`` gives the `RRULE` value, times of day included.
+``ChronoPT/Recurrence/rrule`` gives the `RRULE` value, times of day included;
+for an event with no time, ``ChronoPT/Recurrence/rrule(allDayIn:)`` writes its
+end as a date, as RFC 5545 asks. From iOS 18 and macOS 15,
+``ChronoPT/Recurrence/recurrenceRule(in:)`` gives Foundation's
+`Calendar.RecurrenceRule`, whose `recurrences(of:in:)` lists the dates.
 
 ## Offer the other reading
 

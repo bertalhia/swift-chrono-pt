@@ -205,6 +205,20 @@ extension ChronoPT {
         /// `BYMINUTE` when every hour goes with every minute (8:00 and 20:00);
         /// times that don't combine that way (8:00 and 20:30) are left out.
         public var rrule: String {
+            rrule { Self.utc($0) }
+        }
+
+        /// The rule for an event with no time. RFC 5545 wants UNTIL to be a
+        /// date when the event's start is one, so the end is written as the
+        /// day it falls on in the calendar: "UNTIL=20261231".
+        public func rrule(allDayIn calendar: Calendar) -> String {
+            rrule { date in
+                let parts = calendar.dateComponents([.year, .month, .day], from: date)
+                return String(format: "%04ld%02ld%02ld", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+            }
+        }
+
+        private func rrule(until format: (Date) -> String) -> String {
             var parts = ["FREQ=" + frequency.rawValue.uppercased()]
             if interval > 1 { parts.append("INTERVAL=\(interval)") }
             if !weekdays.isEmpty {
@@ -223,7 +237,7 @@ extension ChronoPT {
             }
             switch end {
             case .count(let count): parts.append("COUNT=\(count)")
-            case .until(let date): parts.append("UNTIL=" + Self.utc(date))
+            case .until(let date): parts.append("UNTIL=" + format(date))
             case nil: break
             }
             return parts.joined(separator: ";")
@@ -344,3 +358,41 @@ extension ChronoPT.Recurrence: CustomStringConvertible {
         .yearly: "year",
     ]
 }
+
+#if canImport(Darwin)
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    extension ChronoPT.Recurrence {
+        /// The same rule as Foundation's `Calendar.RecurrenceRule`, to list
+        /// its dates with `recurrences(of:in:)`. `rate` has no place in it;
+        /// `timesOfDay` becomes hours and minutes when every hour goes with
+        /// every minute, as in `rrule`.
+        public func recurrenceRule(in calendar: Calendar) -> Calendar.RecurrenceRule {
+            let frequency: Calendar.RecurrenceRule.Frequency =
+                switch self.frequency {
+                case .minutely: .minutely
+                case .hourly: .hourly
+                case .daily: .daily
+                case .weekly: .weekly
+                case .monthly: .monthly
+                case .yearly: .yearly
+                }
+            let end: Calendar.RecurrenceRule.End =
+                switch self.end {
+                case .until(let date): .afterDate(date)
+                case .count(let count): .afterOccurrences(count)
+                case nil: .never
+                }
+            let hours = Set(timesOfDay.map(\.hour))
+            let minutes = Set(timesOfDay.map(\.minute))
+            let combine = hours.count * minutes.count == timesOfDay.count
+            return Calendar.RecurrenceRule(
+                calendar: calendar, frequency: frequency, interval: interval, end: end,
+                months: months.sorted().map { Calendar.RecurrenceRule.Month($0) },
+                daysOfTheMonth: daysOfMonth.sorted(),
+                weekdays: weekdays.map { day in
+                    day.ordinal.map { .nth($0, day.weekday) } ?? .every(day.weekday)
+                },
+                hours: combine ? hours.sorted() : [], minutes: combine ? minutes.sorted() : [])
+        }
+    }
+#endif

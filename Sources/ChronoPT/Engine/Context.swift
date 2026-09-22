@@ -372,9 +372,29 @@ struct Context {
             end: end.map(zoned),
             recurrence: recurrence,
             isAllDay: isAllDay,
-            dateInterval: dateInterval(from: start, to: end)
+            dateInterval: dateInterval(from: start, to: end),
+            isApproximate: (ranges ?? [range]).contains { isApproximate(source.normalized[$0]) }
         )
     }
+
+    /// Whether the words say the time or the day roughly.
+    private func isApproximate(_ text: Substring) -> Bool {
+        let words = text.split(separator: " ")
+        return words.contains { Self.approximateWords.contains(String($0)) }
+            || Self.approximatePhrases.contains { text.contains($0) }
+    }
+
+    /// "umas 8", "por volta de", "em torno das", "perto do meio-dia", "lá
+    /// pras 3", "lá pelas 3", "cerca de", "meados de outubro".
+    private static let approximateWords: Set<String> = [
+        "umas", "uns", "cerca", "volta", "torno", "perto", "pras", "meados", "pouco", "pouquinho",
+    ]
+
+    /// "mais tarde", "logo mais", "já já", "lá pelas 3". "pela manhã" is not
+    /// rough, so "pela" counts only after "lá".
+    private static let approximatePhrases = [
+        "mais tarde", "logo mais", "ja ja", "la pelas", "la pelo", "la pela",
+    ]
 
     /// Whole days for a date with no time; start to end for a time range;
     /// nothing for a single moment.

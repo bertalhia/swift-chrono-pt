@@ -45,6 +45,12 @@ extension ChronoPT {
         /// 9").
         public let dateInterval: DateInterval?
 
+        /// Whether the text said it roughly: "umas 8", "por volta de 15h",
+        /// "lá pras 3", "daqui a pouco", "mais tarde", "meados de outubro".
+        /// The date is the reading the parser picks; a UI can show it as an
+        /// estimate.
+        public let isApproximate: Bool
+
         /// A match; `parse` and `interpret` make these. `dateInterval` is
         /// whatever you pass, not computed.
         public init(
@@ -55,7 +61,8 @@ extension ChronoPT {
             end: PartialDate? = nil,
             recurrence: ChronoPT.Recurrence? = nil,
             isAllDay: Bool = false,
-            dateInterval: DateInterval? = nil
+            dateInterval: DateInterval? = nil,
+            isApproximate: Bool = false
         ) {
             self.range = range
             self.ranges = ranges ?? [range]
@@ -65,6 +72,7 @@ extension ChronoPT {
             self.recurrence = recurrence
             self.isAllDay = isAllDay
             self.dateInterval = dateInterval
+            self.isApproximate = isApproximate
         }
     }
 
@@ -137,7 +145,8 @@ extension ChronoPT.Match {
             start: ChronoPT.PartialDate(
                 date: start.date, knownComponents: start.knownComponents, alternative: alternative,
                 timeZone: start.timeZone),
-            end: end, recurrence: recurrence, isAllDay: isAllDay, dateInterval: dateInterval)
+            end: end, recurrence: recurrence, isAllDay: isAllDay, dateInterval: dateInterval,
+            isApproximate: isApproximate)
     }
 }
 

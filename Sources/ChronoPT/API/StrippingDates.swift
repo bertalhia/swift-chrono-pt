@@ -16,6 +16,17 @@ extension ChronoPT {
         let spans = parse(text, reference: reference, calendar: calendar, options: options).flatMap(\.ranges)
         return text.removing(spans)
     }
+
+    /// The text without the dates of matches you already have, from `parse`
+    /// on the same text, so it is not parsed twice.
+    ///
+    /// ```swift
+    /// let matches = ChronoPT.parse(note)
+    /// let title = ChronoPT.strippingDates(matches, from: note)
+    /// ```
+    public static func strippingDates(_ matches: [Match], from text: String) -> String {
+        text.removing(matches.flatMap(\.ranges))
+    }
 }
 
 extension String {

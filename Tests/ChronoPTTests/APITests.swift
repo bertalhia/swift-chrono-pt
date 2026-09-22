@@ -264,4 +264,45 @@ struct APITests {
     func strippingBrackets(_ example: (text: String, stripped: String)) {
         #expect(strip(example.text) == example.stripped)
     }
+
+    @Test(
+        "A match says when the text was rough",
+        arguments: [
+            ("umas 8", true), ("por volta de 15h", true), ("lá pelas 3", true), ("daqui a pouco", true),
+            ("mais tarde", true), ("meados de outubro", true), ("daqui uns 10 dias", true),
+            ("amanhã às 9", false),
+            ("pela manhã", false), ("pelas próximas 2 semanas", false),
+        ])
+    func approximate(_ example: (text: String, isApproximate: Bool)) throws {
+        #expect(try #require(interpret(example.text)).isApproximate == example.isApproximate)
+    }
+
+    @Test("strippingDates takes the matches an app already has")
+    func strippingFromMatches() {
+        let note = "comprar pão amanhã no almoço"
+        #expect(ChronoPT.strippingDates(parse(note), from: note) == "comprar pão")
+        #expect(ChronoPT.strippingDates([], from: note) == note)
+    }
+
+    @Test("An all-day rule writes its end as a date")
+    func allDayUntil() {
+        let rule = ChronoPT.Recurrence(frequency: .weekly, weekdays: [.every(.tuesday)], end: .until(monday))
+        #expect(rule.rrule == "FREQ=WEEKLY;BYDAY=TU;UNTIL=20260921T130000Z")
+        #expect(rule.rrule(allDayIn: saoPaulo) == "FREQ=WEEKLY;BYDAY=TU;UNTIL=20260921")
+    }
+
+    #if canImport(Darwin)
+        @Test("A rule becomes Foundation's RecurrenceRule")
+        func foundationRule() throws {
+            guard #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) else { return }
+            let rule = try #require(interpret("toda última sexta do mês até dezembro")).recurrence
+            let foundation = try #require(rule).recurrenceRule(in: saoPaulo)
+            #expect(foundation.frequency == .monthly)
+            #expect(foundation.weekdays == [.nth(-1, .friday)])
+            let dates = Array(
+                foundation.recurrences(
+                    of: reference(2026, 9, 25), in: reference(2026, 9, 1)..<reference(2027, 1, 31)))
+            #expect(dates.map(ymd) == [[2026, 9, 25], [2026, 10, 30], [2026, 11, 27], [2026, 12, 25]])
+        }
+    #endif
 }

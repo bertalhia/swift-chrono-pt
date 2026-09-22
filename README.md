@@ -183,6 +183,9 @@ ChronoPT.strippingDates(from: "dentista sexta às 14h, reunião dia 30")
 // "dentista, reunião"
 ```
 
+An app that already parsed the text passes the matches instead, so the text
+is not read twice: `ChronoPT.strippingDates(matches, from: note)`.
+
 ### A parser set up once
 
 An app that reads many texts the same way can keep the calendar and options
@@ -225,6 +228,7 @@ public struct ChronoPT.Match: Sendable, Hashable {
     public let recurrence: ChronoPT.Recurrence?
     public let isAllDay: Bool                // "amanhã o dia todo"
     public let dateInterval: DateInterval?   // whole days, or a time range
+    public let isApproximate: Bool           // "umas 8", "daqui a pouco"
 }
 
 public struct ChronoPT.PartialDate: Sendable, Hashable {
