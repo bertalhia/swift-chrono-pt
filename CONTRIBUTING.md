@@ -34,11 +34,21 @@ zone, the result you got and the result you expected.
 
 | File | What it does |
 |---|---|
-| `ChronoPT.swift` | Public API (`parse`, `interpret`, `ParsedResult`) and the merge of a day with a time |
-| `TextSource.swift` | Normalized text with a position map; `Piece` and overlap removal; spelled-out numbers |
-| `DayRules.swift` | Day rules and date arithmetic |
-| `TimeRules.swift` | Clock times, parts of the day, moments, "daqui a"; merges adjacent pieces into one time |
-| `RegexCache.swift` | Keeps compiled regexes per thread, since `Regex` is not `Sendable` |
+| `ChronoPT.swift` | The entry points, `parse` and `interpret` |
+| `API/` | The public types: `ParsedResult`, `ParsedDate`, `ParseOptions`, `Recurrence` |
+| `Engine/TextSource.swift` | Normalized text with a position map, word lookups, and the words that open and close a range |
+| `Engine/Piece.swift` | A match with its position, and overlap removal |
+| `Engine/SpokenNumber.swift` | Spelled-out numbers |
+| `Engine/RegexCache.swift` | Compiled regexes, kept per thread |
+| `Engine/Context.swift` | Joins a day with a time and builds the result |
+| `Day/DayRules.swift` | Finds the days in the text, including ranges |
+| `Day/DayValue.swift` | What a day can be, and which components the text fixed |
+| `Day/DayPatterns.swift` | Day regexes and word tables |
+| `Day/DayResolution.swift` | From a day to a date, holidays included |
+| `Time/TimeRules.swift` | Finds the time pieces |
+| `Time/TimePatterns.swift` | Clock regexes and the duration guard |
+| `Time/PeriodTable.swift` | Parts of the day and moments, with the hour each one means |
+| `Time/TimeResolution.swift` | From the pieces to a clock time, ranges included |
 
 ## Running the tests
 
