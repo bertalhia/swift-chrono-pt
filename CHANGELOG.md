@@ -3,6 +3,50 @@
 Versions follow [semantic versioning](https://semver.org). While the package is
 `0.x`, a minor release may break the API and a patch release may not.
 
+## 0.10.0
+
+### Breaking
+
+- `Recurrence` is a struct with the fields of an iCalendar rule (RFC 5545),
+  the same ones `EKRecurrenceRule` takes: `frequency`, `interval`,
+  `weekdays`, `weekdayOrdinal`, `daysOfMonth`, `months`, `timesPerPeriod` and
+  `end`. `.daily()`, `.weekly(on:)`, `.monthly(day:)`, `.yearly()`,
+  `.hourly(every:)` and `.minutely(every:)` build the common ones. One reading
+  has one value: "diariamente" and "a cada 1 dia" are both `.daily()`.
+- `Recurrence.description` is its `rrule`: "FREQ=WEEKLY;BYDAY=MO,WE".
+
+### Added
+
+- Where a repeating date stops: "toda terça até dezembro", "todo dia por 10
+  dias", "toda segunda, 5 vezes", in `Recurrence.end`.
+- More repeating dates: "3x ao dia", "duas vezes por semana", "dia sim, dia
+  não", "toda última sexta do mês", "todo ano em julho", "todo 25 de
+  dezembro".
+- `Match.isAllDay` for "amanhã o dia todo"; whole parts of the day, "a manhã
+  toda" (6:00 to 12:00), "a tarde inteira", "a noite toda".
+- Lengths of time: "por 3 dias", "nos próximos 5 dias", "amanhã por uma
+  semana", "durante a semana".
+- Semesters, trimesters and halves of the month: "no primeiro semestre", "no
+  próximo trimestre", "primeira quinzena de outubro".
+- A weekday with a bare day number: "sexta, 25" is the 25th when it is a
+  Friday.
+- Time zones after a clock time: "15h BRT", "10h UTC", "16h GMT-3", "às 9
+  horário de Brasília". `knownComponents` has `.timeZone`.
+- English clock times and ISO date-times: "9am", "7:30 pm",
+  "2026-10-15T14:30:00-03:00".
+- `Options.moments`, an app's own phrases with the hour each one means:
+  `["no treino": 7]`.
+
+### Fixed
+
+- "todo dia 25 de dezembro" is yearly, not monthly.
+- "na 2ª quinzena" and "na segunda quinzena" are no longer Monday.
+
+### Performance
+
+- Mapping results back to the original text resumes where the last one
+  stopped instead of walking from the start each time.
+
 ## 0.9.0
 
 ### Added
