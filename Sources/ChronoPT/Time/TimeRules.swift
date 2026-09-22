@@ -63,7 +63,8 @@ enum TimeRules {
     /// Every time piece, without overlap, in text order.
     static func candidates(in source: TextSource) -> [Piece<Value>] {
         let found =
-            clocks(in: source) + minutesToHour(in: source) + noonAndMidnight(in: source)
+            clocks(in: source) + englishClocks(in: source) + minutesToHour(in: source)
+            + noonAndMidnight(in: source)
             + rangeStarts(in: source) + fromNow(in: source) + periods(in: source)
         return Piece.nonOverlapping(found, in: source)
     }

@@ -92,6 +92,16 @@ enum DayRules {
         }
     }
 
+    /// Seconds east of UTC for "z", "-03:00" or "+0100".
+    private static func offset(_ zone: Substring) -> Int? {
+        if zone == "z" { return 0 }
+        let digits = zone.dropFirst().filter(\.isNumber)
+        guard digits.count == 4, let hours = Int(digits.prefix(2)), let minutes = Int(digits.suffix(2)) else {
+            return nil
+        }
+        return (zone.first == "-" ? -1 : 1) * (hours * 3600 + minutes * 60)
+    }
+
     /// A day counted from another: "dois dias antes do natal", "uma semana
     /// depois do dia 10", "véspera do ano novo". The day it counts from sits
     /// right after the lead, and is the hint a holiday name needs.
@@ -256,6 +266,15 @@ enum DayRules {
             } else if let number, let fullYear, let month = Int(number), (1...12).contains(month) {
                 add(match.range, .month(month, year: Int(fullYear)))
             }
+        }
+
+        for match in source.matches(of: isoDateTime, whenContains: "-") {
+            let (_, year, month, day, hour, minute, zone) = match.output
+            guard let year = Int(year), let month = Int(month), let day = Int(day), let hour = Int(hour),
+                let minute = Int(minute), (0...23).contains(hour), (0...59).contains(minute)
+            else { continue }
+            let components = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
+            add(match.range, .dateTime(components, offset: zone.flatMap(offset)))
         }
 
         for match in source.matches(of: isoDate, whenContains: "-") {

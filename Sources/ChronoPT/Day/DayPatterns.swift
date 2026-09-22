@@ -168,6 +168,16 @@ extension DayRules {
         }
     }
 
+    // "2026-10-15T14:30", "2026-10-15 14:30:00", "2026-10-15T14:30:00-03:00", "...Z"
+    static var isoDateTime:
+        Regex<(Substring, Substring, Substring, Substring, Substring, Substring, Substring?)>
+    {
+        RegexCache.regex {
+            #/\b(\d{4})-(\d{2})-(\d{2})[t ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(z|[+-]\d{2}:?\d{2})?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "2026-10-15"
     static var isoDate: Regex<(Substring, Substring, Substring, Substring)> {
         RegexCache.regex {

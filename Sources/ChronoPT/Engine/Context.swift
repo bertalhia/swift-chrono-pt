@@ -73,6 +73,12 @@ struct Context {
     private func combine(
         _ day: Piece<DayRules.Value>?, _ time: TimeRules.Expression?, from dayReference: Date
     ) -> ChronoPT.Match? {
+        // A full date and time names its moment; a time next to it adds nothing.
+        if let day, case .dateTime = day.value {
+            guard let date = DayRules.instant(of: day.value, calendar: calendar) else { return nil }
+            let start = ChronoPT.PartialDate(date: date, knownComponents: day.value.knownComponents)
+            return result(start, end: nil, range: day.range)
+        }
         // An interval of hours counts from now, not from a day: "de 8 em 8 horas".
         if let day, time == nil, case .interval(let components) = day.value,
             components.hour != nil || components.minute != nil

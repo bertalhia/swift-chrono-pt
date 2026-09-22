@@ -41,7 +41,7 @@ date always gives the same result.
 | Date | 25/09, 25/09/2026, 25-12-2027, 25.12.2027, 10/out, 2026-10-15, 15 de outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze |
 | Period | esta semana, semana que vem, fim de semana, no meio da semana, este mês, mês que vem, no início do mês, no meio do mês, fim do mês, em outubro, março de 2027, dez/2027, 12/2027, ano que vem, fim do ano |
 | Holiday | no natal, véspera de natal, no ano novo, na páscoa, no carnaval, sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais |
-| Clock time | às 9, 14h, 9h30, 10:30, 15:30h, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
+| Clock time | às 9, 14h, 9h30, 10:30, 15:30h, 9am, 7:30 pm, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
 | Part of the day | de manhã, à tarde, à noite, de madrugada, cedo, à tardinha, tarde da noite, no fim da tarde |
 | Moment | no almoço, na janta, depois do almoço, antes de dormir, ao acordar, no café da manhã, depois do trabalho |
 | From now | daqui 2 horas, em meia hora, daqui a 20 minutos, daqui a pouco, mais tarde, logo mais |
@@ -52,6 +52,9 @@ date always gives the same result.
 | Past | ontem, anteontem, sexta passada, na última sexta, semana passada, mês passado, há 2 dias, 3 dias atrás, há 2 horas |
 
 Past dates count only with `allowsPast` (see [Options](#options)).
+
+ISO dates with a time, such as "2026-10-15T14:30" or "2026-10-15T14:30:00-03:00",
+give that moment, in the offset they carry or else in the calendar's time zone.
 
 Accents and capitals are optional: "AMANHA as 9" and "no almoco" work too. So
 do forms common in Portugal, such as "pelas 9", "às 15h00", "ao pequeno-almoço"

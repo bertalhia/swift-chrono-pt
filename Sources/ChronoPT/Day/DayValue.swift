@@ -53,6 +53,9 @@ extension DayRules {
         indirect case range(Value, Value)
         /// A day counted from another: "dois dias antes do natal".
         indirect case shifted(Value, by: DateComponents)
+        /// A date and time written in full, ISO style: "2026-10-15T14:30".
+        /// The offset, in seconds east of UTC, is the one the text gave.
+        case dateTime(DateComponents, offset: Int?)
 
         /// A day of the month, with or without the month: "dia 25", "25/09",
         /// "1º de outubro".
@@ -119,6 +122,8 @@ extension DayRules {
                 from.knownComponents
             case .shifted(let base, _):
                 base.knownComponents
+            case .dateTime:
+                [.day, .month, .year, .hour, .minute]
             }
         }
 

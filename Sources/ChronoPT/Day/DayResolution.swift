@@ -223,6 +223,9 @@ extension DayRules {
             guard let first, let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
             return (first, last)
 
+        case .dateTime:
+            return instant(of: value, calendar: calendar).map { (calendar.startOfDay(for: $0), nil) }
+
         case .shifted(let base, let shift):
             guard let days = resolve(base, reference: reference, calendar: calendar),
                 let start = calendar.date(byAdding: shift, to: days.start)
@@ -303,6 +306,15 @@ extension DayRules {
     static func firstDayOfNextMonth(_ day: Date, calendar: Calendar) -> Date? {
         guard let thisMonth = calendar.dateInterval(of: .month, for: day)?.start else { return nil }
         return calendar.date(byAdding: .month, value: 1, to: thisMonth)
+    }
+
+    /// The moment a full date and time names, in the offset the text gave or,
+    /// without one, in the calendar's time zone.
+    static func instant(of value: Value, calendar: Calendar) -> Date? {
+        guard case let .dateTime(components, offset) = value else { return nil }
+        var calendar = calendar
+        if let offset, let zone = TimeZone(secondsFromGMT: offset) { calendar.timeZone = zone }
+        return calendar.date(from: components)
     }
 
     /// A day the banks are open: not a weekend, not a national holiday.

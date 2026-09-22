@@ -28,13 +28,14 @@ struct TextSource {
         normalized.reserveCapacity(text.utf8.count)
         let characters = Array(text)
         for (index, character) in characters.enumerated() {
-            // A dot between digits stays, so "25.12.2027" keeps its shape;
-            // anywhere else it is punctuation.
-            if character == ".", index > 0, index + 1 < characters.count,
+            // A dot or a plus between digits stays, so "25.12.2027" and the
+            // offset of "14:30:00+01:00" keep their shape; anywhere else they
+            // are punctuation.
+            if character == "." || character == "+", index > 0, index + 1 < characters.count,
                 characters[index - 1].isASCII, characters[index - 1].isNumber,
                 characters[index + 1].isASCII, characters[index + 1].isNumber
             {
-                normalized.append(".")
+                normalized.append(character)
             } else {
                 normalized.append(Self.normalized(character))
             }

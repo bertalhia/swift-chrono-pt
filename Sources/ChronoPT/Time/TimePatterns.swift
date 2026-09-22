@@ -97,6 +97,27 @@ extension TimeRules {
         }
     }
 
+    /// "9am", "3pm", "7:30 pm": the meridiem settles the half of the day.
+    static func englishClocks(in source: TextSource) -> [Piece<Value>] {
+        source.matches(of: englishClock, whenAny: ["am", "pm"], orDigit: true).compactMap { match in
+            let (_, hourText, minuteText, meridiem) = match.output
+            guard let hour = Int(hourText), (1...12).contains(hour) else { return nil }
+            let minute = minuteText.flatMap { Int($0) } ?? 0
+            guard (0...59).contains(minute) else { return nil }
+            let clockHour = meridiem == "pm" ? (hour == 12 ? 12 : hour + 12) : (hour == 12 ? 0 : hour)
+            return Piece(
+                range: match.range,
+                value: .clock(hour: clockHour, minute: minute, ambiguous: false, nextDay: false))
+        }
+    }
+
+    // "9am", "3pm", "7:30 pm", "10 AM"
+    static var englishClock: Regex<(Substring, Substring, Substring?, Substring)> {
+        RegexCache.regex {
+            #/\b(\d{1,2})(?::(\d{2}))? ?(am|pm)\b/#.wordBoundaryKind(.simple)
+        }
+    }
+
     static func noonAndMidnight(in source: TextSource) -> [Piece<Value>] {
         source.matches(of: noonOrMidnight, whenAny: noonWords).compactMap { match in
             let (_, prefix, word, minuteWords) = match.output

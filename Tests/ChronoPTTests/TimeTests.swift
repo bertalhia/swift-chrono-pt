@@ -233,6 +233,39 @@ struct TimeTests {
     }
 
     @Test(
+        "English clock times and seconds",
+        arguments: [
+            ("amanhã às 9am", [9, 0]),
+            ("amanhã 3pm", [15, 0]),
+            ("amanhã 7:30 pm", [19, 30]),
+            ("amanhã 10 AM", [10, 0]),
+            ("amanhã 12pm", [12, 0]),
+            ("amanhã às 14:30:15", [14, 30]),
+        ])
+    func englishClock(_ example: (text: String, time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == [2026, 9, 22])
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.start.alternative == nil)
+    }
+
+    @Test(
+        "ISO date and time, with or without an offset",
+        arguments: [
+            ("2026-10-15T14:30", [2026, 10, 15], [14, 30]),
+            ("2026-10-15 14:30:00", [2026, 10, 15], [14, 30]),
+            ("prazo 2026-10-15T14:30:00-03:00", [2026, 10, 15], [14, 30]),
+            ("2026-10-15T14:30:00Z", [2026, 10, 15], [11, 30]),
+            ("2026-10-15T14:30:00+01:00", [2026, 10, 15], [10, 30]),
+        ])
+    func isoDateTime(_ example: (text: String, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.start.hasTime)
+    }
+
+    @Test(
         "Vague times count from now",
         arguments: [
             ("me lembra mais tarde", [12, 0]),

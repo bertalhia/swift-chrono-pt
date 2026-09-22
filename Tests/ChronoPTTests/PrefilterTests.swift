@@ -23,6 +23,7 @@ struct PrefilterTests {
             "dia", "semana", "mês", "ano", "que vem", "passada", "todo", "toda", "cada", "em", "há", "atrás",
             "2", "10", "15", "25/09", "14h", "9", "quinze", "vinte e três", "natal", "útil", "meio-dia",
             "segunda", "sexta", "sáb", "6ª feira", "outubro", "dez", "da noite", "de manhã", "no almoço",
+            "2026-10-15T14:30", "2026-10-15T14:30:00Z", "2026-10-15T14:30:00+01:00", "10 AM",
         ]
     }()
 
