@@ -101,6 +101,15 @@ extension DayRules {
             }
         }
 
+        /// A day that comes back on the calendar, so its next time is the one
+        /// meant: "dia 22", "25/12", "sexta", "natal", "em outubro".
+        var comesBack: Bool {
+            switch self {
+            case .date(_, _, nil), .dayOfMonth, .holiday(_, nil), .weekday(_, nil), .month(_, nil): true
+            default: false
+            }
+        }
+
         /// "ontem", "sexta passada", "há 2 dias": counts only with
         /// `ChronoPT.Options.allowsPast`.
         var isPast: Bool {

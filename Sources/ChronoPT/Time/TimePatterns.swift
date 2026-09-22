@@ -70,6 +70,9 @@ extension TimeRules {
 
     static let writtenHourUnits: Set<String> = ["h", "hs", "hr", "hrs"]
 
+    /// "manhã", "tarde", "noite", "madrugada", as the text reads them.
+    static let partsOfDay: Set<String> = ["manha", "tarde", "noite", "madrugada"]
+
     /// Minutes before the hour: "quinze para as oito" is 7:45. The named hour
     /// decides morning or evening, as in "às oito".
     static func minutesToHour(in source: TextSource) -> [Piece<Value>] {
@@ -163,7 +166,12 @@ extension TimeRules {
         source.matches(of: zone, whenAny: zoneWords).compactMap { match in
             let (_, place, name, sign, hours, minutes) = match.output
             let zone: TimeZone?
-            if let sign, let hours = Int(hours ?? ""), hours <= 14 {
+            if let sign {
+                // An offset that no zone has is no zone: "GMT+14:99".
+                guard let hours = Int(hours ?? ""), hours <= 14, (minutes.flatMap { Int($0) } ?? 0) <= 59
+                else {
+                    return nil
+                }
                 let seconds = hours * 3600 + (minutes.flatMap { Int($0) } ?? 0) * 60
                 zone = TimeZone(secondsFromGMT: sign == "-" ? -seconds : seconds)
             } else {

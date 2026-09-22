@@ -27,8 +27,16 @@ struct Context {
         } else {
             // Past words still claim their text, so "sexta passada" never reads
             // as next Friday; then they drop out, with any time next to them.
-            let past = days.filter(\.value.isPast)
-            self.days = days.filter { !$0.value.isPast }
+            // A day counted from another is past when it lands in the past:
+            // "uma semana depois da sexta passada" is this Friday.
+            let isPast = { (day: Piece<DayRules.Value>) -> Bool in
+                guard case .shifted = day.value else { return day.value.isPast }
+                return DayRules.resolve(day.value, reference: reference, calendar: calendar).map {
+                    $0.start < calendar.startOfDay(for: reference)
+                } ?? false
+            }
+            let past = days.filter(isPast)
+            self.days = days.filter { !isPast($0) }
             self.times = times.filter { [source] time in
                 !time.isPast && !past.contains { source.onlyConnectors(between: $0.range, and: time.range) }
             }

@@ -101,16 +101,55 @@ enum DayRules {
                 let piece = Piece(
                     range: start..<second.piece.range.upperBound, value: Value.range(from, second.piece.value)
                 )
-                return Candidate(piece: piece, hint: .none)
+                return Candidate(piece: piece, hint: merged(first, second))
             }
         }
+    }
+
+    /// A bare "d/m" that counts or scores something: "24/7", "tirei 8/10",
+    /// "1/2 xícara", "2/3 da turma". A date after "dia" or with a year is
+    /// always a date; otherwise a noun after it, or a score word before it,
+    /// makes it a number.
+    static func isFraction(_ range: Range<String.Index>, in source: TextSource) -> Bool {
+        let text = source.normalized[range]
+        if text.hasPrefix("dia ") { return false }
+        if text == "24/7" { return true }
+        if let before = source.word(before: range.lowerBound), scoreWords.contains(before) { return true }
+        let next = source.words(after: range.upperBound, count: 2)
+        guard let first = next.first else { return false }
+        if ["de", "da", "do", "das", "dos"].contains(first) {
+            return !(next.count > 1 && TimeRules.partsOfDay.contains(next[1]))
+        }
+        return !source.endsPhrase(at: range.upperBound)
+    }
+
+    /// Whether the words after a weekday name make it an ordinal: "segunda
+    /// fase", "quartas de final".
+    static func isOrdinal(_ range: Range<String.Index>, in source: TextSource) -> Bool {
+        let next = source.words(after: range.upperBound, count: 2)
+        return next.first.map(ordinalNouns.contains) ?? false || next == ["de", "final"]
+    }
+
+    /// Whether the day exists in that month and year: not 30/02, not 31/04.
+    static func isValidDate(day: Int, month: Int, year: Int) -> Bool {
+        guard (1...12).contains(month), day >= 1 else { return false }
+        let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+        return day <= (month == 2 ? (leap ? 29 : 28) : daysInMonth[month - 1])
+    }
+
+    /// A joined candidate needs its date when a part did: a range ending on
+    /// "sábado, 12" that is not a Saturday gives way to "de quinta a sábado".
+    private static func merged(_ first: Candidate, _ second: Candidate) -> Candidate.Hint {
+        first.hint == .date || second.hint == .date ? .date : .none
     }
 
     /// Seconds east of UTC for "z", "-03:00" or "+0100".
     private static func offset(_ zone: Substring) -> Int? {
         if zone == "z" { return 0 }
         let digits = zone.dropFirst().filter(\.isNumber)
-        guard digits.count == 4, let hours = Int(digits.prefix(2)), let minutes = Int(digits.suffix(2)) else {
+        guard digits.count == 4, let hours = Int(digits.prefix(2)), let minutes = Int(digits.suffix(2)),
+            hours <= 14, minutes <= 59
+        else {
             return nil
         }
         return (zone.first == "-" ? -1 : 1) * (hours * 3600 + minutes * 60)
@@ -250,7 +289,7 @@ enum DayRules {
         }
 
         for match in source.matches(of: inAmount, whenAny: amountWords) {
-            guard let count = SpokenNumber.value(match.output.2) else { continue }
+            guard let count = SpokenNumber.value(match.output.2), count > 0 else { continue }
             add(match.range, amount(count, unit: match.output.3))
         }
 
@@ -276,13 +315,14 @@ enum DayRules {
         }
 
         for match in source.matches(of: everyInterval, whenAny: intervalWords) {
-            guard let count = SpokenNumber.value(match.output.1) else { continue }
+            guard let count = SpokenNumber.value(match.output.1), count > 0 else { continue }
             add(match.range, .interval(components(count, unit: match.output.2)))
         }
 
         for match in source.matches(of: fromToInterval, whenAny: fromToWords) {
             // "de 2 em 3 semanas" is not an interval.
-            guard let count = SpokenNumber.value(match.output.1), SpokenNumber.value(match.output.2) == count
+            guard let count = SpokenNumber.value(match.output.1), count > 0,
+                SpokenNumber.value(match.output.2) == count
             else { continue }
             add(match.range, .interval(components(count, unit: match.output.3)))
         }
@@ -348,7 +388,8 @@ enum DayRules {
                 return name.hasSuffix("s") == plural
                     ? weekdays[plural ? String(name.dropLast()) : name] : nil
             }
-            guard !days.isEmpty, !days.contains(nil) else { continue }
+            // "nas quartas de final", "as segundas intenções".
+            guard !days.isEmpty, !days.contains(nil), !isOrdinal(match.range, in: source) else { continue }
             add(match.range, .weekly(days.compactMap { $0 }))
         }
 
@@ -356,7 +397,9 @@ enum DayRules {
             let (prefix, name, feira, next) = (
                 match.output.1, String(match.output.2), match.output.3, match.output.4
             )
-            guard let day = weekdays[name] else { continue }
+            // An ordinal before its noun: "na segunda fase", "na quinta posição".
+            guard let day = weekdays[name], feira != nil || next != nil || !isOrdinal(match.range, in: source)
+            else { continue }
             // "sexta que vem" is next week's; "sexta dessa semana" is this one.
             let week: Int? =
                 next.map {
@@ -377,7 +420,9 @@ enum DayRules {
         }
 
         for match in source.matches(of: numericDate, whenContains: "/") {
-            guard let day = Int(match.output.1), let month = Int(match.output.2) else { continue }
+            guard let day = Int(match.output.1), let month = Int(match.output.2),
+                match.output.3 != nil || !isFraction(match.range, in: source)
+            else { continue }
             add(match.range, .date(day: day, month: month, year: match.output.3.flatMap { year(String($0)) }))
         }
 
@@ -404,7 +449,8 @@ enum DayRules {
         for match in source.matches(of: isoDateTime, whenContains: "-") {
             let (_, year, month, day, hour, minute, zone) = match.output
             guard let year = Int(year), let month = Int(month), let day = Int(day), let hour = Int(hour),
-                let minute = Int(minute), (0...23).contains(hour), (0...59).contains(minute)
+                let minute = Int(minute), (0...23).contains(hour), (0...59).contains(minute),
+                isValidDate(day: day, month: month, year: year)
             else { continue }
             let components = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
             add(match.range, .dateTime(components, offset: zone.flatMap(offset)))
@@ -419,11 +465,17 @@ enum DayRules {
 
         for match in source.matches(of: monthName, whenAny: monthWords) {
             let (_, dayText, of, monthText, yearText) = match.output
-            // A day in words needs "de": "um mar de rosas" is not a date.
+            // A day in words needs "de": "um mar de rosas" is not a date. A
+            // street named after a date is a place: "Rua 25 de Março".
             guard Int(dayText) != nil || of != nil,
-                let day = dayNumber(dayText), let month = months[String(monthText)]
+                let day = dayNumber(dayText), let month = months[String(monthText)],
+                !(source.word(before: match.range.lowerBound).map(placeWords.contains) ?? false)
             else { continue }
-            add(match.range, .date(day: day, month: month, year: yearText.flatMap { Int($0) }))
+            let year = yearText.flatMap { Int($0) }.flatMap { (1900...2199).contains($0) ? $0 : nil }
+            // A number that is not a year ends the date: "Rua 25 de Março, 1000".
+            let range =
+                year == nil && yearText != nil ? match.range.lowerBound..<monthText.endIndex : match.range
+            add(range, .date(day: day, month: month, year: year))
         }
 
         for match in source.matches(of: dayRangeInMonth, whenAny: monthWords) {

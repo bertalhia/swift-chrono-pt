@@ -564,4 +564,88 @@ struct DayTests {
     func marco(_ example: (text: String, match: String)) throws {
         #expect(try #require(interpret(example.text)).text == example.match)
     }
+
+    @Test(
+        "An ordinal before its noun is not a weekday",
+        arguments: [
+            "passei na segunda fase", "na segunda tentativa deu certo", "fiquei na quinta posição",
+            "pagar na segunda parcela", "o Brasil está nas quartas de final",
+            "ele tinha as segundas intenções",
+        ])
+    func ordinalBeforeNoun(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test("A weekday with a preposition still counts before other words")
+    func weekdayBeforeOtherWords() throws {
+        #expect(ymd(try #require(interpret("na segunda com o João")).start.date) == [2026, 9, 28])
+    }
+
+    @Test(
+        "Fractions, scores and streets are not dates",
+        arguments: [
+            "tirei 8/10 na prova", "1/2 xícara de açúcar", "Rua 25 de Março, 1000", "Av. 7 de Setembro 450",
+            "Rua 13 de Maio",
+        ])
+    func notADate(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test(
+        "A number before or after a date does not make it a fraction",
+        arguments: [
+            ("atendimento 24/7 a partir de amanhã", [2026, 9, 22], "amanhã"),
+            ("comprar 2/3 do material amanhã", [2026, 9, 22], "amanhã"),
+            ("10/10 de manhã", [2026, 10, 10], "10/10 de manhã"),
+            ("dia 8/10", [2026, 10, 8], "dia 8/10"),
+            ("entrega 15/10, sem falta", [2026, 10, 15], "15/10"),
+            ("15 de outubro 2027", [2027, 10, 15], "15 de outubro 2027"),
+        ])
+    func dateNextToNumbers(_ example: (text: String, day: [Int], match: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(found.text == example.match)
+    }
+
+    @Test(
+        "A day counted from another is its next one, and one day",
+        arguments: [
+            ("dois dias antes do natal", reference(2026, 12, 24), [2027, 12, 23]),
+            ("véspera do natal", reference(2026, 12, 25), [2027, 12, 24]),
+            ("véspera de natal", reference(2026, 12, 25), [2027, 12, 24]),
+            ("2 dias antes do dia 22", reference(2026, 9, 21), [2026, 10, 20]),
+            ("uma semana depois da sexta passada", reference(2026, 9, 21), [2026, 9, 25]),
+            ("dois dias depois de ontem", reference(2026, 9, 21), [2026, 9, 22]),
+            ("dois dias antes do carnaval", reference(2026, 9, 21), [2027, 2, 4]),
+            // From its last day.
+            ("uma semana depois do carnaval", reference(2026, 9, 21), [2027, 2, 16]),
+        ])
+    func countedFromItsNextTime(_ example: (text: String, reference: Date, day: [Int])) throws {
+        let found = try #require(interpret(example.text, reference: example.reference))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(found.end == nil)
+    }
+
+    @Test("A range whose end is not a date gives way to the plain range")
+    func rangeWithWrongDate() throws {
+        let found = try #require(interpret("de quinta a sábado, 12"))
+        #expect(found.text == "de quinta a sábado")
+        #expect(ymd(found.end?.date) == [2026, 9, 26])
+    }
+
+    @Test(
+        "Invalid values are no date",
+        arguments: [
+            "2026-02-30T10:00", "2026-13-45T10:00", "a cada 0 minutos", "de 0 em 0 dias",
+        ])
+    func invalidValues(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test("An offset no zone has is no zone")
+    func invalidOffset() throws {
+        let found = try #require(interpret("15h GMT+14:99"))
+        #expect(found.text == "15h")
+        #expect(!found.start.knownComponents.contains(.timeZone))
+    }
 }

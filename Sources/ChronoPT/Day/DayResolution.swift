@@ -333,10 +333,25 @@ extension DayRules {
             return (start, friday > start ? friday : nil)
 
         case .shifted(let base, let shift):
-            guard let days = resolve(base, reference: reference, calendar: calendar),
-                let start = calendar.date(byAdding: shift, to: days.start)
-            else { return nil }
-            return (start, days.end.flatMap { calendar.date(byAdding: shift, to: $0) })
+            // One day, counted back from the first day or forward from the
+            // last: "dois dias antes do carnaval" is before it begins.
+            func shifted(from reference: Date) -> (days: (start: Date, end: Date?), date: Date)? {
+                guard let days = resolve(base, reference: reference, calendar: calendar) else { return nil }
+                let forward = [shift.day, shift.weekOfYear, shift.month, shift.year].contains {
+                    ($0 ?? 0) > 0
+                }
+                return calendar.date(byAdding: shift, to: forward ? days.end ?? days.start : days.start)
+                    .map { (days, $0) }
+            }
+            guard let first = shifted(from: reference) else { return nil }
+            // A date that comes back every year counts from its next time
+            // when this one's shifted day has gone by: "véspera do natal"
+            // said on Christmas Day is next year's.
+            guard first.date < today, base.comesBack,
+                let next = calendar.date(byAdding: .day, value: 1, to: first.days.end ?? first.days.start),
+                let later = shifted(from: next)
+            else { return (first.date, nil) }
+            return (later.date, nil)
 
         case .businessDays(let count):
             // Counting from today, skipping weekends and the days the banks close.

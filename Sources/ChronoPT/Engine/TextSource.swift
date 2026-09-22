@@ -24,8 +24,8 @@ struct TextSource {
 
     init(_ text: String, skipsRules: Bool = true) {
         original = text
-        var normalized = ""
-        normalized.reserveCapacity(text.utf8.count)
+        var mapped: [Character] = []
+        mapped.reserveCapacity(text.utf8.count)
         let characters = Array(text)
         for (index, character) in characters.enumerated() {
             // A dot between digits and a plus before one stay, so
@@ -36,10 +36,15 @@ struct TextSource {
                 && characters[index + 1].isNumber
             let digitBefore = index > 0 && characters[index - 1].isASCII && characters[index - 1].isNumber
             if digitAfter && (character == "+" || (character == "." && digitBefore)) {
-                normalized.append(character)
+                mapped.append(character)
             } else {
-                normalized.append(Self.normalized(character))
+                mapped.append(Self.normalized(character))
             }
+        }
+        var normalized = String(mapped)
+        if normalized.count != mapped.count {
+            Self.separate(&mapped)
+            normalized = String(mapped)
         }
         self.normalized = normalized
         self.cursor = Cursor(normalized: normalized.startIndex, original: text.startIndex)
@@ -118,6 +123,26 @@ struct TextSource {
     {
         guard !skipsRules || (hasDigit && normalized.contains(character)) else { return [] }
         return normalized.matches(of: regex())
+    }
+
+    /// Punctuation that becomes a space can join its neighbour into one
+    /// character: a line break keeps a spacing mark apart ("\n\u{093E}"), a
+    /// space does not. Such a neighbour becomes a space too, so every position
+    /// still maps to the writer's text.
+    private static func separate(_ characters: inout [Character]) {
+        for _ in 0..<4 {
+            var changed = false
+            for index in characters.indices.dropFirst()
+            where String([characters[index - 1], characters[index]]).count != 2 {
+                let side = characters[index].isASCII ? index - 1 : index
+                characters[side] = " "
+                changed = true
+            }
+            if !changed { return }
+        }
+        if String(characters).count != characters.count {
+            characters = characters.map { $0.isASCII ? $0 : " " }
+        }
     }
 
     /// One character as the rules read it. ASCII, nearly all of a note, takes

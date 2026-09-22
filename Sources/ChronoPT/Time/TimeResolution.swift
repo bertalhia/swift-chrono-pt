@@ -162,7 +162,12 @@ extension TimeRules {
     /// the hour move back from the named hour: "dez para a meia-noite" is 23:50
     /// of the same day.
     static func time(minutes: Int) -> Clock {
-        Clock(hour: minutes / 60 % 24, minute: minutes % 60, dayOffset: minutes / (24 * 60))
+        let day = 24 * 60
+        // Floor division: ten minutes before midnight of this day is 23:50
+        // of the day before.
+        let offset = minutes >= 0 ? minutes / day : -((-minutes + day - 1) / day)
+        let rest = minutes - offset * day
+        return Clock(hour: rest / 60, minute: rest % 60, dayOffset: offset)
     }
 
     /// A part of the day next to the day and a clock time said further on make

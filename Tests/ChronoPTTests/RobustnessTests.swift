@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import ChronoPT
@@ -74,6 +75,32 @@ struct RobustnessTests {
         let found = try #require(interpret(text))
         #expect(text[found.range] == "amanhã às 9")
     }
+    @Test(
+        "A mark next to a line break keeps every position",
+        arguments: ["\n\u{093E}amanhã às 9", "\u{0D4E}\namanhã às 9", "\r\u{093E}amanhã às 9"])
+    func markNextToLineBreak(_ text: String) throws {
+        let found = try #require(parse(text).first)
+        #expect(found.text == "amanhã às 9")
+        #expect(String(text[found.range]) == found.text)
+    }
+
+    @Test("strippingDates keeps a mark next to a line break")
+    func stripKeepsMark() {
+        #expect(strip("\u{0D4E}\nreunião amanhã às 9 com o time") == "\u{0D4E}\nreunião com o time")
+    }
+
+    @Test("strippingDates is linear in a run of whitespace")
+    func stripWhitespaceRun() {
+        let text = String(repeating: " \n", count: 4000) + "amanhã"
+        let clock = ContinuousClock()
+        let elapsed = clock.measure { _ = strip(text) }
+        #expect(elapsed < .seconds(1))
+    }
+
+    @Test("Ten minutes before a midnight named as 12 is the day before")
+    func minutesBeforeTwelve() throws {
+        #expect(hm(try #require(interpret("dez para as 12 da manhã")).start.date) == [23, 50])
+    }
 }
 
 /// SplitMix64: the same seed gives the same text on every run.
@@ -91,4 +118,5 @@ struct SeededGenerator: RandomNumberGenerator {
         z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
         return z ^ (z >> 31)
     }
+
 }

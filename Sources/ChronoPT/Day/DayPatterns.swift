@@ -449,6 +449,28 @@ extension DayRules {
     /// Weekdays with no other meaning, which count on their own.
     static let weekdaysAlone: Set<String> = ["sabado", "domingo"]
 
+    /// Nouns an ordinal comes before: "segunda fase", "quinta posição",
+    /// "segunda parcela". After one of them a weekday name is an ordinal.
+    static let ordinalNouns: Set<String> = [
+        "fase", "fases", "tentativa", "tentativas", "vez", "vezes", "parcela", "parcelas", "parte", "partes",
+        "serie", "series", "via", "vias", "dose", "doses", "etapa", "etapas", "rodada", "rodadas", "posicao",
+        "colocacao", "turma", "turmas", "chamada", "opcao", "opcoes", "edicao", "temporada", "pagina",
+        "questao", "questoes", "mao", "maos", "intencao", "intencoes", "divisao", "instancia", "geracao",
+        "onda", "guerra", "linha", "classe", "vara", "camada", "prestacao", "prestacoes", "cadeira",
+    ]
+
+    /// Words before a "d/m" that make it a score: "nota 8/10".
+    static let scoreWords: Set<String> = [
+        "nota", "notas", "tirei", "tirou", "tiramos", "placar", "acertei", "acertou",
+    ]
+
+    /// Places named after a date: "Rua 25 de Março", "Av. 7 de Setembro".
+    static let placeWords: Set<String> = [
+        "rua", "r", "av", "avenida", "praca", "travessa", "tv", "rodovia", "alameda", "al", "estrada",
+        "largo",
+        "viaduto", "ponte", "estacao", "parque", "escola", "colegio", "vila", "jardim", "bairro", "conjunto",
+    ]
+
     static let months = [
         "janeiro": 1, "jan": 1, "fevereiro": 2, "fev": 2, "marco": 3, "mar": 3, "abril": 4, "abr": 4,
         "maio": 5, "mai": 5, "junho": 6, "jun": 6, "julho": 7, "jul": 7, "agosto": 8, "ago": 8,

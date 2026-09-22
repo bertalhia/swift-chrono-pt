@@ -72,14 +72,43 @@ extension String {
         return start < end ? start..<end : nil
     }
 
-    /// Spaces and punctuation the cut left behind.
+    /// Spaces and punctuation the cut left behind, in one pass: a run of
+    /// spaces becomes one, no space stays before punctuation, a comma before
+    /// another mark goes ("pão,."), a dash after a dash goes ("— —"), and so
+    /// do empty brackets.
     private func tidied() -> String {
-        var text = replacing(/[ \t]+/, with: " ")
-        text = text.replacing(/\s+([,.;:!?])/) { String($0.output.1) }
-        text = text.replacing(/([,;:])\s*(?=[,;:.!?])/, with: "")
-        // A dash left with nothing after it: "reunião — — sala 4".
-        text = text.replacing(/([–—-])\s*[–—-]/) { String($0.output.1) }
-        text = text.replacing(/\(\s*\)|\[\s*\]/, with: "")
+        var text = ""
+        text.reserveCapacity(utf8.count)
+        func trimSpaces() {
+            while let last = text.last, last.isWhitespace { text.removeLast() }
+        }
+        for character in self {
+            switch character {
+            case " ", "\t":
+                if let last = text.last, last != " " { text.append(" ") }
+            case ",", ".", ";", ":", "!", "?":
+                trimSpaces()
+                if let last = text.last, ",;:".contains(last) { text.removeLast() }
+                text.append(character)
+            case "–", "—", "-":
+                if text.last(where: { !$0.isWhitespace }).map({ "–—-".contains($0) }) == true,
+                    text.last?.isWhitespace == true
+                {
+                    continue
+                }
+                text.append(character)
+            case ")", "]":
+                let opening: Character = character == ")" ? "(" : "["
+                if text.last(where: { !$0.isWhitespace }) == opening {
+                    trimSpaces()
+                    text.removeLast()
+                    continue
+                }
+                text.append(character)
+            default:
+                text.append(character)
+            }
+        }
         return text.trimmingCharacters(
             in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-–—")))
     }
