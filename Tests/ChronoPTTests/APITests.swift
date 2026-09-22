@@ -117,9 +117,9 @@ struct APITests {
     @Test("A recurrence prints the same way every time")
     func stableDescription() throws {
         let found = try #require(interpret("às quartas e segundas às 7h"))
-        #expect(found.recurrence?.description == "weekly on mon, wed")
-        #expect(ChronoPT.Recurrence.every(DateComponents(day: 15)).description == "every 15 days")
-        #expect(found.debugDescription.hasSuffix("repeating weekly on mon, wed"))
+        #expect(found.recurrence?.description == "FREQ=WEEKLY;BYDAY=MO,WE")
+        #expect(ChronoPT.Recurrence.daily(every: 15).description == "FREQ=DAILY;INTERVAL=15")
+        #expect(found.debugDescription.hasSuffix("repeating FREQ=WEEKLY;BYDAY=MO,WE"))
     }
 
     @Test("Options and recurrence survive a round trip through JSON")
@@ -129,7 +129,8 @@ struct APITests {
             ChronoPT.Options.self, from: JSONEncoder().encode(options))
         #expect(decodedOptions == options)
 
-        let recurrence = ChronoPT.Recurrence.weekly(on: [.tuesday, .thursday])
+        var recurrence = ChronoPT.Recurrence.weekly(on: [.tuesday, .thursday])
+        recurrence.end = .until(monday)
         let decoded = try JSONDecoder().decode(
             ChronoPT.Recurrence.self, from: JSONEncoder().encode(recurrence))
         #expect(decoded == recurrence)

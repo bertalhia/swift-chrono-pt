@@ -42,7 +42,8 @@ you can show it without inventing a year.
 ### Repeating and past dates
 
 ``ChronoPT/Match/recurrence`` says how a date repeats ("toda terça", "todo dia
-às 8", "todo dia 5", "a cada 15 dias"), and ``ChronoPT/Match/start`` is the next
+às 8", "todo dia 5", "a cada 15 dias", "toda última sexta do mês") and where it
+stops ("até dezembro", "por 10 dias"), and ``ChronoPT/Match/start`` is the next
 time it happens.
 Past dates ("ontem", "sexta passada", "há 2 dias") count only with
 ``ChronoPT/Options/allowsPast``.

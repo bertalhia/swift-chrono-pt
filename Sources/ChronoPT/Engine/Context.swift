@@ -87,11 +87,12 @@ struct Context {
             guard let date = calendar.date(byAdding: components, to: reference) else { return nil }
             let start = ChronoPT.PartialDate(
                 date: date, knownComponents: [.day, .month, .year, .hour, .minute])
-            return result(start, end: nil, range: day.range, recurrence: day.value.recurrence)
+            return result(
+                start, end: nil, range: day.range, recurrence: recurrence(of: day.value, from: date))
         }
         if let day {
             guard let days = resolve(day, from: dayReference) else { return nil }
-            let recurrence = day.value.recurrence
+            let recurrence = self.recurrence(of: day.value, from: days.start)
             guard let time else {
                 guard let start = dayOnly(days.start) else { return nil }
                 return result(
@@ -180,6 +181,33 @@ struct Context {
         case .allDay:
             // Needs a day, and the guard above saw it has none.
             return nil
+        }
+    }
+
+    /// How the day repeats, with the end the text gave: "toda terça até
+    /// dezembro" stops at the end of 31 December, and "todo dia por 10 dias"
+    /// at the end of the tenth day from the first.
+    private func recurrence(of value: DayRules.Value, from first: Date) -> ChronoPT.Recurrence? {
+        guard var recurrence = value.recurrence else { return nil }
+        guard case .repeating(_, let limit) = value else { return recurrence }
+        switch limit {
+        case .count(let count):
+            recurrence.end = .count(count)
+        case .day(let last):
+            let days = DayRules.resolve(last, reference: reference, calendar: calendar)
+            recurrence.end = endOfDay(days.map { $0.end ?? $0.start }).map { .until($0) }
+        case .length(let length):
+            let after = calendar.date(byAdding: length, to: calendar.startOfDay(for: first))
+            recurrence.end = endOfDay(after.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) })
+                .map { .until($0) }
+        }
+        return recurrence
+    }
+
+    /// The last second of the day.
+    private func endOfDay(_ day: Date?) -> Date? {
+        day.flatMap {
+            calendar.date(byAdding: DateComponents(day: 1, second: -1), to: calendar.startOfDay(for: $0))
         }
     }
 

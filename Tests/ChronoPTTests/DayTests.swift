@@ -452,7 +452,7 @@ struct DayTests {
 
     @Test(
         "How long is not when",
-        arguments: ["estudar por 2 horas", "3x por semana", "trabalhar 8h por dia", "por 5 dias úteis"])
+        arguments: ["estudar por 2 horas", "trabalhar 8h por dia", "por 5 dias úteis"])
     func howLongIsNotWhen(_ text: String) {
         #expect(interpret(text) == nil)
     }

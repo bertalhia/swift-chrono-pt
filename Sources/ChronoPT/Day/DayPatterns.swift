@@ -81,6 +81,54 @@ extension DayRules {
         }
     }
 
+    // "3x ao dia", "duas vezes por semana", "1x por mês"
+    static var timesPer: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(\d{1,2}|uma|duas|tres|quatro|cinco|seis)(?:x| x| vezes| vez) (?:ao|por|a|na|no|pela|pelo|cada) (dia|semana|mes|ano)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "dia sim, dia não", "semana sim, semana não"
+    static var everyOther: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(dia|semana|mes|ano) sim +(dia|semana|mes|ano) nao\b/#.wordBoundaryKind(.simple)
+        }
+    }
+
+    // "toda última sexta do mês", "todo primeiro sábado do mês"
+    static var nthWeekday: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:toda|todo) (primeira|primeiro|segunda|segundo|terceira|terceiro|quarta|quarto|quinta|quinto|ultima|ultimo|penultima|penultimo|[1-5][ao]) (segunda|terca|quarta|quinta|sexta|sabado|domingo)(?:-feira| feira)? (?:do|de cada|de todo|de todo o) mes\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "todo ano", "anualmente", "todo ano em julho"
+    static var everyYear: Regex<(Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:todo ano|todos os anos|anualmente)(?: (?:em|no mes de) (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro))?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "todo 25 de dezembro", "todo dia 10 de julho", "todo ano no dia 10 de julho"
+    static var everyDate: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:todo (?:ano )?|todos os anos )(?:no )?(?:dia )?(\d{1,2}|primeiro)(?:o)? de (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "5 vezes", "dez vezes": the count that ends a repeating day, never a
+    // rate ("3 vezes ao dia")
+    static var occurrences: Regex<(Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(\d{1,3}|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) vezes\b(?! (?:ao|por|a|na|no|pela|pelo|cada) (?:dia|semana|mes|ano)\b)/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "dois dias antes do", "uma semana depois da", "véspera do", "antevéspera de"
     static var offsetLead: Regex<(Substring, Substring?, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
@@ -370,10 +418,16 @@ extension DayRules {
 
     static let ordinals = [
         "primeiro": 1, "segundo": 2, "terceiro": 3, "quarto": 4, "quinto": 5, "sexto": 6,
-        "primeira": 1, "segunda": 2, "1o": 1, "2o": 2, "3o": 3, "4o": 4, "5o": 5, "6o": 6, "1a": 1, "2a": 2,
+        "primeira": 1, "segunda": 2, "terceira": 3, "quarta": 4, "quinta": 5, "ultima": -1, "ultimo": -1,
+        "penultima": -2, "penultimo": -2,
+        "1o": 1, "2o": 2, "3o": 3, "4o": 4, "5o": 5, "6o": 6, "1a": 1, "2a": 2, "3a": 3, "4a": 4, "5a": 5,
     ]
     static let offsetWords: Set<String> = ["antes", "depois", "apos", "vespera", "antevespera"]
     static let lastingWords: Set<String> = ["por", "durante", "proximos", "proximas"]
+    static let timesWords: Set<String> = ["vez", "vezes"]
+    static let everyOtherWords: Set<String> = ["sim"]
+    static let everyYearWords: Set<String> = ["ano", "anos", "anualmente"]
+    static let everyDateWords: Set<String> = ["todo", "todos"]
     static var monthWords: Set<String> { Set(months.keys) }
 
     static let relativeDays = [

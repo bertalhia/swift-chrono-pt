@@ -51,7 +51,7 @@ struct ReadmeTests {
         #expect(hm(try #require(spoken.start.alternative)) == [7, 0])
 
         let water = try #require(interpret("regar as plantas a cada 15 dias"))
-        #expect(water.recurrence == .every(DateComponents(day: 15)))
+        #expect(water.recurrence == .daily(every: 15))
 
         let paid = try #require(
             interpret("paguei ontem", options: ChronoPT.Options(allowsPast: true, defaultHour: 9)))

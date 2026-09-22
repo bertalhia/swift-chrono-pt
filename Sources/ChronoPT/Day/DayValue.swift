@@ -62,6 +62,17 @@ extension DayRules {
         /// Weekdays as `Calendar` numbers them, in the order of the text.
         case weekly([Int])
         case monthly(Int)
+        /// So many times in each day, week, month or year: "3x ao dia".
+        case timesPer(Int, DateComponents)
+        /// A weekday in its place in the month, each month: "toda última
+        /// sexta do mês" is -1 and Friday.
+        case nthWeekday(Int, weekday: Int)
+        /// Every year, in a month or from today: "todo ano em julho".
+        case yearly(month: Int?)
+        /// Every year on a date: "todo 25 de dezembro".
+        case yearlyOn(day: Int, month: Int)
+        /// A repeating day and where it stops: "toda terça até dezembro".
+        indirect case repeating(Value, until: Limit)
         /// From one day to another: "de segunda a sexta", "do dia 10 ao dia 15".
         indirect case range(Value, Value)
         /// A day counted from another: "dois dias antes do natal".
@@ -101,10 +112,26 @@ extension DayRules {
 
         var recurrence: ChronoPT.Recurrence? {
             switch self {
-            case .daily: .daily
-            case .interval(let components): .every(components)
+            case .daily: .daily()
+            case .interval(let components): ChronoPT.Recurrence(every: components)
             case .weekly(let weekdays): .weekly(on: Set(weekdays.map { DayRules.localeWeekdays[$0 - 1] }))
             case .monthly(let day): .monthly(day: day)
+            case .timesPer(let count, let unit):
+                // Once a week is every week.
+                ChronoPT.Recurrence(every: unit).map { rule in
+                    var rule = rule
+                    rule.timesPerPeriod = count > 1 ? count : nil
+                    return rule
+                }
+            case .nthWeekday(let ordinal, let weekday):
+                ChronoPT.Recurrence(
+                    frequency: .monthly, weekdays: [DayRules.localeWeekdays[weekday - 1]],
+                    weekdayOrdinal: ordinal)
+            case .yearly(let month):
+                ChronoPT.Recurrence(frequency: .yearly, months: month.map { [$0] } ?? [])
+            case .yearlyOn(let day, let month):
+                ChronoPT.Recurrence(frequency: .yearly, daysOfMonth: [day], months: [month])
+            case .repeating(let base, _): base.recurrence
             default: nil
             }
         }
@@ -140,10 +167,16 @@ extension DayRules {
                 month == nil ? [.day] : year == nil ? [.day, .month] : [.day, .month, .year]
             case .holiday:
                 [.day, .month]
-            case .daily, .interval:
+            case .daily, .interval, .timesPer:
                 []
-            case .weekly:
+            case .weekly, .nthWeekday:
                 [.weekday]
+            case .yearly(let month):
+                month == nil ? [] : [.month]
+            case .yearlyOn:
+                [.day, .month]
+            case .repeating(let base, _):
+                base.knownComponents
             case .range(let from, _):
                 from.knownComponents
             case .shifted(let base, _), .lasting(let base, _):
@@ -162,6 +195,16 @@ extension DayRules {
             default: knownComponents
             }
         }
+    }
+
+    /// Where a repeating day stops.
+    enum Limit: Sendable, Equatable {
+        /// On this day, the last one of a period: "até dezembro".
+        case day(Value)
+        /// So long after it starts: "por 10 dias".
+        case length(DateComponents)
+        /// After so many times: "5 vezes".
+        case count(Int)
     }
 
     /// A holiday: on a fixed date, counted from Easter, or on the second Sunday

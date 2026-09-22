@@ -163,6 +163,31 @@ extension DayRules {
         case .monthly(let day):
             return resolve(.dayOfMonth(day), reference: reference, calendar: calendar)
 
+        case .timesPer, .yearly(month: nil):
+            return (today, nil)
+
+        case .yearly(let month?):
+            return resolve(.month(month, year: nil), reference: reference, calendar: calendar).map {
+                ($0.start, nil)
+            }
+
+        case .yearlyOn(let day, let month):
+            return resolve(.date(day: day, month: month, year: nil), reference: reference, calendar: calendar)
+
+        case .nthWeekday(let ordinal, let weekday):
+            // The next one, counting today: the month rolls over once this
+            // month's has gone by.
+            for months in 0...2 {
+                guard let month = calendar.date(byAdding: .month, value: months, to: today),
+                    let day = nthWeekday(ordinal, weekday, inMonthOf: month, calendar: calendar)
+                else { continue }
+                if day >= today { return (day, nil) }
+            }
+            return nil
+
+        case .repeating(let base, _):
+            return resolve(base, reference: reference, calendar: calendar)
+
         case .range(let from, let to):
             // The end is the first time `to` comes from the start on: "de
             // segunda a sexta" said on a Monday runs from next Monday to that
@@ -347,12 +372,29 @@ extension DayRules {
             else { return nil }
             return (start, lastDay.flatMap { calendar.date(byAdding: .day, value: $0, to: easter) })
         case .secondSunday(let month):
-            guard let first = calendar.date(from: DateComponents(year: year, month: month, day: 1)) else {
-                return nil
-            }
-            let firstSunday = (8 - calendar.component(.weekday, from: first)) % 7
-            return calendar.date(byAdding: .day, value: firstSunday + 7, to: first).map { ($0, nil) }
+            return calendar.date(from: DateComponents(year: year, month: month, day: 1))
+                .flatMap { nthWeekday(2, 1, inMonthOf: $0, calendar: calendar) }
+                .map { ($0, nil) }
         }
+    }
+
+    /// The weekday in its place in the month of `day`: 2 and Sunday is the
+    /// second Sunday, -1 and Friday the last Friday. `nil` for a fifth one the
+    /// month does not have.
+    static func nthWeekday(_ ordinal: Int, _ weekday: Int, inMonthOf day: Date, calendar: Calendar) -> Date? {
+        guard ordinal != 0, let first = calendar.dateInterval(of: .month, for: day)?.start,
+            let last = lastDayOfMonth(first, calendar: calendar)
+        else { return nil }
+        let date: Date?
+        if ordinal > 0 {
+            let forward = (weekday - calendar.component(.weekday, from: first) + 7) % 7
+            date = calendar.date(byAdding: .day, value: forward + 7 * (ordinal - 1), to: first)
+        } else {
+            let back = (calendar.component(.weekday, from: last) - weekday + 7) % 7
+            date = calendar.date(byAdding: .day, value: -back + 7 * (ordinal + 1), to: last)
+        }
+        guard let date, calendar.isDate(date, equalTo: first, toGranularity: .month) else { return nil }
+        return date
     }
 
     /// Easter Sunday by the Gregorian computus (Meeus/Jones/Butcher).

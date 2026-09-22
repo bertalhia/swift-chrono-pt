@@ -43,7 +43,8 @@ enum DayRules {
         let found = candidates(in: source)
         let candidates =
             (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)
-            + offsets(of: found, in: source) + lengths(of: found, in: source))
+            + offsets(of: found, in: source) + lengths(of: found, in: source)
+            + limits(of: found, in: source, times: times))
             .filter { candidate in
                 switch candidate.hint {
                 case .none: return true
@@ -155,6 +156,64 @@ enum DayRules {
         }
     }
 
+    /// A repeating day and where it stops: "toda terça até dezembro", "todo
+    /// dia por 10 dias", "toda segunda, 5 vezes". A time may sit between the
+    /// two: "toda terça às 20h até dezembro".
+    private static func limits(
+        of candidates: [Candidate], in source: TextSource, times: [TimeRules.Expression]
+    ) -> [Candidate] {
+        let repeating = candidates.filter { $0.piece.value.recurrence != nil }
+        guard !repeating.isEmpty else { return [] }
+
+        // Whether the gap after the repeating day says "até", when it holds
+        // only that, articles and times; nil when it holds anything else.
+        func saysUntil(after base: Candidate, before start: String.Index) -> Bool? {
+            guard base.piece.range.upperBound <= start else { return nil }
+            var saysUntil = false
+            let joins = source.everyWord(in: base.piece.range.upperBound..<start) { word in
+                if word == "ate" {
+                    saysUntil = true
+                    return true
+                }
+                return ["o", "a", "os", "as"].contains(word)
+                    || times.contains { $0.range.contains(word.startIndex) }
+            }
+            return joins ? saysUntil : nil
+        }
+
+        func joined(_ base: Candidate, _ end: Range<String.Index>, _ limit: Limit) -> Candidate {
+            let piece = Piece(
+                range: base.piece.range.lowerBound..<end.upperBound,
+                value: Value.repeating(base.piece.value, until: limit),
+                priority: 1)
+            return Candidate(piece: piece, hint: .none)
+        }
+
+        let bounded = candidates.flatMap { end in
+            repeating.compactMap { base -> Candidate? in
+                guard end.piece.value.recurrence == nil,
+                    let until = saysUntil(after: base, before: end.piece.range.lowerBound)
+                else { return nil }
+                if case .lasting(.days(0), let length) = end.piece.value, !until {
+                    return joined(base, end.piece.range, .length(length))
+                }
+                // "até" once, in the gap or opening the day: "até dezembro".
+                let opens = source.words(after: end.piece.range.lowerBound, count: 1).first == "ate"
+                guard until != opens else { return nil }
+                return joined(base, end.piece.range, .day(end.piece.value))
+            }
+        }
+        let counted = source.matches(of: occurrences, whenAny: ["vezes"]).flatMap { match in
+            repeating.compactMap { base -> Candidate? in
+                guard let count = SpokenNumber.value(match.output.1), count > 0,
+                    saysUntil(after: base, before: match.range.lowerBound) == false
+                else { return nil }
+                return joined(base, match.range, .count(count))
+            }
+        }
+        return bounded + counted
+    }
+
     /// A weekday followed by its date: "sexta, dia 25", "segunda-feira, 5/10".
     /// The date decides, and the date is the hint the weekday needs.
     private static func weekdaysWithDates(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
@@ -239,6 +298,34 @@ enum DayRules {
         for match in source.matches(of: everyMonth, whenAny: monthlyWords) {
             guard let day = dayNumber(match.output.1), (1...31).contains(day) else { continue }
             add(match.range, .monthly(day))
+        }
+
+        for match in source.matches(of: timesPer, whenAny: timesWords, orDigit: true) {
+            guard let count = SpokenNumber.value(match.output.1), count > 0 else { continue }
+            add(match.range, .timesPer(count, components(1, unit: match.output.2)))
+        }
+
+        for match in source.matches(of: everyOther, whenAny: everyOtherWords)
+        where match.output.1 == match.output.2 {
+            add(match.range, .interval(components(2, unit: match.output.1)))
+        }
+
+        for match in source.matches(of: nthWeekday, whenAny: ["mes"]) {
+            guard let ordinal = ordinals[String(match.output.1)],
+                let weekday = weekdays[String(match.output.2)]
+            else { continue }
+            add(match.range, .nthWeekday(ordinal, weekday: weekday))
+        }
+
+        for match in source.matches(of: everyYear, whenAny: everyYearWords) {
+            add(match.range, .yearly(month: match.output.1.flatMap { months[String($0)] }))
+        }
+
+        for match in source.matches(of: everyDate, whenAny: everyDateWords) {
+            guard let day = dayNumber(match.output.1), let month = months[String(match.output.2)] else {
+                continue
+            }
+            add(match.range, .yearlyOn(day: day, month: month))
         }
 
         for match in source.matches(of: everyWeekday, whenAny: everyWeekdayWords) {

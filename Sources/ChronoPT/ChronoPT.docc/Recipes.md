@@ -40,10 +40,45 @@ event.isAllDay = !match.start.hasTime
 ```
 
 ``ChronoPT/Match/interval`` gives the span as a `DateInterval` when the
-expression has an end. For a repeating date, map ``ChronoPT/Recurrence`` to an
-`EKRecurrenceRule`: `.daily` to `.daily`, `.weekly(on:)` to `.weekly` with
-`daysOfTheWeek`, `.monthly(day:)` to `.monthly` with `daysOfTheMonth`, and
-`.every(_:)` to the frequency and interval its components name.
+expression has an end. ``ChronoPT/Match/isAllDay`` marks "o dia todo".
+
+## Repeat an event
+
+``ChronoPT/Recurrence`` has the fields of an iCalendar rule, the same ones
+`EKRecurrenceRule` takes:
+
+```swift
+func rule(for recurrence: ChronoPT.Recurrence) -> EKRecurrenceRule? {
+    let frequency: EKRecurrenceFrequency
+    switch recurrence.frequency {
+    case .daily: frequency = .daily
+    case .weekly: frequency = .weekly
+    case .monthly: frequency = .monthly
+    case .yearly: frequency = .yearly
+    case .hourly, .minutely: return nil  // a series of alarms, not an event
+    }
+    let weekdays: [Locale.Weekday] = [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
+    let days = recurrence.weekdays.compactMap { weekday in
+        weekdays.firstIndex(of: weekday).flatMap { EKWeekday(rawValue: $0 + 1) }
+    }.map { EKRecurrenceDayOfWeek($0, weekNumber: recurrence.weekdayOrdinal ?? 0) }
+    let end: EKRecurrenceEnd? =
+        switch recurrence.end {
+        case .until(let date): EKRecurrenceEnd(end: date)
+        case .count(let count): EKRecurrenceEnd(occurrenceCount: count)
+        case nil: nil
+        }
+    return EKRecurrenceRule(
+        recurrenceWith: frequency, interval: recurrence.interval,
+        daysOfTheWeek: days.isEmpty ? nil : days,
+        daysOfTheMonth: recurrence.daysOfMonth.isEmpty ? nil : recurrence.daysOfMonth.sorted().map { $0 as NSNumber },
+        monthsOfTheYear: recurrence.months.isEmpty ? nil : recurrence.months.sorted().map { $0 as NSNumber },
+        weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil, end: end)
+}
+```
+
+``ChronoPT/Recurrence/timesPerPeriod`` ("3x ao dia") has no field in a rule:
+the app picks the hours. For an iCalendar file or a CalDAV server,
+``ChronoPT/Recurrence/rrule`` gives the `RRULE` value.
 
 ## Offer the other reading
 

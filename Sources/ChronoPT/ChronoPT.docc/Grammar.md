@@ -48,7 +48,12 @@ mean more than one thing.
 ## Repeating and past dates
 
 - Repeating: todo dia, toda terça, às segundas e quartas, todo dia 5, a cada
-  15 dias, de 8 em 8 horas. See ``ChronoPT/Recurrence``.
+  15 dias, de 8 em 8 horas, 3x ao dia, duas vezes por semana, dia sim dia não,
+  toda última sexta do mês, todo primeiro sábado do mês, todo ano em julho,
+  todo 25 de dezembro. See ``ChronoPT/Recurrence``.
+- Where it stops: toda terça até dezembro, todo dia até 30/09, todo dia por 10
+  dias, toda segunda, 5 vezes. A time may sit in between: "toda terça às 20h
+  até dezembro".
 - Past, with ``ChronoPT/Options/allowsPast``: ontem, sexta passada, semana
   passada, há 2 dias, 3 dias atrás.
 
