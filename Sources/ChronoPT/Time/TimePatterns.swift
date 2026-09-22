@@ -4,25 +4,40 @@ import Foundation
 extension TimeRules {
     static func clocks(in source: TextSource) -> [Piece<Value>] {
         source.matches(of: clock, whenAny: hourWords, orDigit: true).compactMap { match in
-            let (_, prefix, hourText, separator, minuteText, unit, minuteWords, meridiem) = match.output
+            let (_, prefix, hourText, separator, minuteText, unit, minuteWords, period, english) = match
+                .output
             let spoken = Int(hourText) == nil
+            // "7:30 pm" is "7:30 da noite" in English.
+            if english != nil, !(1...12).contains(Int(hourText) ?? 0) { return nil }
+            let meridiem = period ?? english.map { $0 == "am" ? "manha" : "tarde" }
+            let unitWord = unit.map { $0.trimmingCharacters(in: .whitespaces) }
+            // "h", "hs" and "hrs" are how the hour is written; "horas" is how
+            // it is said, and says nothing about morning or evening.
+            let writtenUnit = unitWord.map(writtenHourUnits.contains) ?? false
             // A bare number is not a time: it needs "às", "h", ":" or "da tarde".
             // A spelled-out hour needs "às" or "da tarde", because "uma" is also
             // an article.
             let marked = prefix != nil || meridiem != nil || (!spoken && (separator != nil || unit != nil))
             guard marked, let base = SpokenNumber.value(hourText), (0...23).contains(base) else { return nil }
             if prefix == nil, meridiem == nil, isDuration(match.range, in: source) { return nil }
-            // A word that also counts things marks a time only with "h", a
-            // colon, a part of the day or the end of a phrase: "chego umas 8",
-            // "umas 3h", but not "umas 8 laranjas". With "horas" it is how
-            // long: "umas 2 horas".
-            if let prefix, approximateWords.contains(String(prefix)) {
-                let clockUnit =
-                    unit.map { ["h", "hs"].contains($0.trimmingCharacters(in: .whitespaces)) } ?? false
-                guard unit == nil || clockUnit, !isDuration(match.range, in: source),
-                    separator != nil || clockUnit || meridiem != nil
-                        || source.endsPhrase(at: match.range.upperBound)
-                else { return nil }
+            if let prefix {
+                // A word that also counts things marks a time only with "h", a
+                // colon, a part of the day or the end of a phrase: "chego umas
+                // 8", "buscar as 2", but not "umas 8 laranjas", "as 2
+                // crianças", "uma das 3 opções". "às" with its accent is always
+                // a time. After an approximate word, "horas" is how long:
+                // "umas 2 horas", "por umas 2h".
+                let approximate = approximateWords.contains(String(prefix))
+                let article =
+                    articleWords.contains(String(prefix)) && !source.hasGrave(at: match.range.lowerBound)
+                if approximate, isDuration(match.range, in: source) || (unit != nil && !writtenUnit) {
+                    return nil
+                }
+                if approximate || article, meridiem == nil, separator == nil, unit == nil,
+                    !source.endsPhrase(at: match.range.upperBound)
+                {
+                    return nil
+                }
             }
 
             let minute: Int
@@ -43,15 +58,17 @@ extension TimeRules {
                     range: match.range,
                     value: .clock(hour: hour, minute: minute, ambiguous: false, nextDay: nextDay))
             }
-            // Written "7h" or "07:00" is the 24-hour clock; spoken, "às 7"
-            // doesn't say morning or evening.
-            let written = separator != nil || unit?.first == "h" || hourText.hasPrefix("0")
+            // Written "7h", "7 h" or "07:00" is the 24-hour clock; spoken, "às
+            // 7" doesn't say morning or evening.
+            let written = separator != nil || writtenUnit || hourText.hasPrefix("0")
             let ambiguous = (1...11).contains(base) && !written
             return Piece(
                 range: match.range,
                 value: .clock(hour: base, minute: minute, ambiguous: ambiguous, nextDay: false))
         }
     }
+
+    static let writtenHourUnits: Set<String> = ["h", "hs", "hr", "hrs"]
 
     /// Minutes before the hour: "quinze para as oito" is 7:45. The named hour
     /// decides morning or evening, as in "às oito".
@@ -84,14 +101,24 @@ extension TimeRules {
         }
     }
 
-    /// A bare hour after "de" or "entre", followed by the word that closes a
-    /// range: "de 9" in "de 9 a 11h". It counts only with an end.
-    static func rangeStarts(in source: TextSource) -> [Piece<Value>] {
+    /// A bare hour followed by the word that closes a range: "de 9" in "de 9
+    /// a 11h". It counts only with an end.
+    ///
+    /// A number a day holds is not an hour: "dia 10 às 14h". Without "de" or
+    /// "entre", the number opens a range only where a time can start: at the
+    /// start of a phrase, after a connector, or right after a day ("amanhã 10
+    /// às 12"). After any other word it is a label: "sala 12 às 15h".
+    static func rangeStarts(in source: TextSource, days: [Range<String.Index>]) -> [Piece<Value>] {
         source.matches(of: bareRangeStart, whenAny: hourWords, orDigit: true).compactMap { match in
             // Not a number inside a date or a clock time: "25/09 às 14:00".
             let before = source.normalized[..<match.range.lowerBound].last
             guard before.map({ !"/:-0123456789".contains($0) }) ?? true,
-                let hour = SpokenNumber.value(match.output.1), (0...23).contains(hour)
+                match.output.1 != nil || source.startsPhrase(at: match.range.lowerBound)
+                    || days.contains(where: {
+                        $0.upperBound <= match.range.lowerBound
+                            && source.hasNoWord(in: $0.upperBound..<match.range.lowerBound)
+                    }),
+                let hour = SpokenNumber.value(match.output.2), (0...23).contains(hour)
             else { return nil }
             let value = Value.clock(
                 hour: hour, minute: 0, ambiguous: (1...11).contains(hour), nextDay: false, needsEnd: true)
@@ -185,27 +212,27 @@ extension TimeRules {
     /// "daqui 2 horas" ahead; "há 2 horas" and "20 minutos atrás" back.
     static func fromNow(in source: TextSource) -> [Piece<Value>] {
         let found =
-            source.matches(of: inTime, whenAny: DayRules.amountWords).map {
-                ($0.range, $0.output.1, $0.output.2, 1)
+            source.matches(of: inTime, whenAny: DayRules.amountWords).map { ($0.range, $0.output, 1) }
+            + source.matches(of: agoTime, whenAny: DayRules.agoWords).map { ($0.range, $0.output, -1) }
+            + source.matches(of: timeAgo, whenAny: DayRules.backWords).map { ($0.range, $0.output, -1) }
+        return found.compactMap { range, output, sign in
+            let (_, amount, unit, half, extra, attached) = output
+            return minutes(amount, unit: unit, half: half != nil, extra: extra ?? attached).map {
+                Piece(range: range, value: .fromNow(minutes: sign * $0))
             }
-            + source.matches(of: agoTime, whenAny: DayRules.agoWords).map {
-                ($0.range, $0.output.1, $0.output.2, -1)
-            }
-            + source.matches(of: timeAgo, whenAny: DayRules.backWords).map {
-                ($0.range, $0.output.1, $0.output.2, -1)
-            }
-        return found.compactMap { range, amount, unit, sign in
-            let hours = unit.hasPrefix("hora")
-            let minutes: Int
-            if amount == "meia" {
-                guard hours else { return nil }
-                minutes = 30
-            } else {
-                guard let count = SpokenNumber.value(amount) else { return nil }
-                minutes = hours ? count * 60 : count
-            }
-            return Piece(range: range, value: .fromNow(minutes: sign * minutes))
         } + vagueTimes(in: source)
+    }
+
+    /// Minutes in "2 horas", "1h30", "uma hora e meia", "1 hora e 15
+    /// minutos", "30min", "meia hora". Minutes after minutes are not a thing.
+    static func minutes(_ amount: Substring, unit: Substring, half: Bool, extra: Substring?) -> Int? {
+        let hours = unit.hasPrefix("h")
+        if amount == "meia" { return hours && !half && extra == nil ? 30 : nil }
+        guard let count = SpokenNumber.value(amount) else { return nil }
+        guard hours else { return half || extra != nil ? nil : count }
+        let more = half ? 30 : extra.flatMap { SpokenNumber.value($0) } ?? 0
+        guard (0...59).contains(more) else { return nil }
+        return count * 60 + more
     }
 
     /// "daqui a pouco" is half an hour from now and "mais tarde" two hours;
@@ -235,9 +262,16 @@ extension TimeRules {
 
     /// Hours with duration words around them: "por 2 horas", "há 1h30",
     /// "8h por dia", "8 horas diárias".
+    /// After "de", an hour is how long unless a range closes it: "reunião de
+    /// 2h", "aula de 1h30", while "de 9h às 11h" is a range.
     static func isDuration(_ range: Range<String.Index>, in source: TextSource) -> Bool {
-        if let before = source.word(before: range.lowerBound), durationWords.contains(before) { return true }
+        let before = source.word(before: range.lowerBound)
+        if let before, durationWords.contains(before) { return true }
         let after = source.words(after: range.upperBound, count: 2)
+        if before == "de" {
+            let hyphen = source.normalized[range.upperBound...].first { $0 != " " } == "-"
+            return !hyphen && !(after.first.map(rangeClosings.contains) ?? false)
+        }
         return rateWords.contains { after.starts(with: $0) }
     }
 
@@ -253,9 +287,15 @@ extension TimeRules {
 
     /// Words before an hour that also come before a count: "umas 8
     /// laranjas", "por volta de 10 pessoas".
+    /// Words before an hour that are also articles when written without the
+    /// accent: "as 2 crianças", "a uma reunião", "uma das 3 opções".
+    static let articleWords: Set<String> = ["a", "as", "das"]
+
     static let approximateWords: Set<String> = [
         "umas", "pras", "por volta de", "em torno de", "perto de", "cerca de",
     ]
+
+    static let rangeClosings: Set<String> = ["a", "as", "ao", "ate", "e"]
 
     static let durationWords: Set<String> = [
         "por", "durante", "ha", "faz", "cada", "daqui", "em", "apos", "umas", "uns",
@@ -272,10 +312,15 @@ extension TimeRules {
     // "às 9", "14h", "9h30", "10:30", "15:30h", "15h30min", "às 7 e meia", "às sete da noite", "3 da tarde",
     // "às vinte e duas horas", "às oito e trinta e cinco"
     static var clock:
-        Regex<(Substring, Substring?, Substring, Substring?, Substring?, Substring?, Substring?, Substring?)>
+        Regex<
+            (
+                Substring, Substring?, Substring, Substring?, Substring?, Substring?, Substring?, Substring?,
+                Substring?
+            )
+        >
     {
         RegexCache.regex {
-            #/\b(?:(as|ate as|pelas|la pelas|la pras|la para as|por volta das|em torno das|perto das|a partir das|das|umas|pras|por volta de|em torno de|perto de|cerca de) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)(?:(:|h)(\d{2})(?:hs|h|min|m)?\b|( ?(?:hrs|hr|hs|horas|hora|h))\b|\b)(?: e (meia|(?:vinte|trinta|quarenta|cinquenta) e (?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)|vinte|trinta|quarenta|cinquenta|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|cinco|\d{1,2})\b)?(?: (?:da|de|pela) (manha|tarde|noite|madrugada)\b)?/#
+            #/\b(?:(as|a|ate as|pelas|la pelas|la pras|la para as|por volta das|em torno das|perto das|a partir das|das|umas|pras|por volta de|em torno de|perto de|cerca de) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)(?:(:|h)(\d{2})(?:hrs|hr|hs|h|min|m)?\b|( ?(?:hrs|hr|hs|horas|hora|h))\b|\b)(?: e (meia|(?:vinte|trinta|quarenta|cinquenta) e (?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)|vinte|trinta|quarenta|cinquenta|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|cinco|\d{1,2})\b)?(?: (?:da|de|pela) (manha|tarde|noite|madrugada)\b| ?(am|pm)\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -289,9 +334,9 @@ extension TimeRules {
     }
 
     // "de 9 a 11h", "entre 10 e 11h", "10 às 12", "9-10h"
-    static var bareRangeStart: Regex<(Substring, Substring)> {
+    static var bareRangeStart: Regex<(Substring, Substring?, Substring)> {
         RegexCache.regex {
-            #/\b(?:(?:de|entre) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)\b(?= ?-| (?:a|as|ate|e) )/#
+            #/\b(?:(de|entre) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)\b(?= ?-| (?:a|as|ate|e) )/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -304,26 +349,27 @@ extension TimeRules {
         }
     }
 
-    // "há 2 horas", "faz meia hora", "há umas 2 horas atrás"
-    static var agoTime: Regex<(Substring, Substring, Substring)> {
+    // "há 2 horas", "faz meia hora", "há 2h", "há umas 2 horas atrás"
+    static var agoTime: Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:ha|faz) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) (horas?|minutos?|min)\b(?: atras\b)?/#
+            #/\b(?:ha|faz) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horas?|hrs?|hs|h|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b(?: atras\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }
 
-    // "20 minutos atrás"
-    static var timeAgo: Regex<(Substring, Substring, Substring)> {
+    // "20 minutos atrás", "2h atrás"
+    static var timeAgo: Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) (horas?|minutos?|min) atras\b/#
+            #/\b(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horas?|hrs?|hs|h|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b atras\b/#
                 .wordBoundaryKind(.simple)
         }
     }
 
-    // "daqui 2 horas", "em meia hora", "daqui a 20 minutos", "em uns 15 minutos"
-    static var inTime: Regex<(Substring, Substring, Substring)> {
+    // "daqui 2 horas", "em meia hora", "daqui a 1h", "em 30min", "daqui 1h30",
+    // "daqui a 2 horas e meia", "em uns 15 minutos"
+    static var inTime: Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) (horas?|minutos?|min)\b/#
+            #/\b(?:daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horas?|hrs?|hs|h|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b/#
                 .wordBoundaryKind(.simple)
         }
     }

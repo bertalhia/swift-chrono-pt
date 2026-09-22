@@ -67,10 +67,16 @@ extension TimeRules {
     }
 
     /// The times mentioned in the text, in text order.
-    static func expressions(in source: TextSource, moments: [String: Int] = [:]) -> [Expression] {
+    static func expressions(
+        in source: TextSource, moments: [String: Int] = [:], days: [Range<String.Index>] = [],
+        claimed: [Range<String.Index>] = []
+    ) -> [Expression] {
         var groups: [[Piece<Value>]] = []
-        for piece in candidates(in: source, moments: moments) {
-            if let last = groups.last?.last, source.onlyConnectors(between: last.range, and: piece.range) {
+        for piece in candidates(in: source, moments: moments, days: days, claimed: claimed) {
+            if let group = groups.last, let last = group.last,
+                source.onlyConnectors(between: last.range, and: piece.range),
+                continues(group, with: piece, in: source)
+            {
                 groups[groups.count - 1].append(piece)
             } else {
                 groups.append([piece])
@@ -81,6 +87,14 @@ extension TimeRules {
             return range(in: group, source: source)
                 ?? resolve(group, range: first.range.lowerBound..<last.range.upperBound)
         }
+    }
+
+    /// A second clock time joins a group only as the end of a range: "das
+    /// 14h às 16h" is one time, "às 8h e às 20h" two.
+    static func continues(_ group: [Piece<Value>], with piece: Piece<Value>, in source: TextSource) -> Bool {
+        guard piece.value.isClock, let clock = group.last(where: \.value.isClock) else { return true }
+        return source.rangeStart(
+            from: clock.range, to: piece.range, bareStart: source.startsWithNumber(clock.range)) != nil
     }
 
     /// A group with two clock times joined as a range: "das 14h às 16h", "de

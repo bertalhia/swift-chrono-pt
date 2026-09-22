@@ -104,6 +104,17 @@ extension ChronoPT {
     }
 }
 
+extension ChronoPT.Match {
+    /// The same match with another reading of its start.
+    func with(alternative: Date?) -> Self {
+        Self(
+            range: range, ranges: ranges, text: text,
+            start: ChronoPT.PartialDate(
+                date: start.date, knownComponents: start.knownComponents, alternative: alternative),
+            end: end, recurrence: recurrence, isAllDay: isAllDay)
+    }
+}
+
 extension ChronoPT.Match: CustomDebugStringConvertible {
     public var debugDescription: String {
         let ending = end.map { " to \($0.date.ISO8601Format())" } ?? ""

@@ -152,4 +152,23 @@ struct OptionsTests {
         #expect(time.text == "há umas 2 horas atrás")
         #expect(hm(time.start.date) == [8, 0])
     }
+
+    @Test("A moment with a hyphen, and moments that read the same, give one answer")
+    func momentsReadTheSameWay() throws {
+        let options = ChronoPT.Options(moments: [
+            "pós-treino": 19, "check-in": 15, "No Treino": 7, "no treino": 18,
+        ])
+        #expect(hm(try #require(interpret("amanhã pós-treino", options: options)).start.date) == [19, 0])
+        #expect(hm(try #require(interpret("amanhã check-in", options: options)).start.date) == [15, 0])
+        // In key order, the first of two keys that read the same wins.
+        #expect(hm(try #require(interpret("amanhã no treino", options: options)).start.date) == [7, 0])
+    }
+
+    @Test("A repeating day with no time counts today whatever the default hour")
+    func repeatingTodayWithDefaultHour() throws {
+        let early = ChronoPT.Options(defaultHour: 9)
+        #expect(ymd(try #require(interpret("toda segunda", options: early)).start.date) == [2026, 9, 21])
+        #expect(
+            ymd(try #require(interpret("todo 21 de setembro", options: early)).start.date) == [2026, 9, 21])
+    }
 }

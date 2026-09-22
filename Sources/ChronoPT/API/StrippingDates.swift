@@ -49,6 +49,7 @@ extension String {
     /// is gone: "almoço de amanhã" keeps "almoço".
     private static let leadIns: Set<String> = [
         "de", "do", "da", "em", "no", "na", "nos", "nas", "para", "pra", "pro", "ate", "a", "ao", "as", "aos",
+        "o", "os",
     ]
 
     private func folded(_ text: Substring) -> String {
@@ -75,7 +76,9 @@ extension String {
     private func tidied() -> String {
         var text = replacing(/[ \t]+/, with: " ")
         text = text.replacing(/\s+([,.;:!?])/) { String($0.output.1) }
-        text = text.replacing(/([,;:])\s*(?=[,;:])/, with: "")
+        text = text.replacing(/([,;:])\s*(?=[,;:.!?])/, with: "")
+        // A dash left with nothing after it: "reunião — — sala 4".
+        text = text.replacing(/([–—-])\s*[–—-]/) { String($0.output.1) }
         text = text.replacing(/\(\s*\)|\[\s*\]/, with: "")
         return text.trimmingCharacters(
             in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-–—")))

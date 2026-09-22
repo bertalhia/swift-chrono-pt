@@ -135,4 +135,25 @@ struct APITests {
             ChronoPT.Recurrence.self, from: JSONEncoder().encode(recurrence))
         #expect(decoded == recurrence)
     }
+
+    @Test("interpret leaves a time next to another day to that day")
+    func timeOfAnotherDay() throws {
+        let found = try #require(interpret("amanhã comprar pão, sexta às 14h dentista"))
+        #expect(ymd(found.start.date) == [2026, 9, 22])
+        #expect(!found.start.hasTime)
+        #expect(
+            !(try #require(interpret("hoje à noite jantar, amanhã às 8 reunião")).start.knownComponents
+                .contains(.minute)))
+    }
+
+    @Test(
+        "strippingDates takes the article and the punctuation the date leaves",
+        arguments: [
+            ("reunião para o dia 15", "reunião"), ("entregar até o dia 10", "entregar"),
+            ("comprar pão, amanhã.", "comprar pão."),
+            ("reunião — amanhã às 10h — sala 4", "reunião — sala 4"),
+        ])
+    func strippingLeftovers(_ example: (text: String, stripped: String)) {
+        #expect(strip(example.text) == example.stripped)
+    }
 }

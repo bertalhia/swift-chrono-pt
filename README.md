@@ -306,6 +306,18 @@ Documentation**.
   `start.alternative` holds the other reading, 7:00, so a UI can offer it. A
   part of the day decides: "de manhã, às 7" and "amanhã de manhã, reunião às
   7" are 7:00.
+- On a single day, an hour that did not say morning or evening takes the
+  reading that has not passed: "hoje às 9" said at 10:00 is 21:00. A
+  repeating day keeps its reading, and its other reading is the next one.
+- "as" and "das" without an accent are also articles, so before a bare number
+  they need the end of a phrase: "chego as 3" is a time, "buscar as 2
+  crianças" is not. "às" and "à" are always a time.
+- A number a day holds is not an hour: "dia 10 às 14h" is the 10th at 14:00,
+  and "sala 12 às 15h" is 15:00. Without "de" or "entre", a bare number opens
+  a range only at the start of a phrase or right after a day: "amanhã 10 às
+  12".
+- Two clock times are two times unless a range joins them: "às 8h e às 20h".
+  A day and a time in different sentences stay apart.
 - In a range, an ambiguous end is the first reading after the start: "das 7
   às 9" is 19:00 to 21:00, and "das 7 às 9 da manhã" is 7:00 to 9:00.
 - "para a janta" is not a time. Only "na janta" or "no almoço", with a
@@ -315,8 +327,8 @@ Documentation**.
   "quinta série" (fifth grade) are not dates. Monday to Friday need a hint,
   such as "na segunda", "segunda-feira", "sexta que vem", a time right after
   ("quinta às 14h") or a range ("de segunda a sexta").
-- A duration is not a time: "estudar por 2 horas" and "trabalhar 8h por dia"
-  set no time.
+- A duration is not a time: "estudar por 2 horas", "trabalhar 8h por dia" and
+  "reunião de 2h" set no time.
 - A holiday name with another meaning needs a preposition: "no natal" is
   Christmas, "voo para Natal" is the city, and "ovo de páscoa" is not a date.
 - Midnight of a day is the start of the next day.

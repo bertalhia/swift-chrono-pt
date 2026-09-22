@@ -52,6 +52,39 @@ struct TextSource {
         }
         self.words = words
         self.hasDigit = hasDigit
+        self.sentenceBreaks = Self.sentenceBreaks(in: characters, normalized: normalized)
+    }
+
+    /// Where a sentence ends: a line break, "!", "?", ";", or a full stop
+    /// before a capital letter or a line break. A full stop before a lowercase
+    /// word is an abbreviation: "seg. às 10", "5 de out. às 9".
+    let sentenceBreaks: [String.Index]
+
+    private static func sentenceBreaks(in characters: [Character], normalized: String) -> [String.Index] {
+        var breaks: [String.Index] = []
+        var position = normalized.startIndex
+        for (index, character) in characters.enumerated() {
+            defer { position = normalized.index(after: position) }
+            guard normalized[position] == " " else { continue }
+            if character.isNewline || "!?;".contains(character) {
+                breaks.append(position)
+            } else if character == "." {
+                let next = characters[(index + 1)...].first { $0 != " " && $0 != "\t" }
+                if next.map({ $0.isNewline || $0.isUppercase }) ?? true { breaks.append(position) }
+            }
+        }
+        return breaks
+    }
+
+    /// Whether a sentence ends inside the range.
+    func hasSentenceBreak(in range: Range<String.Index>) -> Bool {
+        var low = 0
+        var high = sentenceBreaks.count
+        while low < high {
+            let middle = (low + high) / 2
+            if sentenceBreaks[middle] < range.lowerBound { low = middle + 1 } else { high = middle }
+        }
+        return low < sentenceBreaks.count && sentenceBreaks[low] < range.upperBound
     }
 
     /// The regex's matches, or none without running it when the text holds
@@ -246,12 +279,13 @@ struct TextSource {
         !normalized[range].contains(where: Self.isWordCharacter)
     }
 
-    /// Only spaces and prepositions between the two ranges: "amanhã às 9",
-    /// "sexta à noite", "hoje, no almoço".
+    /// Only spaces and prepositions between the two ranges, in one sentence:
+    /// "amanhã às 9", "sexta à noite", "hoje, no almoço".
     func onlyConnectors(between first: Range<String.Index>, and second: Range<String.Index>) -> Bool {
         let (left, right) = first.lowerBound <= second.lowerBound ? (first, second) : (second, first)
         guard left.upperBound <= right.lowerBound else { return true }
-        return everyWord(in: left.upperBound..<right.lowerBound) { Self.connectors.contains(String($0)) }
+        let gap = left.upperBound..<right.lowerBound
+        return !hasSentenceBreak(in: gap) && everyWord(in: gap) { Self.connectors.contains(String($0)) }
     }
 
     /// Where a range from `first` to `second` starts, or nil when the words
@@ -298,7 +332,31 @@ struct TextSource {
             return true
         }
         let position = originalRange(index..<index).lowerBound
-        return position < original.endIndex && ",.;:!?\n".contains(original[position])
+        return position < original.endIndex
+            && (original[position].isNewline || ",.;:!?".contains(original[position]))
+    }
+
+    /// Whether a phrase can start at the position: the text starts there, a
+    /// punctuation mark comes before, or the word before is a connector. In
+    /// "sala 12 às 15h" the 12 follows a noun and names the room.
+    func startsPhrase(at index: String.Index) -> Bool {
+        guard let before = wordRange(before: index), !Self.connectors.contains(String(normalized[before]))
+        else {
+            return true
+        }
+        return original[originalRange(before.upperBound..<index)].contains {
+            $0.isNewline || ",.;:!?()".contains($0)
+        }
+    }
+
+    /// Whether the character at the position was written with a grave
+    /// accent: "às" and "à", never an article.
+    func hasGrave(at index: String.Index) -> Bool {
+        let position = originalRange(index..<index).lowerBound
+        return position < original.endIndex
+            && original[position].unicodeScalars.contains {
+                "àÀ".unicodeScalars.contains($0) || $0 == "\u{300}"
+            }
     }
 
     /// The range starts right at a number: "14h", "10/10".

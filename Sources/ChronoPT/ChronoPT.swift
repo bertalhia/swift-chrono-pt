@@ -78,11 +78,18 @@ public enum ChronoPT {
         let attached = context.times.first {
             context.fits($0, with: day) && context.source.onlyConnectors(between: day.range, and: $0.range)
         }
+        // A time next to another day is that day's: in "amanhã comprar pão,
+        // sexta às 14h dentista" the 14h is Friday's.
+        let free = context.times.filter { time in
+            !context.days.contains {
+                $0.range != day.range && context.source.onlyConnectors(between: $0.range, and: time.range)
+            }
+        }
         let joined = attached.flatMap { attached in
-            context.times.lazy.compactMap { TimeRules.joining(attached, $0) }.first
+            free.lazy.compactMap { TimeRules.joining(attached, $0) }.first
         }
         // A time counted from now belongs to no day: "consulta dia 30, sair
         // daqui a 20 minutos" is the 30th, not twenty minutes from now.
-        return context.combine(day, joined ?? attached ?? context.times.first { context.fits($0, with: day) })
+        return context.combine(day, joined ?? attached ?? free.first { context.fits($0, with: day) })
     }
 }

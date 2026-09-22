@@ -83,13 +83,20 @@ enum TimeRules {
     }
 
     /// Every time piece, without overlap, in text order.
-    static func candidates(in source: TextSource, moments: [String: Int] = [:]) -> [Piece<Value>] {
+    /// `days` are where the day rules found something; `claimed` the ones
+    /// that count on their own. A number a day claims is not a time: "dia
+    /// 10 às 14h", "de 10 a 15 de outubro".
+    static func candidates(
+        in source: TextSource, moments: [String: Int] = [:], days: [Range<String.Index>] = [],
+        claimed: [Range<String.Index>] = []
+    ) -> [Piece<Value>] {
         let found =
             clocks(in: source) + englishClocks(in: source) + minutesToHour(in: source)
             + noonAndMidnight(in: source)
-            + rangeStarts(in: source) + fromNow(in: source) + periods(in: source)
+            + rangeStarts(in: source, days: days) + fromNow(in: source) + periods(in: source)
             + periods(in: source, index: index(of: moments), priority: 1) + zones(in: source)
-        return Piece.nonOverlapping(found, in: source)
+        return Piece.nonOverlapping(
+            found.filter { piece in !claimed.contains { $0.overlaps(piece.range) } }, in: source)
     }
 
 }

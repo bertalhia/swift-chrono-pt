@@ -514,4 +514,172 @@ struct TimeTests {
         #expect(hm(found.start.date) == example.time)
         #expect(found.text == example.match)
     }
+
+    @Test(
+        "A number a day holds, or a label, does not open a time range",
+        arguments: [
+            ("reunião dia 10 às 14h", [2026, 10, 10], [14, 0], "dia 10 às 14h"),
+            ("dia 5 às 9", [2026, 10, 5], [9, 0], "dia 5 às 9"),
+            ("sexta dia 9 às 14h", [2026, 10, 9], [14, 0], "sexta dia 9 às 14h"),
+            ("reunião na sala 12 às 15h", [2026, 9, 21], [15, 0], "às 15h"),
+            ("turma 8 às 10h", [2026, 9, 22], [10, 0], "às 10h"),
+        ])
+    func dayNumberIsNotAnHour(_ example: (text: String, day: [Int], time: [Int], match: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.end == nil)
+        #expect(found.text == example.match)
+    }
+
+    @Test(
+        "A bare number still opens a range where a time can start",
+        arguments: [
+            "reunião amanhã 10 às 12", "10 às 12 reunião", "reunião: 10 às 12", "reunião de 10 às 12",
+        ])
+    func bareRangeWhereATimeStarts(_ text: String) throws {
+        let found = try #require(interpret(text))
+        #expect(hm(found.start.date) == [10, 0])
+        #expect(hm(try #require(found.end?.date)) == [12, 0])
+    }
+
+    @Test("A range of days keeps its own numbers")
+    func dayRangeWithTime() throws {
+        let found = try #require(interpret("do dia 10 ao dia 15 às 9h"))
+        #expect(ymd(found.start.date) == [2026, 10, 10])
+        #expect(hm(found.start.date) == [9, 0])
+        #expect(ymd(found.end?.date) == [2026, 10, 15])
+    }
+
+    @Test(
+        "From now, with short units and minutes after the hours",
+        arguments: [
+            ("daqui a 1h", [11, 0]), ("daqui a 2hrs", [12, 0]), ("dentro de 2h", [12, 0]),
+            ("daqui a 1 h", [11, 0]),
+            ("em 1h", [11, 0]), ("daqui 1h30", [11, 30]), ("daqui a 30min", [10, 30]),
+            ("daqui a 2 horas e meia", [12, 30]), ("daqui a uma hora e meia", [11, 30]),
+            ("daqui a 1 hora e 15 minutos", [11, 15]), ("em 1 hora e 30 minutos", [11, 30]),
+        ])
+    func fromNowUnits(_ example: (text: String, time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == [2026, 9, 21])
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.text == example.text)
+    }
+
+    @Test("Minutes need their unit after the hours")
+    func minutesNeedAUnit() throws {
+        #expect(try #require(interpret("daqui a 2 horas e 3 tarefas")).text == "daqui a 2 horas")
+    }
+
+    @Test("Short units back in time", arguments: ["há 2h", "2h atrás"])
+    func agoUnits(_ text: String) throws {
+        let found = try #require(interpret(text, options: ChronoPT.Options(allowsPast: true)))
+        #expect(hm(found.start.date) == [8, 0])
+        #expect(found.text == text)
+    }
+
+    @Test(
+        "Two clock times are two times unless a range joins them",
+        arguments: [
+            ("às 10h, às 15h", ["às 10h", "às 15h"]),
+            ("Reunião às 10h. Às 15h dentista.", ["às 10h", "Às 15h"]),
+            ("das 9 às 12h e das 14h às 18h", ["das 9 às 12h", "das 14h às 18h"]),
+            ("às 9h de manhã e às 9h da noite", ["às 9h de manhã", "às 9h da noite"]),
+        ])
+    func twoClockTimes(_ example: (text: String, matches: [String])) {
+        #expect(parse(example.text).map(\.text) == example.matches)
+    }
+
+    @Test("A day and a time in different sentences stay apart")
+    func sentenceBreak() {
+        #expect(parse("Comprar pão amanhã. Às 15h dentista.").map(\.text) == ["amanhã", "Às 15h"])
+        // A full stop before a lowercase word is an abbreviation.
+        #expect(parse("seg. às 10").map(\.text) == ["seg. às 10"])
+    }
+
+    @Test(
+        "am and pm after \"às\"",
+        arguments: [
+            ("às 7:30 pm", [21], [19, 30]), ("às 9 pm", [21], [21, 0]), ("amanhã às 8 pm", [22], [20, 0]),
+            ("às 11 am", [21], [11, 0]),
+        ])
+    func meridiemAfterAs(_ example: (text: String, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == [2026, 9] + example.day)
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.start.alternative == nil)
+        #expect(found.text == example.text)
+    }
+
+    @Test(
+        "\"as\" and \"das\" without an accent before a count are articles",
+        arguments: [
+            "buscar as 2 crianças na escola", "comprar as 2 pizzas", "escolher uma das 3 opções",
+            "vou a uma reunião",
+        ])
+    func articleBeforeCount(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test(
+        "\"às\" and \"à\" are always a time",
+        arguments: [
+            ("reunião às 3 com o João", [15, 0]), ("à uma", [13, 0]), ("à uma e meia", [13, 30]),
+            ("chego as 3", [15, 0]), ("a uma hora", [13, 0]),
+        ])
+    func accentedAs(_ example: (text: String, time: [Int])) throws {
+        #expect(hm(try #require(interpret(example.text)).start.date) == example.time)
+    }
+
+    @Test(
+        "Hours after \"de\" are how long, unless a range closes them",
+        arguments: ["reunião de 2h", "treino de 1h", "aula de 1h30", "filme de 3h"])
+    func lengthAfterDe(_ text: String) {
+        #expect(interpret(text) == nil)
+        #expect(interpret(text + " amanhã")?.start.hasTime == false)
+    }
+
+    @Test("A range after \"de\" is still a range", arguments: ["de 9h às 11h", "de 9h a 11h", "de 10h-11h"])
+    func rangeAfterDe(_ text: String) throws {
+        #expect(try #require(interpret(text)).end != nil)
+    }
+
+    @Test(
+        "Written hour units are the 24-hour clock",
+        arguments: [
+            ("às 9:30hrs", [9, 30]), ("às 15:30hrs", [15, 30]), ("às 3 h", [3, 0]), ("às 3 hs", [3, 0]),
+            // Said, not written: the afternoon.
+            ("às 3 horas", [15, 0]),
+        ])
+    func writtenUnits(_ example: (text: String, time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.text == example.text)
+    }
+
+    @Test("A line break with a carriage return ends a phrase")
+    func carriageReturn() throws {
+        #expect(hm(try #require(interpret("chego umas 8\r\nlevar bolo")).start.date) == [8, 0])
+        #expect(ymd(try #require(interpret("sexta, 25\r\nlevar bolo")).start.date) == [2026, 9, 25])
+    }
+
+    @Test("On a single day, the reading that has not passed wins")
+    func unpassedReading() throws {
+        let tonight = try #require(interpret("hoje às 9"))
+        #expect(hm(tonight.start.date) == [21, 0])
+        #expect(hm(try #require(tonight.start.alternative)) == [9, 0])
+        // Both still to come: the usual reading.
+        #expect(hm(try #require(interpret("sexta às 9")).start.date) == [9, 0])
+    }
+
+    @Test("The other reading of a repeating time is its next one")
+    func repeatingAlternative() throws {
+        let daily = try #require(interpret("todo dia às 7"))
+        #expect(hm(daily.start.date) == [19, 0])
+        let other = try #require(daily.start.alternative)
+        #expect(ymd(other) == [2026, 9, 22])
+        #expect(hm(other) == [7, 0])
+        #expect(ymd(try #require(interpret("toda segunda às 7")).start.alternative) == [2026, 9, 28])
+    }
 }

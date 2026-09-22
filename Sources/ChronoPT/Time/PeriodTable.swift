@@ -136,11 +136,13 @@ extension TimeRules {
     /// table: "No Treino" reads as "no treino".
     static func index(of moments: [String: Int]) -> [String: [(phrase: String, value: Value)]] {
         var index: [String: [(phrase: String, value: Value)]] = [:]
-        for (text, hour) in moments where (0...23).contains(hour) {
-            let words = TextSource(text).normalized.split(separator: " ")
-            guard let first = words.first else { continue }
-            index[String(first), default: []].append(
-                (words.joined(separator: " "), .period(hour: hour, minute: 0, needsDay: false)))
+        // In key order, so two keys that read the same ("No Treino", "no
+        // treino") give the same answer on every run: the first one wins.
+        for (text, hour) in moments.sorted(by: { $0.key < $1.key }) where (0...23).contains(hour) {
+            let phrase = TextSource(text).normalized.split(separator: " ").joined(separator: " ")
+            let first = String(phrase.prefix { $0.isLetter || $0.isNumber })
+            guard !first.isEmpty, !(index[first]?.contains { $0.phrase == phrase } ?? false) else { continue }
+            index[first, default: []].append((phrase, .period(hour: hour, minute: 0, needsDay: false)))
         }
         return index
     }

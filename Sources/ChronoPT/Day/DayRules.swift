@@ -38,9 +38,9 @@ enum DayRules {
 
     /// The days mentioned in the text, without overlap, in text order.
     static func expressions(
-        in source: TextSource, times: [TimeRules.Expression], reference: Date, calendar: Calendar
+        in source: TextSource, found: [Candidate], times: [TimeRules.Expression], reference: Date,
+        calendar: Calendar
     ) -> [Piece<Value>] {
-        let found = candidates(in: source)
         let candidates =
             (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)
             + offsets(of: found, in: source) + lengths(of: found, in: source)

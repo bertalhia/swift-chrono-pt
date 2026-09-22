@@ -14,8 +14,13 @@ struct Context {
     ) {
         source = TextSource(text, skipsRules: skipsRules)
         let calendar = Self.gregorian(like: calendar)
-        let times = TimeRules.expressions(in: source, moments: options.moments)
-        let days = DayRules.expressions(in: source, times: times, reference: reference, calendar: calendar)
+        // Days first: a number a day holds is not a time ("dia 10 às 14h").
+        let found = DayRules.candidates(in: source)
+        let times = TimeRules.expressions(
+            in: source, moments: options.moments, days: found.map(\.piece.range),
+            claimed: found.filter { $0.hint == .none }.map(\.piece.range))
+        let days = DayRules.expressions(
+            in: source, found: found, times: times, reference: reference, calendar: calendar)
         if options.allowsPast {
             self.times = times
             self.days = days
@@ -62,13 +67,23 @@ struct Context {
     /// the next time it happens: "toda segunda às 9" said on a Monday at 10:00
     /// is next Monday.
     func combine(_ day: Piece<DayRules.Value>?, _ time: TimeRules.Expression?) -> ChronoPT.Match? {
-        guard let day, day.value.recurrence != nil,
-            let found = combine(day, time, from: reference), found.start.date < reference
-        else {
+        guard let day, day.value.recurrence != nil, let found = combine(day, time, from: reference) else {
             return combine(day, time, from: reference)
         }
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: reference))
-        return tomorrow.flatMap { combine(day, time, from: $0) } ?? found
+        // With no time in the text, today counts whatever hour stands in for
+        // it: "toda segunda" said on a Monday is today.
+        let passed =
+            time == nil
+            ? calendar.startOfDay(for: found.start.date) < calendar.startOfDay(for: reference)
+            : found.start.date < reference
+        let alternativePassed = found.start.alternative.map { $0 < reference } ?? false
+        guard passed || alternativePassed,
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: reference)),
+            let later = combine(day, time, from: tomorrow)
+        else { return found }
+        // The other reading is its next time too: "todo dia às 7" at 10:00 is
+        // 19:00 today, or 7:00 tomorrow.
+        return passed ? later : found.with(alternative: later.start.alternative)
     }
 
     private func combine(
@@ -112,11 +127,23 @@ struct Context {
                 date = reference.addingTimeInterval(Double(minutes) * 60)
                 end = nil
             case .at(let clock):
-                date = clock.on(days.start, calendar: calendar, in: time.zone)
-                end = days.end.flatMap { clock.on($0, calendar: calendar, in: time.zone) }
-                alternative = time.alternative.flatMap {
-                    $0.on(days.start, calendar: calendar, in: time.zone)
+                var chosen = clock
+                // On a single day, an hour that did not say morning or evening
+                // takes the reading that has not passed: "hoje às 9" said at
+                // 10:00 is 21:00. A repeating day keeps its reading.
+                if let other = time.alternative, day.value.recurrence == nil,
+                    let first = clock.on(days.start, calendar: calendar, in: time.zone), first < reference,
+                    let second = other.on(days.start, calendar: calendar, in: time.zone), second >= reference
+                {
+                    chosen = other
+                    alternative = first
+                } else {
+                    alternative = time.alternative.flatMap {
+                        $0.on(days.start, calendar: calendar, in: time.zone)
+                    }
                 }
+                date = chosen.on(days.start, calendar: calendar, in: time.zone)
+                end = days.end.flatMap { chosen.on($0, calendar: calendar, in: time.zone) }
             case .between(let start, let until):
                 date = start.on(days.start, calendar: calendar, in: time.zone)
                 end = until.on(days.end ?? days.start, calendar: calendar, in: time.zone)
