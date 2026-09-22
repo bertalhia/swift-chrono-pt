@@ -53,9 +53,11 @@ extension DayRules {
         case holiday(Holiday)
         /// The last time that weekday came, before today: "sexta passada".
         case lastWeekday(Int)
-        case lastWeek
-        case lastMonth
-        case lastYear
+        /// Weeks, months or years back: 1 is "semana passada", 2 "semana
+        /// retrasada".
+        case lastWeek(Int)
+        case lastMonth(Int)
+        case lastYear(Int)
         case daily
         /// Every so many days, weeks or months: "a cada 15 dias".
         case interval(DateComponents)

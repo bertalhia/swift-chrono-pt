@@ -57,7 +57,8 @@ mean more than one thing.
   dias, toda segunda, 5 vezes. A time may sit in between: "toda terça às 20h
   até dezembro".
 - Past, with ``ChronoPT/Options/allowsPast``: ontem, sexta passada, semana
-  passada, há 2 dias, 3 dias atrás.
+  passada, semana retrasada, mês retrasado, há 2 dias, 3 dias atrás, há duas
+  semanas atrás. "outro dia" is not a date: it can point either way.
 
 ## Ambiguous text
 
@@ -71,6 +72,10 @@ mean more than one thing.
   25" is the 25th when it is a Friday. Otherwise, or when the number counts
   something ("sexta 25 pessoas"), the number is not a day.
 - A duration is not a time: "estudar por 2 horas", "trabalhar 8h por dia".
+- An approximate hour ("umas 8", "lá pras 3", "por volta de 15h") reads like
+  "às 8". "umas", "pras", "por volta de", "em torno de" and "perto de" also
+  come before counts, so with a bare number they need the end of a phrase:
+  "chego umas 8" is a time, "umas 8 laranjas" and "umas 2 horas" are not.
 - A holiday name with another meaning needs a preposition: "voo para Natal" is
   the city.
 - "ter" is the verb, never Tuesday, and "agora" alone is not a date.

@@ -9,11 +9,10 @@ extension DayRules {
         }
     }
 
-    // "daqui 2 dias", "daqui a três semanas", "em 3 dias", "dentro de um mês"
-    // "há 2 dias", "faz uma semana"
+    // "há 2 dias", "faz uma semana", "há duas semanas atrás"
     static var agoAmount: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(?:ha|faz) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b/#
+            #/\b(?:ha|faz) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b(?: atras\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -204,6 +203,7 @@ extension DayRules {
         }
     }
 
+    // "daqui 2 dias", "daqui a três semanas", "em 3 dias", "dentro de um mês"
     static var inAmount: Regex<(Substring, Substring, Substring, Substring)> {
         RegexCache.regex {
             #/\b(daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b/#
@@ -305,7 +305,7 @@ extension DayRules {
 
     static var namedPeriod: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|semana passada|mes passado|ano passado)\b/#
+            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|semana passada|semana retrasada|mes passado|mes retrasado|ano passado|ano retrasado)\b/#
                 .wordBoundaryKind(.simple)
         }
     }

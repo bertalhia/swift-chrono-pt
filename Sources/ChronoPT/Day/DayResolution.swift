@@ -124,26 +124,26 @@ extension DayRules {
                 direction: .backward
             ).map { ($0, nil) }
 
-        case .lastWeek:
-            // Monday to Sunday of the week before this one.
+        case .lastWeek(let weeks):
+            // Monday to Sunday of a week before this one.
             let weekday = calendar.component(.weekday, from: today)
             guard let thisMonday = calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: today),
-                let monday = calendar.date(byAdding: .day, value: -7, to: thisMonday),
+                let monday = calendar.date(byAdding: .day, value: -7 * weeks, to: thisMonday),
                 let sunday = calendar.date(byAdding: .day, value: 6, to: monday)
             else { return nil }
             return (monday, sunday)
 
-        case .lastMonth:
+        case .lastMonth(let months):
             guard let thisMonth = calendar.dateInterval(of: .month, for: today)?.start,
-                let first = calendar.date(byAdding: .month, value: -1, to: thisMonth),
+                let first = calendar.date(byAdding: .month, value: -months, to: thisMonth),
                 let last = lastDayOfMonth(first, calendar: calendar)
             else { return nil }
             return (first, last)
 
-        case .lastYear:
+        case .lastYear(let years):
             guard let thisYear = calendar.dateInterval(of: .year, for: today)?.start,
-                let first = calendar.date(byAdding: .year, value: -1, to: thisYear),
-                let last = calendar.date(byAdding: .day, value: -1, to: thisYear)
+                let first = calendar.date(byAdding: .year, value: -years, to: thisYear),
+                let last = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: first)
             else { return nil }
             return (first, last)
 

@@ -22,6 +22,7 @@ struct OptionsTests {
             ("faz uma semana", [2026, 9, 14]),
             ("há um mês", [2026, 8, 21]),
             ("há 3 anos", [2023, 9, 21]),
+            ("há duas semanas atrás", [2026, 9, 7]),
         ])
     func pastDay(_ example: (text: String, day: [Int])) throws {
         #expect(interpret(example.text) == nil)
@@ -38,6 +39,9 @@ struct OptionsTests {
             ("ano passado", [2025, 1, 1], [2025, 12, 31]),
             ("de ontem até sexta", [2026, 9, 20], [2026, 9, 25]),
             ("fim de semana passado", [2026, 9, 19], [2026, 9, 20]),
+            ("semana retrasada", [2026, 9, 7], [2026, 9, 13]),
+            ("mês retrasado", [2026, 7, 1], [2026, 7, 31]),
+            ("ano retrasado", [2024, 1, 1], [2024, 12, 31]),
         ])
     func pastPeriod(_ example: (text: String, start: [Int], end: [Int])) throws {
         #expect(interpret(example.text) == nil)
@@ -131,5 +135,21 @@ struct OptionsTests {
         let saved = Data(#"{"allowsPast":true,"hour":9}"#.utf8)
         let options = try JSONDecoder().decode(ChronoPT.Options.self, from: saved)
         #expect(options == ChronoPT.Options(allowsPast: true, defaultHour: 9))
+    }
+
+    @Test("\"outro dia\" is not a date, even with past dates on")
+    func otherDay() {
+        #expect(interpret("a gente se fala outro dia", options: Self.past) == nil)
+        #expect(interpret("encontrei ele outro dia", options: Self.past) == nil)
+    }
+
+    @Test("A redundant \"atrás\" belongs to the expression")
+    func redundantAgo() throws {
+        #expect(
+            try #require(interpret("há duas semanas atrás", options: Self.past)).text
+                == "há duas semanas atrás")
+        let time = try #require(interpret("há umas 2 horas atrás", options: Self.past))
+        #expect(time.text == "há umas 2 horas atrás")
+        #expect(hm(time.start.date) == [8, 0])
     }
 }

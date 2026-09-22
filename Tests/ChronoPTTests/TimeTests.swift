@@ -468,4 +468,50 @@ struct TimeTests {
         #expect(found.text == "amanhã às 9")
         #expect(!found.start.knownComponents.contains(.timeZone))
     }
+
+    @Test(
+        "An approximate hour reads like an exact one",
+        arguments: [
+            // 8 is morning, like "às 8"; 8:00 has passed, so it is tomorrow.
+            ("chego umas 8", [2026, 9, 22], [8, 0], "umas 8"),
+            ("umas 8 da noite", [2026, 9, 21], [20, 0], "umas 8 da noite"),
+            ("umas 8 e meia", [2026, 9, 22], [8, 30], "umas 8 e meia"),
+            ("umas 3h", [2026, 9, 22], [3, 0], "umas 3h"),
+            ("amanhã umas 8, pode ser", [2026, 9, 22], [8, 0], "amanhã umas 8"),
+            ("lá pras 3", [2026, 9, 21], [15, 0], "lá pras 3"),
+            ("pras 3 da tarde", [2026, 9, 21], [15, 0], "pras 3 da tarde"),
+            ("por volta de 15h", [2026, 9, 21], [15, 0], "por volta de 15h"),
+            ("em torno de 10h", [2026, 9, 22], [10, 0], "em torno de 10h"),
+            ("em torno das 10", [2026, 9, 22], [10, 0], "em torno das 10"),
+            ("perto do meio-dia", [2026, 9, 21], [12, 0], "perto do meio-dia"),
+            ("perto de meio-dia", [2026, 9, 21], [12, 0], "perto de meio-dia"),
+        ])
+    func approximateHour(_ example: (text: String, day: [Int], time: [Int], match: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.text == example.match)
+    }
+
+    @Test(
+        "An approximate count is not a time",
+        arguments: [
+            "comprei umas 8 laranjas", "estudar umas 2 horas", "por umas 2h", "vou pras 3 lojas",
+            "por volta de 10 pessoas", "cerca de 10 pessoas",
+        ])
+    func approximateCount(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test(
+        "An approximate amount of time from now",
+        arguments: [
+            ("chego em uns 15 minutos", [10, 15], "em uns 15 minutos"),
+            ("daqui umas 2 horas", [12, 0], "daqui umas 2 horas"),
+        ])
+    func approximateFromNow(_ example: (text: String, time: [Int], match: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.text == example.match)
+    }
 }

@@ -520,9 +520,12 @@ enum DayRules {
                 case "meio da semana", "metade da semana": .middleOfWeek
                 case "fim da semana", "final da semana": .endOfWeek
                 case "ano que vem", "proximo ano", "prox ano": .nextYear
-                case "semana passada": .lastWeek
-                case "mes passado": .lastMonth
-                case "ano passado": .lastYear
+                case "semana passada": .lastWeek(1)
+                case "semana retrasada": .lastWeek(2)
+                case "mes passado": .lastMonth(1)
+                case "mes retrasado": .lastMonth(2)
+                case "ano passado": .lastYear(1)
+                case "ano retrasado": .lastYear(2)
                 default: .weekend(weeks: 0)
                 }
             add(match.range, value)

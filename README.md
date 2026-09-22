@@ -41,15 +41,15 @@ date always gives the same result.
 | Date | 25/09, 25/09/2026, 25-12-2027, 25.12.2027, 10/out, 2026-10-15, 15 de outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze |
 | Period | esta semana, semana que vem, fim de semana, no meio da semana, este mês, mês que vem, no início do mês, no meio do mês, fim do mês, primeira quinzena de outubro, em outubro, março de 2027, dez/2027, 12/2027, no próximo trimestre, primeiro semestre, ano que vem, fim do ano |
 | Holiday | no natal, véspera de natal, no ano novo, na páscoa, no carnaval, sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais |
-| Clock time | às 9, 14h, 9h30, 10:30, 15:30h, 9am, 7:30 pm, 15h BRT, 16h GMT-3, às 9 horário de Brasília, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
+| Clock time | às 9, 14h, 9h30, 10:30, 15:30h, 9am, 7:30 pm, umas 8 da noite, lá pras 3, por volta de 15h, perto do meio-dia, 15h BRT, 16h GMT-3, às 9 horário de Brasília, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
 | Part of the day | de manhã, à tarde, à noite, de madrugada, cedo, à tardinha, tarde da noite, no fim da tarde, a tarde toda, a noite inteira |
 | Moment | no almoço, na janta, depois do almoço, antes de dormir, ao acordar, no café da manhã, depois do trabalho |
-| From now | daqui 2 horas, em meia hora, daqui a 20 minutos, daqui a pouco, mais tarde, logo mais |
+| From now | daqui 2 horas, em meia hora, daqui a 20 minutos, em uns 15 minutos, daqui a pouco, mais tarde, logo mais |
 | Counted from a date | dois dias antes do natal, véspera do ano novo, uma semana depois do dia 10, 3 dias antes de 25/10 |
 | Business days | em 5 dias úteis, prazo de 2 dias úteis, no próximo dia útil, primeiro dia útil do mês, último dia útil do mês |
 | Range | das 14h às 16h, 14h às 16h, 10h-11h, de 9 a 11h, entre 10 e 11h, de segunda a sexta, seg-sex, do dia 10 ao dia 15, de 10 a 15 de outubro, por 3 dias, amanhã por uma semana, nos próximos 5 dias, durante a semana |
 | Repeating | todo dia, todos os dias, toda terça, todas as sextas, às segundas e quartas, todo dia 5, todo mês no dia 10, a cada 15 dias, de 2 em 2 semanas, toda semana, mensalmente, 3x ao dia, duas vezes por semana, dia sim dia não, toda última sexta do mês, todo ano em julho, todo 25 de dezembro, toda terça até dezembro, todo dia por 10 dias, toda segunda 5 vezes |
-| Past | ontem, anteontem, sexta passada, na última sexta, semana passada, mês passado, há 2 dias, 3 dias atrás, há 2 horas |
+| Past | ontem, anteontem, sexta passada, na última sexta, semana passada, semana retrasada, mês passado, mês retrasado, há 2 dias, 3 dias atrás, há duas semanas atrás, há 2 horas |
 
 Past dates count only with `allowsPast` (see [Options](#options)).
 
