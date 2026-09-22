@@ -349,6 +349,11 @@ struct TextSource {
         }
     }
 
+    /// The range as the writer typed it.
+    func originalText(_ range: Range<String.Index>) -> Substring {
+        original[originalRange(range)]
+    }
+
     /// Whether the character at the position was written with a grave
     /// accent: "às" and "à", never an article.
     func hasGrave(at index: String.Index) -> Bool {

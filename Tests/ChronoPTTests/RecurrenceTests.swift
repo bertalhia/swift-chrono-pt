@@ -169,4 +169,49 @@ struct RecurrenceTests {
         #expect(interpret("tomar 3 vezes") == nil)
         #expect(try #require(interpret("toda terça, 3 vezes ao dia")).recurrence?.end == nil)
     }
+
+    @Test(
+        "A count after \"todo dia\" is not a day of the month",
+        arguments: [
+            "estudar inglês todo dia 30 minutos", "fazer todos os dias 10 flexões",
+            "todo dia 2 horas de piano",
+        ])
+    func countAfterEveryDay(_ text: String) throws {
+        #expect(try #require(interpret(text)).recurrence == .daily())
+    }
+
+    @Test("\"todo dia 1º\" is monthly")
+    func firstOfEveryMonth() throws {
+        #expect(try #require(interpret("todo dia 1º")).recurrence == .monthly(day: 1))
+    }
+
+    @Test(
+        "The end of a repeating day in the month under way",
+        arguments: [
+            (
+                "toda terça até setembro", reference(2026, 9, 21),
+                "FREQ=WEEKLY;BYDAY=TU;UNTIL=20261001T025959Z"
+            ),
+            (
+                "toda terça até dezembro", reference(2026, 12, 5),
+                "FREQ=WEEKLY;BYDAY=TU;UNTIL=20270101T025959Z"
+            ),
+        ])
+    func endInMonthUnderWay(_ example: (text: String, reference: Date, rrule: String)) throws {
+        #expect(
+            try #require(interpret(example.text, reference: example.reference)).recurrence?.rrule
+                == example.rrule)
+    }
+
+    @Test(
+        "A fifth weekday of the month is found however far it is",
+        arguments: [
+            ("toda quinta quarta do mês", reference(2026, 1, 5), [2026, 4, 29]),
+            ("todo quinto sábado do mês", reference(2026, 2, 1), [2026, 5, 30]),
+        ])
+    func fifthWeekday(_ example: (text: String, reference: Date, day: [Int])) throws {
+        #expect(
+            ymd(try #require(interpret(example.text, reference: example.reference)).start.date) == example.day
+        )
+    }
 }

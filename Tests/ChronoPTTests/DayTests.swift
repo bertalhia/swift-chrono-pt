@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import ChronoPT
@@ -122,7 +123,8 @@ struct DayTests {
             ("prox semana", [2026, 9, 28], [2026, 10, 4]),
             ("fim de semana que vem", [2026, 10, 3], [2026, 10, 4]),
             ("no começo da semana", [2026, 9, 21], [2026, 9, 22]),
-            ("no meio da semana", [2026, 9, 23], [2026, 9, 23]),
+            // One day: no end.
+            ("no meio da semana", [2026, 9, 23], []),
             ("no fim da semana", [2026, 9, 24], [2026, 9, 25]),
             ("férias em dezembro", [2026, 12, 1], [2026, 12, 31]),
             ("em março de 2027", [2027, 3, 1], [2027, 3, 31]),
@@ -525,5 +527,41 @@ struct DayTests {
     func noDate(_ text: String) {
         #expect(interpret(text) == nil)
         #expect(parse(text).isEmpty)
+    }
+
+    @Test(
+        "Days and months under way, weeks from a Sunday, and this week's days",
+        arguments: [
+            ("em setembro", reference(2026, 9, 21), [2026, 9, 21], [2026, 9, 30]),
+            ("em outubro", reference(2026, 9, 21), [2026, 10, 1], [2026, 10, 31]),
+            ("fim de semana que vem", reference(2026, 9, 27), [2026, 10, 3], [2026, 10, 4]),
+            ("no começo da semana", reference(2026, 9, 22), [2026, 9, 22], []),
+            ("no fim da semana", reference(2026, 9, 25), [2026, 9, 25], []),
+            ("sexta dessa semana", reference(2026, 9, 21), [2026, 9, 25], []),
+            ("de quarta a sexta da semana que vem", reference(2026, 9, 21), [2026, 9, 30], [2026, 10, 2]),
+            ("no natal de 2027", reference(2026, 9, 21), [2027, 12, 25], []),
+            ("natal de 2027", reference(2026, 9, 21), [2027, 12, 25], []),
+            ("no carnaval de 2028", reference(2026, 9, 21), [2028, 2, 26], [2028, 2, 29]),
+        ])
+    func underWay(_ example: (text: String, reference: Date, start: [Int], end: [Int])) throws {
+        let found = try #require(interpret(example.text, reference: example.reference))
+        #expect(ymd(found.start.date) == example.start)
+        #expect(ymd(found.end?.date) == example.end)
+    }
+
+    @Test("This week's day that has passed is no date")
+    func thisWeeksPassedDay() {
+        #expect(interpret("quinta dessa semana", reference: reference(2026, 9, 25)) == nil)
+    }
+
+    @Test(
+        "\"marco\" without its cedilla is March only after \"em\" or before a year",
+        arguments: [
+            ("mandar e-mail para Marco amanhã", "amanhã"),
+            ("encontro no Marco Zero amanhã às 10", "amanhã às 10"),
+            ("em marco", "em marco"), ("para março", "para março"), ("marco de 2027", "marco de 2027"),
+        ])
+    func marco(_ example: (text: String, match: String)) throws {
+        #expect(try #require(interpret(example.text)).text == example.match)
     }
 }

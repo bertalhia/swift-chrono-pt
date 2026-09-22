@@ -39,6 +39,7 @@ struct OptionsTests {
             ("ano passado", [2025, 1, 1], [2025, 12, 31]),
             ("de ontem até sexta", [2026, 9, 20], [2026, 9, 25]),
             ("fim de semana passado", [2026, 9, 19], [2026, 9, 20]),
+            ("no último fim de semana", [2026, 9, 19], [2026, 9, 20]),
             ("semana retrasada", [2026, 9, 7], [2026, 9, 13]),
             ("mês retrasado", [2026, 7, 1], [2026, 7, 31]),
             ("ano retrasado", [2024, 1, 1], [2024, 12, 31]),
@@ -170,5 +171,13 @@ struct OptionsTests {
         #expect(ymd(try #require(interpret("toda segunda", options: early)).start.date) == [2026, 9, 21])
         #expect(
             ymd(try #require(interpret("todo 21 de setembro", options: early)).start.date) == [2026, 9, 21])
+    }
+
+    @Test("The weekend before, said on a Sunday")
+    func lastWeekendFromSunday() throws {
+        let found = try #require(
+            interpret("fim de semana passado", reference: reference(2026, 9, 27), options: Self.past))
+        #expect(ymd(found.start.date) == [2026, 9, 19])
+        #expect(ymd(found.end?.date) == [2026, 9, 20])
     }
 }

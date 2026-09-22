@@ -93,6 +93,11 @@ enum DayRules {
                 {
                     from = .date(day: day, month: month, year: year)
                 }
+                // Both days are in the week the end names: "de quarta a sexta
+                // da semana que vem".
+                if case .weekday(let day, nil) = from, case .weekday(_, let week?) = second.piece.value {
+                    from = .weekday(day, week: week)
+                }
                 let piece = Piece(
                     range: start..<second.piece.range.upperBound, value: Value.range(from, second.piece.value)
                 )
@@ -296,7 +301,10 @@ enum DayRules {
         }
 
         for match in source.matches(of: everyMonth, whenAny: monthlyWords) {
-            guard let day = dayNumber(match.output.1), (1...31).contains(day) else { continue }
+            // "todo dia 30 minutos" counts minutes every day.
+            guard let day = dayNumber(match.output.1), (1...31).contains(day),
+                source.endsPhrase(at: match.range.upperBound)
+            else { continue }
             add(match.range, .monthly(day))
         }
 
@@ -350,10 +358,13 @@ enum DayRules {
             )
             guard let day = weekdays[name] else { continue }
             // "sexta que vem" is next week's; "sexta dessa semana" is this one.
-            let nextWeek =
-                next.map { $0.contains("semana que vem") || $0.contains("proxima semana") } ?? false
+            let week: Int? =
+                next.map {
+                    $0.contains("semana que vem") || $0.contains("proxima semana")
+                        ? 1 : $0.contains("dessa semana") || $0.contains("desta semana") ? 0 : nil
+                } ?? nil
             let unambiguous = weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
-            add(match.range, .weekday(day, nextWeek: nextWeek), hint: unambiguous ? .none : .time)
+            add(match.range, .weekday(day, week: week), hint: unambiguous ? .none : .time)
         }
 
         // A bare number needs a digit in the text, and must not count
@@ -435,13 +446,14 @@ enum DayRules {
         }
 
         for match in source.matches(of: holidayName, whenAny: holidayWords) {
-            let (_, preposition, name) = match.output
+            let (_, preposition, name, year) = match.output
             guard let entry = holidays[String(name)] else { continue }
             // "fantasia de carnaval" is not a date, but "dois dias antes do
-            // carnaval" is: without its preposition the name only anchors.
+            // carnaval" and "natal de 2027" are: without its preposition or a
+            // year the name only anchors.
             add(
-                match.range, .holiday(entry.holiday),
-                hint: preposition == nil && entry.needsPreposition ? .anchor : .none)
+                match.range, .holiday(entry.holiday, year: year.flatMap { Int($0) }),
+                hint: preposition == nil && year == nil && entry.needsPreposition ? .anchor : .none)
         }
 
         for match in source.matches(of: lasting, whenAny: lastingWords) {
@@ -465,9 +477,16 @@ enum DayRules {
         }
 
         for match in source.matches(of: wholeMonth, whenAny: monthWords) {
-            let (_, withPreposition, comingMonth, withYear, year) = match.output
+            let (_, preposition, withPreposition, comingMonth, withYear, year) = match.output
             guard let name = withPreposition ?? comingMonth ?? withYear, let month = months[String(name)]
             else { continue }
+            // "marco" without its cedilla is also a name and a noun: "para
+            // Marco", "no Marco Zero". It is March after "em" or before a year.
+            if name == "marco", !source.originalText(match.range).contains(where: { "çÇ".contains($0) }),
+                withPreposition != nil, !["em", "no mes de"].contains(preposition ?? ""), year == nil
+            {
+                continue
+            }
             add(match.range, .month(month, year: year.flatMap { Int($0) }))
         }
 
@@ -498,7 +517,9 @@ enum DayRules {
                 case "fim de semana que vem", "final de semana que vem", "proximo fim de semana",
                     "proximo final de semana":
                     .weekend(weeks: 1)
-                case "fim de semana passado", "final de semana passado": .weekend(weeks: -1)
+                case "fim de semana passado", "final de semana passado", "ultimo fim de semana",
+                    "ultimo final de semana":
+                    .weekend(weeks: -1)
                 case "fim do mes que vem", "final do mes que vem": .endOfMonth(months: 1)
                 case "esta semana", "essa semana", "nesta semana", "nessa semana": .thisWeek
                 case "semana que vem", "proxima semana", "prox semana", "essa semana que vem",

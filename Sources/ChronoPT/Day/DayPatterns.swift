@@ -75,7 +75,7 @@ extension DayRules {
     // "todo dia 5", "todo mês no dia 10"
     static var everyMonth: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b(?:todo mes(?: no)? dia|todos os dias|todo dia) (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)\b(?!/)/#
+            #/\b(?:todo mes(?: no)? dia|todos os dias|todo dia) (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o\b|\b)(?!/)/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -163,9 +163,9 @@ extension DayRules {
     }
 
     // "em outubro", "em março de 2027", "março que vem", "no mês de outubro"
-    static var wholeMonth: Regex<(Substring, Substring?, Substring?, Substring?, Substring?)> {
+    static var wholeMonth: Regex<(Substring, Substring?, Substring?, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:(?:em|no mes de|para|ate|no|neste|nesse) (fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio)|(fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio) que vem|(fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio)(?= de \d{4}))\b(?: de (\d{4}))?/#
+            #/\b(?:(em|no mes de|para|ate|no|neste|nesse) (fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio)|(fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio) que vem|(fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio)(?= de \d{4}))\b(?: de (\d{4}))?/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -305,15 +305,15 @@ extension DayRules {
 
     static var namedPeriod: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|semana passada|semana retrasada|mes passado|mes retrasado|ano passado|ano retrasado)\b/#
+            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|ultimo fim de semana|ultimo final de semana|semana passada|semana retrasada|mes passado|mes retrasado|ano passado|ano retrasado)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
 
     // "no natal", "véspera de natal", "dia de finados", "na sexta-feira santa"
-    static var holidayName: Regex<(Substring, Substring?, Substring)> {
+    static var holidayName: Regex<(Substring, Substring?, Substring, Substring?)> {
         RegexCache.regex {
-            #/\b(?:(no proximo|na proxima|no|na|ate o|ate a|ate|neste|nesta|nesse|nessa|este|esta|esse|essa|feriado de|feriado do|feriado da|dia de|dia do|dia da) )?(vespera de natal|natal|reveillon|virada do ano|ano novo|ano-novo|tiradentes|dia do trabalhador|dia do trabalho|independencia|dia das criancas|nossa senhora aparecida|finados|proclamacao da republica|consciencia negra|dia dos namorados|carnaval|quarta-feira de cinzas|quarta de cinzas|sexta-feira santa|sexta-feira da paixao|sexta santa|pascoa|corpus christi|dia das maes|dia dos pais)\b/#
+            #/\b(?:(no proximo|na proxima|no|na|ate o|ate a|ate|neste|nesta|nesse|nessa|este|esta|esse|essa|feriado de|feriado do|feriado da|dia de|dia do|dia da) )?(vespera de natal|natal|reveillon|virada do ano|ano novo|ano-novo|tiradentes|dia do trabalhador|dia do trabalho|independencia|dia das criancas|nossa senhora aparecida|finados|proclamacao da republica|consciencia negra|dia dos namorados|carnaval|quarta-feira de cinzas|quarta de cinzas|sexta-feira santa|sexta-feira da paixao|sexta santa|pascoa|corpus christi|dia das maes|dia dos pais)\b(?: de (\d{4})\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }

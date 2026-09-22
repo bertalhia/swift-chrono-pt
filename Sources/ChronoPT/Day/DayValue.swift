@@ -6,8 +6,10 @@ extension DayRules {
         case weeks(Int)
         case months(Int)
         case years(Int)
-        /// Weekday as `Calendar` numbers it: 1 is Sunday, 7 is Saturday.
-        case weekday(Int, nextWeek: Bool)
+        /// Weekday as `Calendar` numbers it: 1 is Sunday, 7 is Saturday. `week`
+        /// is `nil` for the next time it comes, 0 for this week's ("sexta
+        /// dessa semana"), 1 for next week's ("sexta que vem").
+        case weekday(Int, week: Int?)
         case date(day: Int, month: Int, year: Int?)
         case dayOfMonth(Int)
         /// A weekday and a bare day number: "sexta, 25". The next day with
@@ -50,7 +52,8 @@ extension DayRules {
         case businessDays(Int)
         case firstBusinessDayOfMonth
         case lastBusinessDayOfMonth
-        case holiday(Holiday)
+        /// A holiday, in the year the text gave: "no natal de 2027".
+        case holiday(Holiday, year: Int?)
         /// The last time that weekday came, before today: "sexta passada".
         case lastWeekday(Int)
         /// Weeks, months or years back: 1 is "semana passada", 2 "semana

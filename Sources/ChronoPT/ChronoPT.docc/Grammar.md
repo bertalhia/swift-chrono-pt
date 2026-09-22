@@ -76,6 +76,9 @@ mean more than one thing.
   "às 8". "umas", "pras", "por volta de", "em torno de" and "perto de" also
   come before counts, so with a bare number they need the end of a phrase:
   "chego umas 8" is a time, "umas 8 laranjas" and "umas 2 horas" are not.
+- "marco" without its cedilla is also a name and a noun: it is March after
+  "em" or before a year ("em marco", "marco de 2027"), not in "para Marco" or
+  "no Marco Zero".
 - A holiday name with another meaning needs a preposition: "voo para Natal" is
   the city.
 - "ter" is the verb, never Tuesday, and "agora" alone is not a date.
