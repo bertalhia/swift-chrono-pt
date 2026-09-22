@@ -8,9 +8,11 @@ mean more than one thing.
 - Relative: hoje, amanhã, depois de amanhã, daqui 2 dias, em três semanas,
   daqui a 1 ano, prazo de 5 dias.
 - Weekdays: sexta que vem, próxima sexta, na terça-feira, sábado agora, quinta
-  dessa semana, 6ª feira, na seg.
+  dessa semana, 6ª feira, na seg, sexta, 25.
 - Dates: 25/09, 25/09/2026, 25-12-2027, 25.12.2027, 10/out, 2026-10-15, 15 de
   outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze.
+- Dates with a time, ISO style: 2026-10-15T14:30, 2026-10-15 14:30:00,
+  2026-10-15T14:30:00-03:00. With an offset, the moment is the one it names.
 - Periods: esta semana, semana que vem, fim de semana, no meio da semana, este
   mês, no início do mês, fim do mês, em outubro, março de 2027, dez/2027, ano
   que vem, fim do ano.
@@ -24,8 +26,9 @@ mean more than one thing.
 
 ## Times
 
-- Clock times: às 9, 14h, 9h30, 10:30, 15:30h, às 7 e meia, às sete da noite,
-  às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia.
+- Clock times: às 9, 14h, 9h30, 10:30, 15:30h, 9am, 7:30 pm, às 7 e meia, às
+  sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito,
+  meio-dia e meia.
 - Parts of the day and moments: de manhã, à tarde, à noite, de madrugada, cedo,
   no almoço, na janta, depois do trabalho, antes de dormir.
 - From now: daqui 2 horas, em meia hora, daqui a pouco (30 minutes), mais
@@ -48,6 +51,9 @@ mean more than one thing.
   of the day or a written hour settles it.
 - Ordinals are not weekdays: "segunda via do boleto" is not a date. Monday to
   Friday need a hint: a preposition, "que vem", a time, a date or a range.
+- A weekday with a bare number is that day only when the two agree: "sexta,
+  25" is the 25th when it is a Friday. Otherwise, or when the number counts
+  something ("sexta 25 pessoas"), the number is not a day.
 - A duration is not a time: "estudar por 2 horas", "trabalhar 8h por dia".
 - A holiday name with another meaning needs a preposition: "voo para Natal" is
   the city.

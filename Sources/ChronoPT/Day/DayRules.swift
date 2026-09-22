@@ -29,11 +29,17 @@ enum DayRules {
             /// A bigger expression that counts from it: "natal" in "dois dias
             /// antes do natal". Alone it is not a date.
             case anchor
+            /// A date on the calendar: "sexta, 25" only when the 25th is a
+            /// Friday. Checked before overlaps are removed, so a pair that
+            /// disagrees leaves the weekday alone: "na quinta, 25".
+            case date
         }
     }
 
     /// The days mentioned in the text, without overlap, in text order.
-    static func expressions(in source: TextSource, times: [TimeRules.Expression]) -> [Piece<Value>] {
+    static func expressions(
+        in source: TextSource, times: [TimeRules.Expression], reference: Date, calendar: Calendar
+    ) -> [Piece<Value>] {
         let found = candidates(in: source)
         let candidates =
             (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)
@@ -42,6 +48,8 @@ enum DayRules {
                 switch candidate.hint {
                 case .none: return true
                 case .anchor: return false
+                case .date:
+                    return resolve(candidate.piece.value, reference: reference, calendar: calendar) != nil
                 case .time: break
                 }
                 return times.contains { time in
@@ -241,6 +249,15 @@ enum DayRules {
                 next.map { $0.contains("semana que vem") || $0.contains("proxima semana") } ?? false
             let unambiguous = weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
             add(match.range, .weekday(day, nextWeek: nextWeek), hint: unambiguous ? .none : .time)
+        }
+
+        // A bare number needs a digit in the text, and must not count
+        // something: "sexta 25 pessoas".
+        for match in source.hasDigit ? source.matches(of: weekdayAndDay, whenAny: weekdayWords) : [] {
+            guard let weekday = weekdays[String(match.output.1)], let day = Int(match.output.2),
+                source.endsPhrase(at: match.range.upperBound)
+            else { continue }
+            add(match.range, .weekdayAndDay(weekday, day: day), hint: .date)
         }
 
         for match in source.matches(of: numericDate, whenContains: "/") {

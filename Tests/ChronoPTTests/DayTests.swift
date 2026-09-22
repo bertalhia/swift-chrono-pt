@@ -293,6 +293,45 @@ struct DayTests {
     }
 
     @Test(
+        "A weekday with a bare day number is that day when the two agree",
+        arguments: [
+            ("sexta, 25", [2026, 9, 25], "sexta, 25"),
+            ("reunião sexta 25", [2026, 9, 25], "sexta 25"),
+            ("na sexta, 25", [2026, 9, 25], "na sexta, 25"),
+            ("sábado 26", [2026, 9, 26], "sábado 26"),
+            ("6ª feira, 2", [2026, 10, 2], "6ª feira, 2"),
+            ("sexta, 25, reunião com o cliente", [2026, 9, 25], "sexta, 25"),
+            // The 21st is today, a Monday.
+            ("segunda, 21", [2026, 9, 21], "segunda, 21"),
+        ])
+    func weekdayWithBareDay(_ example: (text: String, day: [Int], match: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(found.text == example.match)
+    }
+
+    @Test("A weekday with a bare day number takes the time after it")
+    func weekdayWithBareDayAndTime() throws {
+        let found = try #require(interpret("segunda, 28 às 10h"))
+        #expect(ymd(found.start.date) == [2026, 9, 28])
+        #expect(hm(found.start.date) == [10, 0])
+        #expect(found.text == "segunda, 28 às 10h")
+    }
+
+    @Test(
+        "A bare number that disagrees with the weekday, or counts something, is not a day",
+        arguments: [
+            // The 25th is a Friday.
+            ("na quinta, 25", "na quinta"),
+            ("quinta, 25", nil),
+            ("sexta 25 pessoas", nil),
+            ("sexta 2 reuniões", nil),
+        ] as [(String, String?)])
+    func weekdayWithBareNumber(_ example: (text: String, match: String?)) {
+        #expect(interpret(example.text)?.text == example.match)
+    }
+
+    @Test(
         "An abbreviated weekday counts with a time right after it",
         arguments: [
             ("qua 14h", [2026, 9, 23], [14, 0]),

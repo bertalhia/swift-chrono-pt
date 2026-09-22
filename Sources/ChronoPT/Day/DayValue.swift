@@ -10,6 +10,9 @@ extension DayRules {
         case weekday(Int, nextWeek: Bool)
         case date(day: Int, month: Int, year: Int?)
         case dayOfMonth(Int)
+        /// A weekday and a bare day number: "sexta, 25". The next day with
+        /// that number, when it falls on that weekday; otherwise no date.
+        case weekdayAndDay(Int, day: Int)
         case thisWeek
         case nextWeek
         /// Weeks from the coming weekend: 0 is this one, 1 is "fim de semana
@@ -99,6 +102,8 @@ extension DayRules {
                 [.day, .month, .year]
             case .weekday, .lastWeekday:
                 [.day, .month, .year, .weekday]
+            case .weekdayAndDay:
+                [.day, .weekday]
             case .date(_, _, let year):
                 year == nil ? [.day, .month] : [.day, .month, .year]
             case .dayOfMonth, .monthly:

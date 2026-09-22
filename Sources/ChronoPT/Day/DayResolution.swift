@@ -58,6 +58,12 @@ extension DayRules {
                 matchingPolicy: .strict
             ).map { ($0, nil) }
 
+        case .weekdayAndDay(let weekday, let day):
+            guard let date = resolve(.dayOfMonth(day), reference: reference, calendar: calendar)?.start,
+                calendar.component(.weekday, from: date) == weekday
+            else { return nil }
+            return (date, nil)
+
         case .thisWeek:
             // From today to Sunday; on a Sunday, just today.
             let weekday = calendar.component(.weekday, from: today)

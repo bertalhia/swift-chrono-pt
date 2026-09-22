@@ -13,8 +13,9 @@ struct Context {
         text: String, reference: Date, calendar: Calendar, options: ChronoPT.Options, skipsRules: Bool = true
     ) {
         source = TextSource(text, skipsRules: skipsRules)
+        let calendar = Self.gregorian(like: calendar)
         let times = TimeRules.expressions(in: source)
-        let days = DayRules.expressions(in: source, times: times)
+        let days = DayRules.expressions(in: source, times: times, reference: reference, calendar: calendar)
         if options.allowsPast {
             self.times = times
             self.days = days
@@ -28,7 +29,7 @@ struct Context {
             }
         }
         self.reference = reference
-        self.calendar = Self.gregorian(like: calendar)
+        self.calendar = calendar
         self.options = options
     }
 

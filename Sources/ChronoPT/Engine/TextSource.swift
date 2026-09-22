@@ -288,6 +288,18 @@ struct TextSource {
         return start
     }
 
+    /// Whether a phrase can end at the position: the text ends, a
+    /// punctuation mark follows, or the next word is a connector. In "sexta,
+    /// 25 às 10h" and "sexta, 25, reunião" the 25 is a day; in "sexta 25
+    /// pessoas" it counts something.
+    func endsPhrase(at index: String.Index) -> Bool {
+        guard let next = words(after: index, count: 1).first, !Self.connectors.contains(next) else {
+            return true
+        }
+        let position = originalRange(index..<index).lowerBound
+        return position < original.endIndex && ",.;:!?\n".contains(original[position])
+    }
+
     /// The range starts right at a number: "14h", "10/10".
     func startsWithNumber(_ range: Range<String.Index>) -> Bool {
         words(after: range.lowerBound, count: 1).first?.first?.isNumber ?? false

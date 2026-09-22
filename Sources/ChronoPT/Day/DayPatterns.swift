@@ -136,6 +136,15 @@ extension DayRules {
         }
     }
 
+    // "sexta, 25", "na segunda 28": a number that is a clock time or part of a
+    // date ("sexta 10:30", "sexta 25/09") is left to those rules
+    static var weekdayAndDay: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:(?:na|no|nesta|neste|esta|este|essa|esse|nessa|nesse|proxima|proximo|ate|pra|para|pro) )?(segunda|terca|quarta|quinta|sexta|sabado|domingo|seg|qua|qui|sex|sab|dom|[2-6]a)(?:-feira| feira)? +(\d{1,2})\b(?![\/:.+-]\d)/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "25/09", "dia 25/09/2026", "5/1/27"
     static var numericDate: Regex<(Substring, Substring, Substring, Substring?)> {
         RegexCache.regex {
