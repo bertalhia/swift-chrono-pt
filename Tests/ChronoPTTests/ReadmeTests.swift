@@ -61,13 +61,14 @@ struct ReadmeTests {
             .split(separator: "\n")
             .filter { $0.hasPrefix("| ") && !$0.hasPrefix("| Kind") }
             .map { $0.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) } }
-        #expect(rows.count == 13)
+        #expect(rows.count == 14)
 
         for row in rows {
             let (kind, examples) = (row[0], row[1].components(separatedBy: ", "))
             for example in examples {
                 switch kind {
-                case "Relative day", "Weekday", "Date", "Period", "Holiday", "Business days":
+                case "Relative day", "Weekday", "Date", "Period", "Holiday", "Business days",
+                    "Counted from a date":
                     let found = interpret(example)
                     #expect(found?.start.hasTime == false, "\(kind): \(example)")
                 case "Clock time", "Part of the day", "Moment":

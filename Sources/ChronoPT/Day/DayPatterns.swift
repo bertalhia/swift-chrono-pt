@@ -81,6 +81,14 @@ extension DayRules {
         }
     }
 
+    // "dois dias antes do", "uma semana depois da", "véspera do", "antevéspera de"
+    static var offsetLead: Regex<(Substring, Substring?, Substring?, Substring?, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses) (antes|depois|apos)|(antevespera|vespera))(?: (?:de|do|da|dos|das|o|a))?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "em 5 dias úteis", "no prazo de 2 dias úteis", "compensa em 1 dia útil"
     static var businessDays: Regex<(Substring, Substring)> {
         RegexCache.regex {
@@ -275,6 +283,7 @@ extension DayRules {
         "santa", "paixao", "pascoa", "corpus", "maes", "pais",
     ]
     static let businessWords: Set<String> = ["util", "uteis"]
+    static let offsetWords: Set<String> = ["antes", "depois", "apos", "vespera", "antevespera"]
     static var monthWords: Set<String> { Set(months.keys) }
 
     static let relativeDays = [

@@ -51,6 +51,8 @@ extension DayRules {
         case monthly(Int)
         /// From one day to another: "de segunda a sexta", "do dia 10 ao dia 15".
         indirect case range(Value, Value)
+        /// A day counted from another: "dois dias antes do natal".
+        indirect case shifted(Value, by: DateComponents)
 
         /// A day of the month, with or without the month: "dia 25", "25/09",
         /// "1º de outubro".
@@ -70,6 +72,7 @@ extension DayRules {
                 count < 0
             case .lastWeekday, .lastWeek, .lastMonth, .lastYear: true
             case .range(let from, let to): from.isPast || to.isPast
+            case .shifted(let base, _): base.isPast
             default: false
             }
         }
@@ -114,13 +117,19 @@ extension DayRules {
                 [.weekday]
             case .range(let from, _):
                 from.knownComponents
+            case .shifted(let base, _):
+                base.knownComponents
             }
         }
 
         /// What the text fixes at the end: the second day of a range, or the
         /// same as the start for a period.
         var endKnownComponents: Set<Calendar.Component> {
-            if case .range(_, let to) = self { to.knownComponents } else { knownComponents }
+            switch self {
+            case .range(_, let to): to.knownComponents
+            case .shifted(let base, _): base.endKnownComponents
+            default: knownComponents
+            }
         }
     }
 

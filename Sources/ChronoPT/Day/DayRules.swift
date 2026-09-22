@@ -18,15 +18,32 @@ enum DayRules {
     struct Candidate {
         let piece: Piece<Value>
         /// Counts only with a time right after it ("quinta às 10").
-        let needsTime: Bool
+        let hint: Hint
+
+        /// What a candidate needs before it counts.
+        enum Hint {
+            /// Nothing: "amanhã", "25/09".
+            case none
+            /// A time next to it, a range or its date: "quinta às 10".
+            case time
+            /// A bigger expression that counts from it: "natal" in "dois dias
+            /// antes do natal". Alone it is not a date.
+            case anchor
+        }
     }
 
     /// The days mentioned in the text, without overlap, in text order.
     static func expressions(in source: TextSource, times: [TimeRules.Expression]) -> [Piece<Value>] {
         let found = candidates(in: source)
-        let candidates = (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source))
+        let candidates =
+            (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)
+            + offsets(of: found, in: source))
             .filter { candidate in
-                guard candidate.needsTime else { return true }
+                switch candidate.hint {
+                case .none: return true
+                case .anchor: return false
+                case .time: break
+                }
                 return times.contains { time in
                     guard !time.isFromNow else { return false }
                     guard source.onlyConnectors(between: candidate.piece.range, and: time.range) else {
@@ -70,7 +87,34 @@ enum DayRules {
                 let piece = Piece(
                     range: start..<second.piece.range.upperBound, value: Value.range(from, second.piece.value)
                 )
-                return Candidate(piece: piece, needsTime: false)
+                return Candidate(piece: piece, hint: .none)
+            }
+        }
+    }
+
+    /// A day counted from another: "dois dias antes do natal", "uma semana
+    /// depois do dia 10", "véspera do ano novo". The day it counts from sits
+    /// right after the lead, and is the hint a holiday name needs.
+    private static func offsets(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
+        source.matches(of: offsetLead, whenAny: offsetWords).flatMap { lead -> [Candidate] in
+            let (_, countText, unit, direction, eve) = lead.output
+            let shift: DateComponents
+            if let eve {
+                shift = DateComponents(day: eve == "antevespera" ? -2 : -1)
+            } else {
+                guard let countText, let unit, let direction, let count = SpokenNumber.value(countText) else {
+                    return []
+                }
+                shift = components(direction == "antes" ? -count : count, unit: unit)
+            }
+            return candidates.compactMap { base in
+                guard base.piece.range.lowerBound >= lead.range.upperBound,
+                    source.hasNoWord(in: lead.range.upperBound..<base.piece.range.lowerBound)
+                else { return nil }
+                let range = lead.range.lowerBound..<base.piece.range.upperBound
+                let piece = Piece(
+                    range: range, value: Value.shifted(base.piece.value, by: shift), priority: 1)
+                return Candidate(piece: piece, hint: .none)
             }
         }
     }
@@ -88,7 +132,7 @@ enum DayRules {
                 let range = weekday.piece.range.lowerBound..<date.piece.range.upperBound
                 // "sáb - 3/10" is that date, not a range from Saturday to it.
                 let piece = Piece(range: range, value: date.piece.value, priority: 1)
-                return Candidate(piece: piece, needsTime: false)
+                return Candidate(piece: piece, hint: .none)
             }
         }
     }
@@ -96,8 +140,8 @@ enum DayRules {
     static func candidates(in source: TextSource) -> [Candidate] {
         var found: [Candidate] = []
 
-        func add(_ range: Range<String.Index>, _ value: Value, needsTime: Bool = false) {
-            found.append(Candidate(piece: Piece(range: range, value: value), needsTime: needsTime))
+        func add(_ range: Range<String.Index>, _ value: Value, hint: Candidate.Hint = .none) {
+            found.append(Candidate(piece: Piece(range: range, value: value), hint: hint))
         }
 
         for match in source.matches(of: relativeDay, whenAny: relativeDayWords) {
@@ -186,7 +230,7 @@ enum DayRules {
             let nextWeek =
                 next.map { $0.contains("semana que vem") || $0.contains("proxima semana") } ?? false
             let unambiguous = weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
-            add(match.range, .weekday(day, nextWeek: nextWeek), needsTime: !unambiguous)
+            add(match.range, .weekday(day, nextWeek: nextWeek), hint: unambiguous ? .none : .time)
         }
 
         for match in source.matches(of: numericDate, whenContains: "/") {
@@ -231,10 +275,12 @@ enum DayRules {
 
         for match in source.matches(of: holidayName, whenAny: holidayWords) {
             let (_, preposition, name) = match.output
-            guard let entry = holidays[String(name)], preposition != nil || !entry.needsPreposition else {
-                continue
-            }
-            add(match.range, .holiday(entry.holiday))
+            guard let entry = holidays[String(name)] else { continue }
+            // "fantasia de carnaval" is not a date, but "dois dias antes do
+            // carnaval" is: without its preposition the name only anchors.
+            add(
+                match.range, .holiday(entry.holiday),
+                hint: preposition == nil && entry.needsPreposition ? .anchor : .none)
         }
 
         for match in source.matches(of: businessDays, whenAny: businessWords) {

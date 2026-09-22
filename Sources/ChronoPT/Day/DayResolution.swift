@@ -223,6 +223,12 @@ extension DayRules {
             guard let first, let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
             return (first, last)
 
+        case .shifted(let base, let shift):
+            guard let days = resolve(base, reference: reference, calendar: calendar),
+                let start = calendar.date(byAdding: shift, to: days.start)
+            else { return nil }
+            return (start, days.end.flatMap { calendar.date(byAdding: shift, to: $0) })
+
         case .businessDays(let count):
             // Counting from today, skipping weekends and the days the banks close.
             var date = today

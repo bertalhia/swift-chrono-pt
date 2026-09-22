@@ -335,6 +335,35 @@ struct DayTests {
     }
 
     @Test(
+        "A day counted from another",
+        arguments: [
+            ("dois dias antes do natal", [2026, 12, 23]),
+            ("3 dias antes de 25/10", [2026, 10, 22]),
+            ("uma semana depois do dia 10", [2026, 10, 17]),
+            ("15 dias após 01/10", [2026, 10, 16]),
+            ("véspera do ano novo", [2026, 12, 31]),
+            ("na véspera da páscoa", [2027, 3, 27]),
+            ("antevéspera de natal", [2026, 12, 23]),
+            ("véspera de natal", [2026, 12, 24]),
+        ])
+    func countedFromAnother(_ example: (text: String, day: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        // "na véspera da páscoa" matches from "véspera".
+        let expected = example.text.hasPrefix("na ") ? String(example.text.dropFirst(3)) : example.text
+        #expect(found.text == expected)
+    }
+
+    @Test(
+        "An offset from something that is not a date gives nothing",
+        arguments: [
+            "dois dias antes da viagem", "véspera", "uma semana depois da consulta", "fantasia de carnaval",
+        ])
+    func offsetWithoutADate(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test(
         "An ordinal is not a weekday",
         arguments: [
             "pedir a segunda via do boleto",
