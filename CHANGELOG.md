@@ -3,6 +3,35 @@
 Versions follow [semantic versioning](https://semver.org). While the package is
 `0.x`, a minor release may break the API and a patch release may not.
 
+## 0.9.0
+
+### Added
+
+- `ChronoPT.Parser` keeps a calendar and options for an app that reads many
+  texts the same way.
+- `PartialDate.alternative`: "às 7" reads as 19:00, and the alternative holds
+  7:00, so a UI can offer it.
+- Dates counted from another: "dois dias antes do natal", "véspera do ano
+  novo", "uma semana depois do dia 10".
+- Vague times: "daqui a pouco" (30 minutes) and "mais tarde" (2 hours).
+  "agora" alone stays unread.
+- Date formats: "10/out", "25-12-2027", "25.12.2027", "dez/2027", "12/2027".
+- `Recurrence` has a stable `description`, weekdays in week order.
+- DocC articles: getting started, the grammar, and recipes.
+
+### Changed
+
+- A time counted from now joins a day when it lands on that day: "hoje mais
+  tarde" is two hours from now.
+
+### Performance
+
+- Rules skip their regex when the text holds none of the words it needs. In a
+  release build, 10 KB of text with no date goes from 105 ms to 2.3 ms, 7.7 KB
+  of notes from 118 ms to 28 ms, and a one-line note from 1.1 ms to 0.28 ms.
+- Normalization no longer allocates per character, and the part-of-day table
+  is indexed by first word instead of searched 102 times.
+
 ## 0.8.0
 
 ### Breaking
