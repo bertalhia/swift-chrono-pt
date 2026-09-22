@@ -75,7 +75,9 @@ mean more than one thing.
 - "às 7" is 19:00, and ``ChronoPT/PartialDate/alternative`` holds 7:00. A part
   of the day or a written hour settles it.
 - Ordinals are not weekdays: "segunda via do boleto" is not a date. Monday to
-  Friday need a hint: a preposition, "que vem", a time, a date or a range.
+  Friday need a hint: a preposition, "que vem", a time, a date, a range, or
+  the end of a phrase ("dentista terça"). After "a", "o" or "em" they stay
+  ordinals.
 - A weekday with a bare number is that day only when the two agree: "sexta,
   25" is the 25th when it is a Friday. Otherwise, or when the number counts
   something ("sexta 25 pessoas"), the number is not a day.

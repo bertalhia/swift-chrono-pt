@@ -334,7 +334,9 @@ Documentation**.
 - Ordinals are not weekdays: "segunda via do boleto" (a duplicate bill) and
   "quinta série" (fifth grade) are not dates. Monday to Friday need a hint,
   such as "na segunda", "segunda-feira", "sexta que vem", a time right after
-  ("quinta às 14h") or a range ("de segunda a sexta").
+  ("quinta às 14h"), a range ("de segunda a sexta"), or the end of a phrase
+  ("dentista terça", "ligar sexta pro João"). After "a", "o" or "em" they
+  stay ordinals: "ficou em segunda".
 - A duration is not a time: "estudar por 2 horas", "trabalhar 8h por dia" and
   "reunião de 2h" set no time.
 - A holiday name with another meaning needs a preposition: "no natal" is

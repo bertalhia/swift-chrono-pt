@@ -464,6 +464,15 @@ struct TextSource {
             }
     }
 
+    /// Whether a punctuation mark or a line break comes right after the
+    /// position, spaces aside: "sexta, 25", "sexta!".
+    func punctuationFollows(_ index: String.Index) -> Bool {
+        let position = originalRange(index..<index).lowerBound
+        return original[position...].first { $0 != " " && $0 != "\t" }.map {
+            $0.isNewline || ",.;:!?)".contains($0)
+        } ?? false
+    }
+
     /// The range starts right at a number: "14h", "10/10".
     func startsWithNumber(_ range: Range<String.Index>) -> Bool {
         words(after: range.lowerBound, count: 1).first?.first?.isNumber ?? false

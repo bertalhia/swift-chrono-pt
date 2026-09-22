@@ -29,7 +29,7 @@ struct IntegrationTests {
                 }
             }
             let emphasized = attributed.runs.filter { $0.inlinePresentationIntent == .stronglyEmphasized }
-            #expect(emphasized.map { String(attributed[$0.range].characters) } == ["amanhã às 9"])
+            #expect(emphasized.map { String(attributed[$0.range].characters) } == ["amanhã às 9", "sexta"])
         }
     #endif
 }

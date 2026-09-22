@@ -325,7 +325,8 @@ struct DayTests {
         arguments: [
             // The 25th is a Friday.
             ("na quinta, 25", "na quinta"),
-            ("quinta, 25", nil),
+            // The comma ends the phrase: Thursday alone.
+            ("quinta, 25", "quinta"),
             ("sexta 25 pessoas", nil),
             ("sexta 2 reuniões", nil),
         ] as [(String, String?)])
@@ -808,5 +809,26 @@ struct DayTests {
     func terVerb() throws {
         let found = try #require(interpret("vou ter 25 de outubro livre"))
         #expect(found.text == "25 de outubro")
+    }
+
+    @Test(
+        "A weekday at the end of a phrase is a day",
+        arguments: [
+            ("dentista terça", ["terça"]), ("reunião quarta", ["quarta"]),
+            ("ligar sexta pro João", ["sexta"]),
+            ("sexta!", ["sexta"]), ("prova quinta, sala 3", ["quinta"]),
+            ("terça ou quarta", ["terça", "quarta"]),
+        ])
+    func weekdayEndingPhrase(_ example: (text: String, matches: [String])) {
+        #expect(parse(example.text).map(\.text) == example.matches)
+    }
+
+    @Test(
+        "An ordinal at the end of a phrase is still an ordinal",
+        arguments: [
+            "ficou em segunda", "é a quinta", "a segunda opção", "pagar segunda parcela", "reunião sex",
+        ])
+    func ordinalEndingPhrase(_ text: String) {
+        #expect(parse(text).isEmpty)
     }
 }

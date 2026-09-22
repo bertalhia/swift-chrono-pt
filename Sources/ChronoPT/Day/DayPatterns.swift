@@ -523,6 +523,21 @@ extension DayRules {
         "2a": 2, "3a": 3, "4a": 4, "5a": 5, "6a": 6,
     ]
 
+    /// Monday to Friday written in full, which count on their own at the end
+    /// of a phrase.
+    static let fullWeekdayNames: Set<String> = ["segunda", "terca", "quarta", "quinta", "sexta"]
+
+    /// Words before a weekday name that make it an ordinal: "a segunda",
+    /// "ficou em segunda".
+    static let wordsBeforeOrdinal: Set<String> = [
+        "a", "o", "as", "os", "em", "de", "da", "do", "uma", "um", "sua", "seu", "minha", "meu", "nossa",
+        "nosso",
+    ]
+
+    /// Words after a weekday name that still end the phrase it is in:
+    /// "ligar sexta pro João", "terça ou quarta".
+    static let wordsAfterDay: Set<String> = ["pro", "pra", "para", "com", "ou", "e"]
+
     /// Weekdays with no other meaning, which count on their own.
     static let weekdaysAlone: Set<String> = ["sabado", "domingo"]
 

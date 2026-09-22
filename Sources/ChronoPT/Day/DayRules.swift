@@ -143,6 +143,19 @@ enum DayRules {
         return !source.endsPhrase(at: range.upperBound)
     }
 
+    /// A weekday name that ends a phrase is a day: "dentista terça", "ligar
+    /// sexta pro João", "sexta!". An article or "em" before it makes it an
+    /// ordinal ("a segunda", "ficou em segunda"), and an abbreviation keeps
+    /// needing a hint ("sex" is a word).
+    static func standsAlone(_ name: String, _ range: Range<String.Index>, in source: TextSource) -> Bool {
+        guard fullWeekdayNames.contains(name) else { return false }
+        if let before = source.word(before: range.lowerBound), wordsBeforeOrdinal.contains(before) {
+            return false
+        }
+        guard let next = source.words(after: range.upperBound, count: 1).first else { return true }
+        return wordsAfterDay.contains(next) || source.punctuationFollows(range.upperBound)
+    }
+
     /// Whether the words after a weekday name make it an ordinal: "segunda
     /// fase", "quartas de final".
     static func isOrdinal(_ range: Range<String.Index>, in source: TextSource) -> Bool {
@@ -582,7 +595,9 @@ enum DayRules {
                     $0.contains("semana que vem") || $0.contains("proxima semana")
                         ? 1 : $0.contains("dessa semana") || $0.contains("desta semana") ? 0 : nil
                 } ?? nil
-            let unambiguous = weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
+            let unambiguous =
+                weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
+                || standsAlone(name, match.range, in: source)
             add(match.range, .weekday(day, week: week), hint: unambiguous ? .none : .time)
         }
 
