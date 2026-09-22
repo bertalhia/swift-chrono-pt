@@ -652,7 +652,7 @@ enum DayRules {
                 let last = Int(lastText),
                 let month = Int(monthText), first < last
             else { continue }
-            let year = yearText.flatMap { year(String($0)) }
+            let year = yearText.flatMap { Self.year(String($0)) }
             add(
                 match.range,
                 .range(

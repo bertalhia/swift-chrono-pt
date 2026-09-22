@@ -125,11 +125,11 @@ struct TextSource {
         for place in found {
             starts.formUnion(max(0, place - Self.reach)...place)
         }
-        let regex = regex()
+        let compiled = regex()
         var matches: [Regex<Output>.Match] = []
         var end = normalized.startIndex
         for place in starts.sorted() where wordStarts[place] >= end {
-            guard let match = normalized[wordStarts[place]...].prefixMatch(of: regex) else { continue }
+            guard let match = normalized[wordStarts[place]...].prefixMatch(of: compiled) else { continue }
             matches.append(match)
             end = match.range.upperBound
         }
