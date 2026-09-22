@@ -89,6 +89,16 @@ extension DayRules {
         }
     }
 
+    // "por 3 dias", "durante uma semana", "nos próximos 5 dias", "pelas
+    // próximas 2 semanas": hours are left out, since "estudar por 2 horas"
+    // is how long, not when
+    static var lasting: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:por mais|por|durante os proximos|durante as proximas|durante|pelos proximos|pelas proximas|nos proximos|nas proximas) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b(?! uteis| util)/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "em 5 dias úteis", "no prazo de 2 dias úteis", "compensa em 1 dia útil"
     static var businessDays: Regex<(Substring, Substring)> {
         RegexCache.regex {
@@ -247,7 +257,7 @@ extension DayRules {
 
     static var namedPeriod: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|semana passada|mes passado|ano passado)\b/#
+            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|durante a semana(?! que vem| passada)|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|semana passada|mes passado|ano passado)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -363,6 +373,7 @@ extension DayRules {
         "primeira": 1, "segunda": 2, "1o": 1, "2o": 2, "3o": 3, "4o": 4, "5o": 5, "6o": 6, "1a": 1, "2a": 2,
     ]
     static let offsetWords: Set<String> = ["antes", "depois", "apos", "vespera", "antevespera"]
+    static let lastingWords: Set<String> = ["por", "durante", "proximos", "proximas"]
     static var monthWords: Set<String> { Set(months.keys) }
 
     static let relativeDays = [

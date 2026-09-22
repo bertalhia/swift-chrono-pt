@@ -43,7 +43,7 @@ enum DayRules {
         let found = candidates(in: source)
         let candidates =
             (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)
-            + offsets(of: found, in: source))
+            + offsets(of: found, in: source) + lengths(of: found, in: source))
             .filter { candidate in
                 switch candidate.hint {
                 case .none: return true
@@ -132,6 +132,24 @@ enum DayRules {
                 let range = lead.range.lowerBound..<base.piece.range.upperBound
                 let piece = Piece(
                     range: range, value: Value.shifted(base.piece.value, by: shift), priority: 1)
+                return Candidate(piece: piece, hint: .none)
+            }
+        }
+    }
+
+    /// A day followed by how long: "amanhã por 3 dias", "sexta, por uma
+    /// semana". The length is the hint a weekday needs. A repeating day keeps
+    /// its own reading: "todo dia por 10 dias" is not a span.
+    private static func lengths(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
+        candidates.flatMap { length in
+            candidates.compactMap { base in
+                guard case .lasting(.days(0), let components) = length.piece.value,
+                    base.piece.value.recurrence == nil,
+                    base.piece.range.upperBound <= length.piece.range.lowerBound,
+                    source.hasNoWord(in: base.piece.range.upperBound..<length.piece.range.lowerBound)
+                else { return nil }
+                let range = base.piece.range.lowerBound..<length.piece.range.upperBound
+                let piece = Piece(range: range, value: Value.lasting(base.piece.value, for: components))
                 return Candidate(piece: piece, hint: .none)
             }
         }
@@ -339,6 +357,11 @@ enum DayRules {
                 hint: preposition == nil && entry.needsPreposition ? .anchor : .none)
         }
 
+        for match in source.matches(of: lasting, whenAny: lastingWords) {
+            guard let count = SpokenNumber.value(match.output.1), count > 0 else { continue }
+            add(match.range, .lasting(.days(0), for: components(count, unit: match.output.2)))
+        }
+
         for match in source.matches(of: businessDays, whenAny: businessWords) {
             guard let count = SpokenNumber.value(match.output.1) else { continue }
             add(match.range, .businessDays(count))
@@ -405,6 +428,7 @@ enum DayRules {
                 case "inicio do ano", "comeco do ano": .startOfYear
                 case "meio do ano", "metade do ano": .middleOfYear
                 case "fim do ano", "final do ano": .endOfYear
+                case "durante a semana": .workWeek
                 case "comeco da semana", "inicio da semana": .startOfWeek
                 case "meio da semana", "metade da semana": .middleOfWeek
                 case "fim da semana", "final da semana": .endOfWeek

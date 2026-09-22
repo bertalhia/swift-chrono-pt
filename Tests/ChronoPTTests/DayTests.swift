@@ -415,6 +415,49 @@ struct DayTests {
     }
 
     @Test(
+        "A length of time is a span that counts its first day",
+        arguments: [
+            ("tomar por 3 dias", [2026, 9, 21], [2026, 9, 23], "por 3 dias"),
+            ("viajar por uma semana", [2026, 9, 21], [2026, 9, 27], "por uma semana"),
+            ("por 1 mês", [2026, 9, 21], [2026, 10, 20], "por 1 mês"),
+            ("nos próximos 5 dias", [2026, 9, 21], [2026, 9, 25], "nos próximos 5 dias"),
+            ("pelas próximas 2 semanas", [2026, 9, 21], [2026, 10, 4], "pelas próximas 2 semanas"),
+            ("durante três dias", [2026, 9, 21], [2026, 9, 23], "durante três dias"),
+            ("amanhã por 3 dias", [2026, 9, 22], [2026, 9, 24], "amanhã por 3 dias"),
+            ("viajar sexta por uma semana", [2026, 9, 25], [2026, 10, 1], "sexta por uma semana"),
+            ("dia 30 por 2 dias", [2026, 9, 30], [2026, 10, 1], "dia 30 por 2 dias"),
+            // Not the weekend.
+            ("durante a semana", [2026, 9, 21], [2026, 9, 25], "durante a semana"),
+        ])
+    func lengthOfTime(_ example: (text: String, start: [Int], end: [Int], match: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.start)
+        #expect(ymd(found.end?.date) == example.end)
+        #expect(found.text == example.match)
+    }
+
+    @Test("A length of one day has no end")
+    func lengthOfOneDay() throws {
+        let found = try #require(interpret("por 1 dia"))
+        #expect(ymd(found.start.date) == [2026, 9, 21])
+        #expect(found.end == nil)
+    }
+
+    @Test("\"durante a semana\" said on a weekend is next week's")
+    func workWeekOnAWeekend() throws {
+        let found = try #require(interpret("durante a semana", reference: reference(2026, 9, 26)))
+        #expect(ymd(found.start.date) == [2026, 9, 28])
+        #expect(ymd(found.end?.date) == [2026, 10, 2])
+    }
+
+    @Test(
+        "How long is not when",
+        arguments: ["estudar por 2 horas", "3x por semana", "trabalhar 8h por dia", "por 5 dias úteis"])
+    func howLongIsNotWhen(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test(
         "A day counted from another",
         arguments: [
             ("dois dias antes do natal", [2026, 12, 23]),

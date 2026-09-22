@@ -271,6 +271,26 @@ extension DayRules {
         case .dateTime:
             return instant(of: value, calendar: calendar).map { (calendar.startOfDay(for: $0), nil) }
 
+        case .lasting(let base, let length):
+            // The last day is the day before the length has gone by: three
+            // days from the 21st end on the 23rd.
+            guard let first = resolve(base, reference: reference, calendar: calendar)?.start,
+                let after = calendar.date(byAdding: length, to: first),
+                let last = calendar.date(byAdding: .day, value: -1, to: after)
+            else { return nil }
+            return (first, last > first ? last : nil)
+
+        case .workWeek:
+            let weekday = calendar.component(.weekday, from: today)
+            let start =
+                weekday == 1 || weekday == 7
+                ? nextMonday(after: today, calendar: calendar) : today
+            guard let start,
+                let friday = calendar.date(
+                    byAdding: .day, value: 6 - calendar.component(.weekday, from: start), to: start)
+            else { return nil }
+            return (start, friday > start ? friday : nil)
+
         case .shifted(let base, let shift):
             guard let days = resolve(base, reference: reference, calendar: calendar),
                 let start = calendar.date(byAdding: shift, to: days.start)

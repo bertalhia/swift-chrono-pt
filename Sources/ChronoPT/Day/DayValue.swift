@@ -66,6 +66,12 @@ extension DayRules {
         indirect case range(Value, Value)
         /// A day counted from another: "dois dias antes do natal".
         indirect case shifted(Value, by: DateComponents)
+        /// From a day, for so long: "amanhã por 3 dias" is tomorrow and the
+        /// two days after it. Alone it counts from today: "por 3 dias".
+        indirect case lasting(Value, for: DateComponents)
+        /// Monday to Friday, from today: "durante a semana". On a weekend,
+        /// next week's.
+        case workWeek
         /// A date and time written in full, ISO style: "2026-10-15T14:30".
         /// The offset, in seconds east of UTC, is the one the text gave.
         case dateTime(DateComponents, offset: Int?)
@@ -88,7 +94,7 @@ extension DayRules {
                 count < 0
             case .lastWeekday, .lastWeek, .lastMonth, .lastYear: true
             case .range(let from, let to): from.isPast || to.isPast
-            case .shifted(let base, _): base.isPast
+            case .shifted(let base, _), .lasting(let base, _): base.isPast
             default: false
             }
         }
@@ -108,7 +114,8 @@ extension DayRules {
         /// whole day; a month or a year period fixes only its month or year.
         var knownComponents: Set<Calendar.Component> {
             switch self {
-            case .days, .weeks, .months, .years, .thisWeek, .nextWeek, .weekend, .lastWeek, .endOfMonth:
+            case .days, .weeks, .months, .years, .thisWeek, .nextWeek, .weekend, .lastWeek, .endOfMonth,
+                .workWeek:
                 [.day, .month, .year]
             case .weekday, .lastWeekday:
                 [.day, .month, .year, .weekday]
@@ -139,7 +146,7 @@ extension DayRules {
                 [.weekday]
             case .range(let from, _):
                 from.knownComponents
-            case .shifted(let base, _):
+            case .shifted(let base, _), .lasting(let base, _):
                 base.knownComponents
             case .dateTime:
                 [.day, .month, .year, .hour, .minute]
