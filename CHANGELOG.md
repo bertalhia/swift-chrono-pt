@@ -4,6 +4,44 @@ Versions follow [semantic versioning](https://semver.org). Up to 0.x, a minor
 release could break the API and a patch release could not. From 1.0.0, see
 Stability in the README.
 
+## 0.13.0
+
+### Added
+
+- `Match.isApproximate`: "umas 8", "por volta de 15h", "daqui a pouco",
+  "meados de outubro".
+- `ChronoPT.strippingDates(_:from:)` takes matches an app already has.
+- `Recurrence.rrule(allDayIn:)` writes UNTIL as a date for events with no
+  time, and `Recurrence.recurrenceRule(in:)` gives Foundation's
+  `Calendar.RecurrenceRule` from iOS 18 and macOS 15.
+- A weekday that ends a phrase is a day: "dentista terça", "ligar sexta pro
+  João". After "a", "o" or "em" it stays an ordinal.
+- A weekday after its date: "15/10, quinta", "28/9 (seg)", "ter., 29 de set.".
+- Opening phrases: "a partir de segunda", "antes das 10", "depois das 18h",
+  also taken out by strippingDates with the brackets around a date.
+- Chat spellings: "semana q vem", "próx. segunda", "sexta próxima", "dia 1°",
+  "15hrs30", "td dia"; with past dates, "sábado retrasado".
+- "meio dia" without a hyphen next to a day or with minutes: "amanhã meio
+  dia", "meio dia e meia".
+- Short hours and prescriptions: "a cada 4h", "8/8h", "12/12h por 10 dias";
+  "daqui uns 10 dias", "1 mês e meio", "5 minutinhos".
+- Repeating forms: "todo dia útil", "todo fim de semana", "todo fim de mês",
+  "todo dia 15 e 30", "toda segunda a sexta", "segundas e quartas às 19h",
+  "toda semana na quarta", "quinzenal às quintas", "toda noite às 22h".
+
+### Fixed
+
+- "todo dia útil" was daily, weekends included.
+- "1 hora de academia" and "2 horas de estudo" were clock times.
+
+### Performance
+
+- Compiled regexes are shared through a pool: after the first parse in a
+  process, a parse on a new thread takes 0.5 ms instead of 10 ms, and memory
+  follows how many parses run at once, not how many threads ran one.
+- Business days keep each year's holidays for the length of a count: "em 999
+  dias úteis" went from 8.4 ms to 1.4 ms with interpret.
+
 ## 0.12.0
 
 The API as it is meant to stay for 1.0. See Stability in the README.
