@@ -203,7 +203,7 @@ extension TimeRules {
 
     static var inTime: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(?:daqui a|daqui|em|dentro de) (\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) (horas?|minutos?|min)\b/#
+            #/\b(?:daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) (horas?|minutos?|min)\b/#
                 .wordBoundaryKind(.simple)
         }
     }

@@ -15,6 +15,7 @@ struct RecurrenceTests {
             ("reunião toda segunda às 9", [2026, 9, 28], [9, 0], .weekly(on: [.monday])),
             ("toda segunda às 18h", [2026, 9, 21], [18, 0], .weekly(on: [.monday])),
             ("todas as sextas às 19h", [2026, 9, 25], [19, 0], .weekly(on: [.friday])),
+            ("toda 2ª feira às 9h", [2026, 9, 28], [9, 0], .weekly(on: [.monday])),
             (
                 "academia às segundas e quartas às 7h", [2026, 9, 23], [7, 0],
                 .weekly(on: [.monday, .wednesday])

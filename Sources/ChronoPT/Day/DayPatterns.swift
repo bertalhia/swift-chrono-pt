@@ -13,7 +13,7 @@ extension DayRules {
     // "há 2 dias", "faz uma semana"
     static var agoAmount: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(?:ha|faz) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses)\b/#
+            #/\b(?:ha|faz) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -37,7 +37,7 @@ extension DayRules {
     // "a cada 15 dias", "cada 2 meses"
     static var everyInterval: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(?:a )?cada (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (horas?|minutos?|min|dias?|semanas?|mes|meses)\b/#
+            #/\b(?:a )?cada (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (horas?|minutos?|min|dias?|semanas?|mes|meses|anos?)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -45,7 +45,7 @@ extension DayRules {
     // "de 2 em 2 semanas"
     static var fromToInterval: Regex<(Substring, Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\bde (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) em (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (horas?|minutos?|min|dias?|semanas?|mes|meses)\b/#
+            #/\bde (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) em (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (horas?|minutos?|min|dias?|semanas?|mes|meses|anos?)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -84,14 +84,14 @@ extension DayRules {
     // "toda terça", "todas as sextas", "às segundas e quartas", "nas terças e quintas"
     static var everyWeekday: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(toda|todo|todas as|todos os|as|aos|nas|nos) ((?:(?:segunda|terca|quarta|quinta|sexta)s?(?:-feiras?)?|sabados?|domingos?)(?:(?:,|, e| e) (?:(?:segunda|terca|quarta|quinta|sexta)s?(?:-feiras?)?|sabados?|domingos?))*)\b/#
+            #/\b(toda|todo|todas as|todos os|as|aos|nas|nos) ((?:(?:segunda|terca|quarta|quinta|sexta)s?(?:-feiras?)?|sabados?|domingos?|[2-6]as?(?:-feiras?| feiras?)?)(?:(?:,|, e| e) (?:(?:segunda|terca|quarta|quinta|sexta)s?(?:-feiras?)?|sabados?|domingos?|[2-6]as?(?:-feiras?| feiras?)?))*)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
 
     static var inAmount: Regex<(Substring, Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(daqui a|daqui|em|dentro de) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses)\b/#
+            #/\b(daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -99,7 +99,7 @@ extension DayRules {
     // "na sexta", "segunda-feira", "sexta que vem", "quarta da semana que vem"
     static var weekday: Regex<(Substring, Substring?, Substring, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:(na|no|nesta|neste|esta|este|essa|esse|nessa|nesse|proxima|proximo|prox|ate|pra|para|pro) )?(segunda|terca|quarta|quinta|sexta|sabado|domingo|seg|qua|qui|sex|sab|dom)(-feira| feira)?( que vem| da semana que vem| da proxima semana)?\b/#
+            #/\b(?:(na|no|nesta|neste|esta|este|essa|esse|nessa|nesse|proxima|proximo|prox|ate|pra|para|pro) )?(segunda|terca|quarta|quinta|sexta|sabado|domingo|seg|qua|qui|sex|sab|dom|[2-6]a)(-feira| feira)?( que vem| da semana que vem| da proxima semana| agora| dessa semana| desta semana)?\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -139,7 +139,7 @@ extension DayRules {
     // "dia 30", "até dia 5", "dia primeiro", "dia quinze"; "dia 25/09" is left to `numericDate`.
     static var dayOfMonth: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\bdia (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)\b(?!/)/#
+            #/\bdia (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º|a|ª)?\b(?!/)/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -195,7 +195,9 @@ extension DayRules {
 
     /// Days, weeks or months, ready for `Calendar.date(byAdding:to:)`.
     static func components(_ count: Int, unit: some StringProtocol) -> DateComponents {
-        if unit.hasPrefix("hora") {
+        if unit.hasPrefix("ano") {
+            DateComponents(year: count)
+        } else if unit.hasPrefix("hora") {
             DateComponents(hour: count)
         } else if unit.hasPrefix("min") {
             DateComponents(minute: count)
@@ -209,7 +211,9 @@ extension DayRules {
     }
 
     static func amount(_ count: Int, unit: Substring) -> Value {
-        unit.hasPrefix("dia") ? .days(count) : unit.hasPrefix("semana") ? .weeks(count) : .months(count)
+        if unit.hasPrefix("ano") { return .years(count) }
+        return unit.hasPrefix("dia")
+            ? .days(count) : unit.hasPrefix("semana") ? .weeks(count) : .months(count)
     }
 
     /// `Calendar` weekday numbers, from 1, as `Locale.Weekday`.
@@ -230,6 +234,7 @@ extension DayRules {
     static let weekdays = [
         "domingo": 1, "segunda": 2, "terca": 3, "quarta": 4, "quinta": 5, "sexta": 6, "sabado": 7,
         "dom": 1, "seg": 2, "qua": 4, "qui": 5, "sex": 6, "sab": 7,
+        "2a": 2, "3a": 3, "4a": 4, "5a": 5, "6a": 6,
     ]
 
     /// Weekdays with no other meaning, which count on their own.

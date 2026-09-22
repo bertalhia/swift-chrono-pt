@@ -5,6 +5,7 @@ extension TimeRules {
     struct Period {
         let phrases: [String]
         let hour: Int
+        var minute = 0
         var needsDay = false
     }
 
@@ -43,7 +44,7 @@ extension TimeRules {
                 "no fim do expediente", "ate o fim do expediente", "ate o final do expediente",
                 "saindo do trabalho",
             ], hour: 18),
-        Period(phrases: ["de madrugada", "na madrugada", "pela madrugada"], hour: 5),
+        Period(phrases: ["de madrugada", "na madrugada", "pela madrugada", "de madruga"], hour: 5),
         Period(
             phrases: [
                 "de manha cedo", "de manha bem cedo", "de manha bem cedinho", "bem cedo de manha",
@@ -59,7 +60,7 @@ extension TimeRules {
                 "de manha", "pela manha", "na parte da manha", "esta manha", "essa manha", "nesta manha",
                 "nessa manha",
             ], hour: 9),
-        Period(phrases: ["no comeco da tarde", "no inicio da tarde"], hour: 13),
+        Period(phrases: ["no comeco da tarde", "no inicio da tarde", "no comecinho da tarde"], hour: 13),
         Period(phrases: ["no meio da tarde"], hour: 15),
         Period(
             phrases: [
@@ -70,11 +71,12 @@ extension TimeRules {
             phrases: [
                 "no fim da tarde", "no final da tarde", "no fim de tarde", "ao fim da tarde",
                 "ao final da tarde", "ate o fim da tarde", "ate o final da tarde", "a tardinha",
-                "de tardinha",
+                "de tardinha", "de tardezinha",
             ], hour: 18),
         Period(
             phrases: [
                 "no fim do dia", "no final do dia", "ao fim do dia", "ao final do dia", "ate o fim do dia",
+                "no finalzinho do dia",
                 "ate o final do dia",
             ], hour: 18),
         Period(phrases: ["a noitinha", "de noitinha", "no comeco da noite", "no inicio da noite"], hour: 19),
@@ -83,6 +85,7 @@ extension TimeRules {
                 "a noite", "de noite", "pela noite", "na parte da noite", "esta noite", "essa noite",
                 "nesta noite", "nessa noite",
             ], hour: 19),
+        Period(phrases: ["na boquinha da noite", "de boquinha da noite"], hour: 18, minute: 30),
         Period(phrases: ["tarde da noite"], hour: 23),
     ]
 
@@ -90,7 +93,10 @@ extension TimeRules {
         table.flatMap { period in
             period.phrases.flatMap { phrase in
                 source.wordRanges(of: phrase).map {
-                    Piece(range: $0, value: .period(hour: period.hour, needsDay: period.needsDay))
+                    Piece(
+                        range: $0,
+                        value: .period(hour: period.hour, minute: period.minute, needsDay: period.needsDay)
+                    )
                 }
             }
         }

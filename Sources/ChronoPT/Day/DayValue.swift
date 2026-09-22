@@ -5,6 +5,7 @@ extension DayRules {
         case days(Int)
         case weeks(Int)
         case months(Int)
+        case years(Int)
         /// Weekday as `Calendar` numbers it: 1 is Sunday, 7 is Saturday.
         case weekday(Int, nextWeek: Bool)
         case date(day: Int, month: Int, year: Int?)
@@ -48,7 +49,9 @@ extension DayRules {
         /// `ChronoPT.Options.allowsPast`.
         var isPast: Bool {
             switch self {
-            case .days(let count), .weeks(let count), .months(let count), .weekend(let count): count < 0
+            case .days(let count), .weeks(let count), .months(let count), .years(let count),
+                .weekend(let count):
+                count < 0
             case .lastWeekday, .lastWeek, .lastMonth, .lastYear: true
             case .range(let from, let to): from.isPast || to.isPast
             default: false
@@ -70,7 +73,7 @@ extension DayRules {
         /// whole day; a month or a year period fixes only its month or year.
         var knownComponents: Set<Calendar.Component> {
             switch self {
-            case .days, .weeks, .months, .thisWeek, .nextWeek, .weekend, .lastWeek, .endOfMonth:
+            case .days, .weeks, .months, .years, .thisWeek, .nextWeek, .weekend, .lastWeek, .endOfMonth:
                 [.day, .month, .year]
             case .weekday, .lastWeekday:
                 [.day, .month, .year, .weekday]

@@ -79,6 +79,11 @@ struct TimeTests {
             ("amanhã até o fim do dia", 18, 0),
             ("amanhã até o final do expediente", 18, 0),
             ("amanhã até o fim da manhã", 11, 0),
+            ("amanhã no comecinho da tarde", 13, 0),
+            ("amanhã de madruga", 5, 0),
+            ("amanhã na boquinha da noite", 18, 30),
+            ("amanhã de tardezinha", 18, 0),
+            ("amanhã no finalzinho do dia", 18, 0),
         ])
     func time(_ example: (text: String, hour: Int, minute: Int)) throws {
         let found = try #require(interpret(example.text))
@@ -212,6 +217,19 @@ struct TimeTests {
         let end = try #require(found.end?.date)
         #expect(ymd(end) == [2026, 9, 22])
         #expect(hm(end) == example.end)
+    }
+
+    @Test(
+        "A deadline counts from now",
+        arguments: [
+            ("em até 48 horas", [2026, 9, 23], [10, 0]),
+            ("em até 30 minutos", [2026, 9, 21], [10, 30]),
+            ("no prazo de 2 horas", [2026, 9, 21], [12, 0]),
+        ])
+    func deadline(_ example: (text: String, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
     }
 
     @Test("A time range past midnight ends the next day")

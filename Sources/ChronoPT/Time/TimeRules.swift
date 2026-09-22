@@ -16,7 +16,7 @@ enum TimeRules {
         case clock(hour: Int, minute: Int, ambiguous: Bool, nextDay: Bool, needsEnd: Bool = false)
         /// Part of the day or moment. `needsDay` when it is not a time on its
         /// own: "chegar cedo".
-        case period(hour: Int, needsDay: Bool)
+        case period(hour: Int, minute: Int, needsDay: Bool)
         case fromNow(minutes: Int)
 
         var isClock: Bool { if case .clock = self { true } else { false } }

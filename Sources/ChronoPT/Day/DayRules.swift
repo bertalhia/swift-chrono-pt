@@ -160,12 +160,14 @@ enum DayRules {
             // The singular goes with "toda" ("toda segunda"), the plural with
             // "todas as", "às" or "nas" ("às segundas e quartas").
             let plural = match.output.1 != "toda" && match.output.1 != "todo"
-            let days = match.output.2.split(whereSeparator: { $0 == " " || $0 == "," }).filter { $0 != "e" }
-                .map { word in
-                    let name = word.split(separator: "-").first.map(String.init) ?? ""
-                    return name.hasSuffix("s") == plural
-                        ? weekdays[plural ? String(name.dropLast()) : name] : nil
-                }
+            let days = match.output.2.split(whereSeparator: { $0 == " " || $0 == "," }).filter {
+                $0 != "e" && !$0.hasPrefix("feira")
+            }
+            .map { word in
+                let name = word.split(separator: "-").first.map(String.init) ?? ""
+                return name.hasSuffix("s") == plural
+                    ? weekdays[plural ? String(name.dropLast()) : name] : nil
+            }
             guard !days.isEmpty, !days.contains(nil) else { continue }
             add(match.range, .weekly(days.compactMap { $0 }))
         }
@@ -175,7 +177,9 @@ enum DayRules {
                 match.output.1, String(match.output.2), match.output.3, match.output.4
             )
             guard let day = weekdays[name] else { continue }
-            let nextWeek = next?.contains("semana") ?? false
+            // "sexta que vem" is next week's; "sexta dessa semana" is this one.
+            let nextWeek =
+                next.map { $0.contains("semana que vem") || $0.contains("proxima semana") } ?? false
             let unambiguous = weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
             add(match.range, .weekday(day, nextWeek: nextWeek), needsTime: !unambiguous)
         }

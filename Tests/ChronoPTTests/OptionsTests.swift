@@ -20,6 +20,7 @@ struct OptionsTests {
             ("3 dias atrás", [2026, 9, 18]),
             ("faz uma semana", [2026, 9, 14]),
             ("há um mês", [2026, 8, 21]),
+            ("há 3 anos", [2023, 9, 21]),
         ])
     func pastDay(_ example: (text: String, day: [Int])) throws {
         #expect(interpret(example.text) == nil)

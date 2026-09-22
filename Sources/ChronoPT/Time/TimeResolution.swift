@@ -70,7 +70,7 @@ extension TimeRules {
                 )
             else { continue }
             let period = group.lazy.compactMap { piece -> Int? in
-                if case let .period(hour, _) = piece.value { hour } else { nil }
+                if case let .period(hour, _, _) = piece.value { hour } else { nil }
             }.first
             let (from, until) = range(
                 from: (hour, minute, ambiguous, nextDay),
@@ -146,7 +146,7 @@ extension TimeRules {
     /// or evening: "de manhã, às 7" is 7:00.
     static func resolve(_ group: [Piece<Value>], range: Range<String.Index>) -> Expression? {
         var clock: ClockPiece?
-        var period: (hour: Int, needsDay: Bool)?
+        var period: (hour: Int, minute: Int, needsDay: Bool)?
 
         for piece in group {
             switch piece.value {
@@ -155,8 +155,8 @@ extension TimeRules {
                     range: range, value: .fromNow(minutes: minutes), needsDay: false, pieces: group)
             case let .clock(hour, minute, ambiguous, nextDay, needsEnd):
                 if clock == nil, !needsEnd { clock = (hour, minute, ambiguous, nextDay) }
-            case let .period(hour, needsDay):
-                if period == nil { period = (hour, needsDay) }
+            case let .period(hour, minute, needsDay):
+                if period == nil { period = (hour, minute, needsDay) }
             }
         }
 
@@ -166,7 +166,7 @@ extension TimeRules {
         }
         if let period {
             return Expression(
-                range: range, value: .at(Clock(hour: period.hour, minute: 0, nextDay: false)),
+                range: range, value: .at(Clock(hour: period.hour, minute: period.minute, nextDay: false)),
                 needsDay: period.needsDay, pieces: group)
         }
         return nil

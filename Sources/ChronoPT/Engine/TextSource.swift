@@ -6,7 +6,8 @@ import Foundation
 /// "Almoço," matches "almoco".
 ///
 /// Slash, colon and hyphen stay: "25/09", "10:30", "meio-dia". En and em
-/// dashes become hyphens: "10h–11h".
+/// dashes become hyphens: "10h–11h", and ordinal indicators become the letter
+/// they stand for: "1º" reads as "1o", "6ª" as "6a".
 struct TextSource {
     let original: String
     let normalized: String
@@ -21,6 +22,9 @@ struct TextSource {
                 )
                 guard folded.count == 1, let simple = folded.first else { return character }
                 if "–—".contains(simple) { return "-" }
+                // Ordinal indicators read as the letter they stand for: "1º", "6ª".
+                if simple == "º" { return "o" }
+                if simple == "ª" { return "a" }
                 return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
             })
     }

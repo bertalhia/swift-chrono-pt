@@ -13,6 +13,9 @@ extension DayRules {
         case .weeks(let count):
             return calendar.date(byAdding: .day, value: 7 * count, to: today).map { ($0, nil) }
 
+        case .years(let count):
+            return calendar.date(byAdding: .year, value: count, to: today).map { ($0, nil) }
+
         case .months(let count):
             return calendar.date(byAdding: .month, value: count, to: today).map { ($0, nil) }
 
