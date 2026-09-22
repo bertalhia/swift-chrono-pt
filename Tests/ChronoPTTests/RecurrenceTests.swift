@@ -105,10 +105,13 @@ struct RecurrenceTests {
     @Test(
         "Rates, alternate days, weekdays in the month and yearly dates",
         arguments: [
-            ("tomar 3x ao dia", [2026, 9, 21], ChronoPT.Recurrence(frequency: .daily, timesPerPeriod: 3)),
+            (
+                "tomar 3x ao dia", [2026, 9, 21],
+                ChronoPT.Recurrence(frequency: .daily, rate: .init(count: 3, per: .daily))
+            ),
             (
                 "duas vezes por semana", [2026, 9, 21],
-                ChronoPT.Recurrence(frequency: .weekly, timesPerPeriod: 2)
+                ChronoPT.Recurrence(frequency: .weekly, rate: .init(count: 2, per: .weekly))
             ),
             // Once a week is every week.
             ("uma vez por semana", [2026, 9, 21], .weekly()),
@@ -116,15 +119,15 @@ struct RecurrenceTests {
             ("semana sim, semana não", [2026, 9, 21], .weekly(every: 2)),
             (
                 "toda última sexta do mês", [2026, 9, 25],
-                ChronoPT.Recurrence(frequency: .monthly, weekdays: [.friday], weekdayOrdinal: -1)
+                ChronoPT.Recurrence(frequency: .monthly, weekdays: [.nth(-1, .friday)])
             ),
             (
                 "toda primeira segunda do mês", [2026, 10, 5],
-                ChronoPT.Recurrence(frequency: .monthly, weekdays: [.monday], weekdayOrdinal: 1)
+                ChronoPT.Recurrence(frequency: .monthly, weekdays: [.nth(1, .monday)])
             ),
             (
                 "todo 2º sábado do mês", [2026, 10, 10],
-                ChronoPT.Recurrence(frequency: .monthly, weekdays: [.saturday], weekdayOrdinal: 2)
+                ChronoPT.Recurrence(frequency: .monthly, weekdays: [.nth(2, .saturday)])
             ),
             ("todo ano", [2026, 9, 21], .yearly()),
             ("a cada 2 anos", [2026, 9, 21], .yearly(every: 2)),
@@ -137,7 +140,7 @@ struct RecurrenceTests {
                 "todo dia 25 de dezembro", [2026, 12, 25],
                 ChronoPT.Recurrence(frequency: .yearly, daysOfMonth: [25], months: [12])
             ),
-        ])
+        ] as [(String, [Int], ChronoPT.Recurrence)])
     func moreRules(_ example: (text: String, day: [Int], recurrence: ChronoPT.Recurrence)) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
@@ -213,5 +216,25 @@ struct RecurrenceTests {
         #expect(
             ymd(try #require(interpret(example.text, reference: example.reference)).start.date) == example.day
         )
+    }
+
+    @Test("Several times on a repeating day are one rule")
+    func severalTimesOfDay() throws {
+        let found = try #require(interpret("remédio às 8h e às 20h todo dia"))
+        #expect(found.text == "às 8h e às 20h todo dia")
+        // 8:00 has passed: the next is 20:00 today.
+        #expect(ymd(found.start.date) == [2026, 9, 21])
+        #expect(hm(found.start.date) == [20, 0])
+        #expect(found.recurrence?.timesOfDay == [8, ChronoPT.TimeOfDay(hour: 20)!])
+        #expect(found.recurrence?.rrule == "FREQ=DAILY;BYHOUR=8,20;BYMINUTE=0")
+        #expect(parse("remédio às 8h e às 20h todo dia").count == 1)
+    }
+
+    @Test("A rate inside a weekly rule")
+    func rateInsideWeekly() throws {
+        let found = try #require(interpret("toda terça, 3 vezes ao dia"))
+        #expect(found.recurrence?.weekdays == [.every(.tuesday)])
+        #expect(found.recurrence?.rate == .init(count: 3, per: .daily))
+        #expect(found.recurrence?.description == "FREQ=WEEKLY;BYDAY=TU (3 per day)")
     }
 }

@@ -20,28 +20,43 @@ extension ChronoPT {
 
         private var hour: Int
 
-        /// Your app's own moments, with the hour each one means: `["no
-        /// treino": 7, "na consulta": 14]`. They read like "no almoço":
-        /// capitals and accents don't matter, and one wins over a built-in
-        /// phrase written the same way. An hour outside 0 to 23 is ignored.
-        public var moments: [String: Int]
+        /// Your app's own moments, with the time each one means: `["no
+        /// treino": 7, "na consulta": TimeOfDay(hour: 14, minute: 30)!]`. They
+        /// read like "no almoço": capitals and accents don't matter, and one
+        /// wins over a built-in phrase written the same way. Of two keys that
+        /// read the same, the first in key order wins.
+        public var moments: [String: TimeOfDay]
 
-        public init(allowsPast: Bool = false, defaultHour: Int = 12, moments: [String: Int] = [:]) {
+        /// Options for reading text; see each property.
+        public init(allowsPast: Bool = false, defaultHour: Int = 12, moments: [String: TimeOfDay] = [:]) {
             self.allowsPast = allowsPast
             self.hour = Self.clamped(defaultHour)
             self.moments = moments
         }
 
         private enum CodingKeys: String, CodingKey {
-            case allowsPast, hour, moments
+            case allowsPast, defaultHour, moments
+            /// The key 0.x wrote for `defaultHour`.
+            case hour
         }
 
+        /// Reads `{"allowsPast": false, "defaultHour": 12, "moments": {"no
+        /// treino": {"hour": 7, "minute": 0}}}`, and what 0.x wrote: `hour`
+        /// for the default hour, whole hours for moments, no moments at all.
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            allowsPast = try container.decode(Bool.self, forKey: .allowsPast)
-            hour = Self.clamped(try container.decode(Int.self, forKey: .hour))
-            // Options saved before moments existed have none.
-            moments = try container.decodeIfPresent([String: Int].self, forKey: .moments) ?? [:]
+            allowsPast = try container.decodeIfPresent(Bool.self, forKey: .allowsPast) ?? false
+            hour = Self.clamped(
+                try container.decodeIfPresent(Int.self, forKey: .defaultHour)
+                    ?? container.decodeIfPresent(Int.self, forKey: .hour) ?? 12)
+            moments = try container.decodeIfPresent([String: TimeOfDay].self, forKey: .moments) ?? [:]
+        }
+
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(allowsPast, forKey: .allowsPast)
+            try container.encode(defaultHour, forKey: .defaultHour)
+            try container.encode(moments, forKey: .moments)
         }
 
         private static func clamped(_ hour: Int) -> Int {

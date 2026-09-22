@@ -101,7 +101,8 @@ struct OptionsTests {
     }
 
     static let moments = ChronoPT.Options(moments: [
-        "no treino": 7, "na consulta": 14, "Na Aula": 19, "no jogo": 25,
+        "no treino": 7, "na consulta": 14, "Na Aula": 19,
+        "no jogo": ChronoPT.TimeOfDay(hour: 21, minute: 30)!,
     ])
 
     @Test(
@@ -118,10 +119,15 @@ struct OptionsTests {
         #expect(hm(found.start.date) == example.time)
     }
 
-    @Test("A moment with an hour outside the day is ignored")
-    func momentOutsideTheDay() throws {
-        let found = try #require(interpret("amanhã no jogo", options: Self.moments))
-        #expect(!found.start.hasTime)
+    @Test("A moment keeps its minutes")
+    func momentWithMinutes() throws {
+        #expect(hm(try #require(interpret("amanhã no jogo", options: Self.moments)).start.date) == [21, 30])
+    }
+
+    @Test("A time of day outside the clock is no time")
+    func invalidTimeOfDay() {
+        #expect(ChronoPT.TimeOfDay(hour: 25) == nil)
+        #expect(ChronoPT.TimeOfDay(hour: 9, minute: 60) == nil)
     }
 
     @Test("An app's moment wins over a built-in one written the same way")

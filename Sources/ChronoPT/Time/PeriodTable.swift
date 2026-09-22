@@ -134,15 +134,17 @@ extension TimeRules {
 
     /// An app's moments, from `ChronoPT.Options.moments`, indexed like the
     /// table: "No Treino" reads as "no treino".
-    static func index(of moments: [String: Int]) -> [String: [(phrase: String, value: Value)]] {
+    static func index(of moments: [String: ChronoPT.TimeOfDay]) -> [String: [(phrase: String, value: Value)]]
+    {
         var index: [String: [(phrase: String, value: Value)]] = [:]
         // In key order, so two keys that read the same ("No Treino", "no
         // treino") give the same answer on every run: the first one wins.
-        for (text, hour) in moments.sorted(by: { $0.key < $1.key }) where (0...23).contains(hour) {
+        for (text, time) in moments.sorted(by: { $0.key < $1.key }) {
             let phrase = TextSource(text).normalized.split(separator: " ").joined(separator: " ")
             let first = String(phrase.prefix { $0.isLetter || $0.isNumber })
             guard !first.isEmpty, !(index[first]?.contains { $0.phrase == phrase } ?? false) else { continue }
-            index[first, default: []].append((phrase, .period(hour: hour, minute: 0, needsDay: false)))
+            index[first, default: []].append(
+                (phrase, .period(hour: time.hour, minute: time.minute, needsDay: false)))
         }
         return index
     }

@@ -68,7 +68,7 @@ extension TimeRules {
 
     /// The times mentioned in the text, in text order.
     static func expressions(
-        in source: TextSource, moments: [String: Int] = [:], days: [Range<String.Index>] = [],
+        in source: TextSource, moments: [String: ChronoPT.TimeOfDay] = [:], days: [Range<String.Index>] = [],
         claimed: [Range<String.Index>] = []
     ) -> [Expression] {
         var groups: [[Piece<Value>]] = []

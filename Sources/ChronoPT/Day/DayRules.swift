@@ -256,11 +256,19 @@ enum DayRules {
             var found: [Candidate] = []
             for end in near.starting(from: base.piece.range.upperBound) {
                 guard let until = saysUntil(after: base, before: end.piece.range.lowerBound) else { break }
-                guard end.piece.value.recurrence == nil else { continue }
                 if case .lasting(.days(0), let length) = end.piece.value, !until {
                     found.append(joined(base, end.piece.range, .length(length)))
                     continue
                 }
+                // "toda terça, 3 vezes ao dia" repeats three times each day.
+                if case .timesPer(let count, let unit) = end.piece.value, !until {
+                    let range = base.piece.range.lowerBound..<end.piece.range.upperBound
+                    let piece = Piece(
+                        range: range, value: Value.rated(base.piece.value, count, per: unit), priority: 1)
+                    found.append(Candidate(piece: piece, hint: .none))
+                    continue
+                }
+                guard end.piece.value.recurrence == nil else { continue }
                 // "até" once, in the gap or opening the day: "até dezembro".
                 let opens = source.words(after: end.piece.range.lowerBound, count: 1).first == "ate"
                 guard until != opens else { continue }

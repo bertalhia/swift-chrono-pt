@@ -196,7 +196,7 @@ extension DayRules {
             }
             return nil
 
-        case .repeating(let base, _):
+        case .repeating(let base, _), .rated(let base, _, _):
             return resolve(base, reference: reference, calendar: calendar)
 
         case .range(let from, let to):

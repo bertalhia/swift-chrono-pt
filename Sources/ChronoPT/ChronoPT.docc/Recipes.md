@@ -58,9 +58,10 @@ func rule(for recurrence: ChronoPT.Recurrence) -> EKRecurrenceRule? {
     case .hourly, .minutely: return nil  // a series of alarms, not an event
     }
     let weekdays: [Locale.Weekday] = [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
-    let days = recurrence.weekdays.compactMap { weekday in
-        weekdays.firstIndex(of: weekday).flatMap { EKWeekday(rawValue: $0 + 1) }
-    }.map { EKRecurrenceDayOfWeek($0, weekNumber: recurrence.weekdayOrdinal ?? 0) }
+    let days = recurrence.weekdays.compactMap { day in
+        weekdays.firstIndex(of: day.weekday).flatMap { EKWeekday(rawValue: $0 + 1) }
+            .map { EKRecurrenceDayOfWeek($0, weekNumber: day.ordinal ?? 0) }
+    }
     let end: EKRecurrenceEnd? =
         switch recurrence.end {
         case .until(let date): EKRecurrenceEnd(end: date)
@@ -76,9 +77,11 @@ func rule(for recurrence: ChronoPT.Recurrence) -> EKRecurrenceRule? {
 }
 ```
 
-``ChronoPT/Recurrence/timesPerPeriod`` ("3x ao dia") has no field in a rule:
-the app picks the hours. For an iCalendar file or a CalDAV server,
-``ChronoPT/Recurrence/rrule`` gives the `RRULE` value.
+An `EKRecurrenceRule` has no times of day: for "todo dia às 8h e às 20h",
+make one event for each of ``ChronoPT/Recurrence/timesOfDay``. A
+``ChronoPT/Recurrence/rate`` ("3x ao dia") has no field in any rule: the app
+picks the hours. For an iCalendar file or a CalDAV server,
+``ChronoPT/Recurrence/rrule`` gives the `RRULE` value, times of day included.
 
 ## Offer the other reading
 

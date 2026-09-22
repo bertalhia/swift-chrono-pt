@@ -156,4 +156,56 @@ struct APITests {
     func strippingLeftovers(_ example: (text: String, stripped: String)) {
         #expect(strip(example.text) == example.stripped)
     }
+
+    @Test("Recurrence has a stable JSON form")
+    func recurrenceJSON() throws {
+        let rule = ChronoPT.Recurrence(
+            frequency: .monthly, weekdays: [.nth(-1, .friday), .nth(1, .monday)],
+            timesOfDay: [ChronoPT.TimeOfDay(hour: 20)!, 8], end: .count(5))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let json = String(decoding: try encoder.encode(rule), as: UTF8.self)
+        #expect(
+            json
+                == #"{"daysOfMonth":[],"end":{"count":5},"frequency":"monthly","interval":1,"months":[],"#
+                + #""timesOfDay":[{"hour":8,"minute":0},{"hour":20,"minute":0}],"#
+                + #""weekdays":[{"ordinal":1,"weekday":"mon"},{"ordinal":-1,"weekday":"fri"}]}"#)
+        #expect(try JSONDecoder().decode(ChronoPT.Recurrence.self, from: Data(json.utf8)) == rule)
+        #expect(rule.rrule == "FREQ=MONTHLY;BYDAY=1MO,-1FR;BYHOUR=8,20;BYMINUTE=0;COUNT=5")
+    }
+
+    @Test(
+        "Recurrence refuses values no rule can hold",
+        arguments: [
+            #"{"frequency":"daily","interval":0}"#, #"{"frequency":"yearly","months":[13]}"#,
+            #"{"frequency":"monthly","daysOfMonth":[0]}"#, #"{"frequency":"daily","end":{"count":0}}"#,
+            #"{"frequency":"daily","timesOfDay":[{"hour":24}]}"#,
+        ])
+    func recurrenceRefusesInvalid(_ json: String) {
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChronoPT.Recurrence.self, from: Data(json.utf8))
+        }
+    }
+
+    @Test("An interval is at least 1")
+    func intervalClamps() {
+        var rule = ChronoPT.Recurrence.daily()
+        rule.interval = -3
+        #expect(rule.interval == 1)
+        #expect(ChronoPT.Recurrence.daily(every: 0).interval == 1)
+    }
+
+    @Test("Options write defaultHour, and read what 0.x wrote")
+    func optionsJSON() throws {
+        let options = ChronoPT.Options(defaultHour: 9, moments: ["no treino": 7])
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        #expect(
+            String(decoding: try encoder.encode(options), as: UTF8.self)
+                == #"{"allowsPast":false,"defaultHour":9,"moments":{"no treino":{"hour":7,"minute":0}}}"#)
+        let old = #"{"allowsPast":true,"hour":9,"moments":{"no treino":7}}"#
+        #expect(
+            try JSONDecoder().decode(ChronoPT.Options.self, from: Data(old.utf8))
+                == ChronoPT.Options(allowsPast: true, defaultHour: 9, moments: ["no treino": 7]))
+    }
 }

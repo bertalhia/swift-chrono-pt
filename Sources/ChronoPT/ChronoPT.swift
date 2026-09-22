@@ -39,8 +39,11 @@ public enum ChronoPT {
                 !usedTimes.contains(index) && context.fits(context.times[index], with: day)
                     && context.source.onlyConnectors(between: day.range, and: context.times[index].range)
             }
-            if let adjacent { usedTimes.insert(adjacent) }
-            if let result = context.combine(day, adjacent.map { context.times[$0] }) {
+            // A repeating day takes every clock time chained to it: "às 8h e
+            // às 20h todo dia".
+            let chain = adjacent.map { context.chain(from: $0, for: day, skipping: usedTimes) } ?? []
+            usedTimes.formUnion(chain)
+            if let result = context.combine(day, times: chain.map { context.times[$0] }) {
                 results.append(result)
             }
         }
@@ -75,8 +78,14 @@ public enum ChronoPT {
         guard let day = context.days.first(where: { context.resolve($0) != nil }) else {
             return context.times.lazy.compactMap { context.combine(nil, $0) }.first
         }
-        let attached = context.times.first {
-            context.fits($0, with: day) && context.source.onlyConnectors(between: day.range, and: $0.range)
+        let attachedIndex = context.times.indices.first {
+            context.fits(context.times[$0], with: day)
+                && context.source.onlyConnectors(between: day.range, and: context.times[$0].range)
+        }
+        let attached = attachedIndex.map { context.times[$0] }
+        if let attachedIndex, day.value.recurrence != nil {
+            let chain = context.chain(from: attachedIndex, for: day, skipping: [])
+            if chain.count > 1 { return context.combine(day, times: chain.map { context.times[$0] }) }
         }
         // A time next to another day is that day's: in "amanhã comprar pão,
         // sexta às 14h dentista" the 14h is Friday's.

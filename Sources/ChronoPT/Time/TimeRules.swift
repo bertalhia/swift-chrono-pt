@@ -87,7 +87,7 @@ enum TimeRules {
     /// that count on their own. A number a day claims is not a time: "dia
     /// 10 às 14h", "de 10 a 15 de outubro".
     static func candidates(
-        in source: TextSource, moments: [String: Int] = [:], days: [Range<String.Index>] = [],
+        in source: TextSource, moments: [String: ChronoPT.TimeOfDay] = [:], days: [Range<String.Index>] = [],
         claimed: [Range<String.Index>] = []
     ) -> [Piece<Value>] {
         let found =

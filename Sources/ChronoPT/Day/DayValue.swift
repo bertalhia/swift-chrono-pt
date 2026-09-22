@@ -78,6 +78,9 @@ extension DayRules {
         case yearlyOn(day: Int, month: Int)
         /// A repeating day and where it stops: "toda terça até dezembro".
         indirect case repeating(Value, until: Limit)
+        /// A repeating day and how many times in each unit: "toda terça, 3
+        /// vezes ao dia".
+        indirect case rated(Value, Int, per: DateComponents)
         /// From one day to another: "de segunda a sexta", "do dia 10 ao dia 15".
         indirect case range(Value, Value)
         /// A day counted from another: "dois dias antes do natal".
@@ -134,18 +137,25 @@ extension DayRules {
                 // Once a week is every week.
                 ChronoPT.Recurrence(every: unit).map { rule in
                     var rule = rule
-                    rule.timesPerPeriod = count > 1 ? count : nil
+                    rule.rate = count > 1 ? ChronoPT.Recurrence.Rate(count: count, per: rule.frequency) : nil
                     return rule
                 }
             case .nthWeekday(let ordinal, let weekday):
                 ChronoPT.Recurrence(
-                    frequency: .monthly, weekdays: [DayRules.localeWeekdays[weekday - 1]],
-                    weekdayOrdinal: ordinal)
+                    frequency: .monthly, weekdays: [.nth(ordinal, DayRules.localeWeekdays[weekday - 1])])
             case .yearly(let month):
                 ChronoPT.Recurrence(frequency: .yearly, months: month.map { [$0] } ?? [])
             case .yearlyOn(let day, let month):
                 ChronoPT.Recurrence(frequency: .yearly, daysOfMonth: [day], months: [month])
             case .repeating(let base, _): base.recurrence
+            case .rated(let base, let count, let unit):
+                base.recurrence.map { rule in
+                    var rule = rule
+                    rule.rate = ChronoPT.Recurrence.unit(of: unit).map {
+                        ChronoPT.Recurrence.Rate(count: count, per: $0.1)
+                    }
+                    return rule
+                }
             default: nil
             }
         }
@@ -189,7 +199,7 @@ extension DayRules {
                 month == nil ? [] : [.month]
             case .yearlyOn:
                 [.day, .month]
-            case .repeating(let base, _):
+            case .repeating(let base, _), .rated(let base, _, _):
                 base.knownComponents
             case .range(let from, _):
                 from.knownComponents

@@ -227,6 +227,48 @@ struct Context {
         }
     }
 
+    /// The times that go with a day, starting from the one next to it. A
+    /// repeating day also takes every clock time chained to that one by
+    /// connectors: "às 8h e às 20h todo dia" is both.
+    func chain(from first: Int, for day: Piece<DayRules.Value>, skipping used: Set<Int>) -> [Int] {
+        guard day.value.recurrence != nil, case .at = times[first].value else { return [first] }
+        var chain = [first]
+        var grew = true
+        while grew {
+            grew = false
+            for index in times.indices where !used.contains(index) && !chain.contains(index) {
+                guard case .at = times[index].value, fits(times[index], with: day),
+                    chain.contains(where: {
+                        source.onlyConnectors(between: times[$0].range, and: times[index].range)
+                    })
+                else { continue }
+                chain.append(index)
+                grew = true
+            }
+        }
+        return chain.sorted()
+    }
+
+    /// A day with its times. Several clock times on a repeating day make one
+    /// match at the first to come, with each time in `timesOfDay`.
+    func combine(_ day: Piece<DayRules.Value>, times: [TimeRules.Expression]) -> ChronoPT.Match? {
+        guard times.count > 1 else { return combine(day, times.first) }
+        let matches = times.compactMap { combine(day, $0) }
+        guard let first = matches.min(by: { $0.start.date < $1.start.date }) else { return nil }
+        var recurrence = first.recurrence
+        recurrence?.timesOfDay = Set(
+            matches.compactMap { match in
+                let parts = calendar.dateComponents([.hour, .minute], from: match.start.date)
+                return ChronoPT.TimeOfDay(hour: parts.hour ?? -1, minute: parts.minute ?? -1)
+            })
+        let spans = [day.range] + times.map(\.range)
+        let lower = spans.map(\.lowerBound).min() ?? day.range.lowerBound
+        let upper = spans.map(\.upperBound).max() ?? day.range.upperBound
+        return result(
+            ChronoPT.PartialDate(date: first.start.date, knownComponents: first.start.knownComponents),
+            end: first.end, range: lower..<upper, recurrence: recurrence)
+    }
+
     /// How the day repeats, with the end the text gave: "toda terça até
     /// dezembro" stops at the end of 31 December, and "todo dia por 10 dias"
     /// at the end of the tenth day from the first.
