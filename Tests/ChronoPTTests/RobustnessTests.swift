@@ -1,4 +1,5 @@
 import Testing
+
 @testable import ChronoPT
 
 @Suite("Robustness")
@@ -10,7 +11,7 @@ struct RobustnessTests {
         "sexta", "que vem", "no almoço", "à noite", "quinze para as oito", "vinte e três",
         "daqui", "2", "horas", "por dia", "no natal", "semana", "mês", "e meia", "meio-dia",
         "ÀS", "Amanhã,", "(sexta)", "—", "🇧🇷", "👍🏽", "e\u{301}", "\u{301}", "\n", "\r\n", "\t",
-        "ß", "ﬁ", "İ", "٣", "𝟗", "  ", ",", ".", "/", ":", "-"
+        "ß", "ﬁ", "İ", "٣", "𝟗", "  ", ",", ".", "/", ":", "-",
     ]
 
     @Test("Random text never crashes, and every range points into the input", arguments: 0..<200)

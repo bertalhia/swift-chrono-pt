@@ -48,7 +48,7 @@ extension String {
     /// Words that only introduce a date and have nothing left to say once it
     /// is gone: "almoço de amanhã" keeps "almoço".
     private static let leadIns: Set<String> = [
-        "de", "do", "da", "em", "no", "na", "nos", "nas", "para", "pra", "pro", "ate", "a", "ao", "as", "aos"
+        "de", "do", "da", "em", "no", "na", "nos", "nas", "para", "pra", "pro", "ate", "a", "ao", "as", "aos",
     ]
 
     private func folded(_ text: Substring) -> String {
@@ -57,11 +57,15 @@ extension String {
 
     private func wordRange(before index: String.Index) -> Range<String.Index>? {
         var end = index
-        while end > startIndex, !self[self.index(before: end)].isLetter, !self[self.index(before: end)].isNumber {
+        while end > startIndex, !self[self.index(before: end)].isLetter,
+            !self[self.index(before: end)].isNumber
+        {
             end = self.index(before: end)
         }
         var start = end
-        while start > startIndex, self[self.index(before: start)].isLetter || self[self.index(before: start)].isNumber {
+        while start > startIndex,
+            self[self.index(before: start)].isLetter || self[self.index(before: start)].isNumber
+        {
             start = self.index(before: start)
         }
         return start < end ? start..<end : nil
@@ -73,6 +77,7 @@ extension String {
         text = text.replacing(/\s+([,.;:!?])/) { String($0.output.1) }
         text = text.replacing(/([,;:])\s*(?=[,;:])/, with: "")
         text = text.replacing(/\(\s*\)|\[\s*\]/, with: "")
-        return text.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-–—")))
+        return text.trimmingCharacters(
+            in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-–—")))
     }
 }

@@ -1,0 +1,45 @@
+name: A date read wrong
+description: The parser gave a date you did not mean, or gave none at all
+labels: [bug]
+body:
+  - type: textarea
+    id: text
+    attributes:
+      label: The text
+      description: Exactly as you passed it, accents and all
+      placeholder: reunião sexta às 14h
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: Reference date and time
+      placeholder: Monday, 21 September 2026, 10:00
+    validations:
+      required: true
+  - type: input
+    id: timezone
+    attributes:
+      label: Time zone
+      placeholder: America/Sao_Paulo
+    validations:
+      required: true
+  - type: input
+    id: got
+    attributes:
+      label: What you got
+      placeholder: 25/09/2026 02:00, or nil
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: 25/09/2026 14:00
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 0.8.0

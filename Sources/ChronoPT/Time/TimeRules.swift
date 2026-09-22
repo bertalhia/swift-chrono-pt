@@ -38,14 +38,17 @@ enum TimeRules {
         let nextDay: Bool
 
         func on(_ day: Date, calendar: Calendar) -> Date? {
-            guard let time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) else { return nil }
+            guard let time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) else {
+                return nil
+            }
             return nextDay ? calendar.date(byAdding: .day, value: 1, to: time) : time
         }
     }
 
     /// Every time piece, without overlap, in text order.
     static func candidates(in source: TextSource) -> [Piece<Value>] {
-        let found = clocks(in: source) + minutesToHour(in: source) + noonAndMidnight(in: source)
+        let found =
+            clocks(in: source) + minutesToHour(in: source) + noonAndMidnight(in: source)
             + rangeStarts(in: source) + fromNow(in: source) + periods(in: source)
         return Piece.nonOverlapping(found, in: source)
     }

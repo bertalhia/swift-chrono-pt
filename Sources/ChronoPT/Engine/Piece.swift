@@ -10,7 +10,9 @@ struct Piece<Value: Sendable>: Sendable {
     /// beats "de manhã". The result is in text order.
     static func nonOverlapping(_ pieces: [Self], in source: TextSource) -> [Self] {
         let sorted = pieces.sorted { lhs, rhs in
-            if lhs.range.lowerBound != rhs.range.lowerBound { return lhs.range.lowerBound < rhs.range.lowerBound }
+            if lhs.range.lowerBound != rhs.range.lowerBound {
+                return lhs.range.lowerBound < rhs.range.lowerBound
+            }
             return source.length(of: lhs.range) > source.length(of: rhs.range)
         }
         var kept: [Self] = []

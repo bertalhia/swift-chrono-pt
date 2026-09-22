@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ChronoPT
 
 /// The README shows real behavior: its code examples and every example in its
@@ -37,7 +38,8 @@ struct ReadmeTests {
         let water = try #require(interpret("regar as plantas a cada 15 dias"))
         #expect(water.recurrence == .every(DateComponents(day: 15)))
 
-        let paid = try #require(interpret("paguei ontem", options: ChronoPT.Options(allowsPast: true, defaultHour: 9)))
+        let paid = try #require(
+            interpret("paguei ontem", options: ChronoPT.Options(allowsPast: true, defaultHour: 9)))
         #expect(ymd(paid.start.date) == [2026, 9, 20])
         #expect(hm(paid.start.date) == [9, 0])
     }
@@ -78,7 +80,9 @@ struct ReadmeTests {
                     #expect(interpret(example)?.recurrence != nil, "\(kind): \(example)")
                 case "Past":
                     #expect(interpret(example) == nil, "\(kind): \(example)")
-                    #expect(interpret(example, options: ChronoPT.Options(allowsPast: true)) != nil, "\(kind): \(example)")
+                    #expect(
+                        interpret(example, options: ChronoPT.Options(allowsPast: true)) != nil,
+                        "\(kind): \(example)")
                 default:
                     Issue.record("Unknown kind in the README table: \(kind)")
                 }

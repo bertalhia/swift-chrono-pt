@@ -24,16 +24,19 @@ enum DayRules {
     /// The days mentioned in the text, without overlap, in text order.
     static func expressions(in source: TextSource, times: [TimeRules.Expression]) -> [Piece<Value>] {
         let found = candidates(in: source)
-        let candidates = (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)).filter { candidate in
-            guard candidate.needsTime else { return true }
-            return times.contains { time in
-                guard source.onlyConnectors(between: candidate.piece.range, and: time.range) else { return false }
-                // A time before the day only counts with "de": "às 10 de
-                // quinta" is Thursday, but "às 10 segunda via" is not Monday.
-                return time.range.lowerBound >= candidate.piece.range.upperBound
-                    || source.word(before: candidate.piece.range.lowerBound) == "de"
+        let candidates = (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source))
+            .filter { candidate in
+                guard candidate.needsTime else { return true }
+                return times.contains { time in
+                    guard source.onlyConnectors(between: candidate.piece.range, and: time.range) else {
+                        return false
+                    }
+                    // A time before the day only counts with "de": "às 10 de
+                    // quinta" is Thursday, but "às 10 segunda via" is not Monday.
+                    return time.range.lowerBound >= candidate.piece.range.upperBound
+                        || source.word(before: candidate.piece.range.lowerBound) == "de"
+                }
             }
-        }
         return Piece.nonOverlapping(candidates.map(\.piece), in: source)
     }
 
@@ -46,16 +49,23 @@ enum DayRules {
             candidates.compactMap { second in
                 let firstWord = source.words(after: first.piece.range.lowerBound, count: 1).first ?? ""
                 let bareStart = source.startsWithNumber(first.piece.range) || weekdays[firstWord] != nil
-                guard let start = source.rangeStart(from: first.piece.range, to: second.piece.range, bareStart: bareStart) else {
+                guard
+                    let start = source.rangeStart(
+                        from: first.piece.range, to: second.piece.range, bareStart: bareStart)
+                else {
                     return nil
                 }
                 // A day of the month takes the month of the end: "do dia 10 ao
                 // dia 15 de novembro".
                 var from = first.piece.value
-                if case .dayOfMonth(let day) = from, case let .date(last, month, year) = second.piece.value, day <= last {
+                if case .dayOfMonth(let day) = from, case let .date(last, month, year) = second.piece.value,
+                    day <= last
+                {
                     from = .date(day: day, month: month, year: year)
                 }
-                let piece = Piece(range: start..<second.piece.range.upperBound, value: Value.range(from, second.piece.value))
+                let piece = Piece(
+                    range: start..<second.piece.range.upperBound, value: Value.range(from, second.piece.value)
+                )
                 return Candidate(piece: piece, needsTime: false)
             }
         }
@@ -67,9 +77,10 @@ enum DayRules {
         candidates.flatMap { weekday in
             candidates.compactMap { date in
                 guard case .weekday = weekday.piece.value,
-                      date.piece.value.isDate,
-                      weekday.piece.range.upperBound <= date.piece.range.lowerBound,
-                      source.words(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound).isEmpty else { return nil }
+                    date.piece.value.isDate,
+                    weekday.piece.range.upperBound <= date.piece.range.lowerBound,
+                    source.words(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound).isEmpty
+                else { return nil }
                 let range = weekday.piece.range.lowerBound..<date.piece.range.upperBound
                 return Candidate(piece: Piece(range: range, value: date.piece.value), needsTime: false)
             }
@@ -105,7 +116,9 @@ enum DayRules {
         }
 
         for match in text.matches(of: lastWeekday) {
-            guard let name = match.output.1 ?? match.output.2, let day = weekdays[String(name)] else { continue }
+            guard let name = match.output.1 ?? match.output.2, let day = weekdays[String(name)] else {
+                continue
+            }
             add(match.range, .lastWeekday(day))
         }
 
@@ -120,12 +133,16 @@ enum DayRules {
 
         for match in text.matches(of: fromToInterval) {
             // "de 2 em 3 semanas" is not an interval.
-            guard let count = SpokenNumber.value(match.output.1), SpokenNumber.value(match.output.2) == count else { continue }
+            guard let count = SpokenNumber.value(match.output.1), SpokenNumber.value(match.output.2) == count
+            else { continue }
             add(match.range, .interval(components(count, unit: match.output.3)))
         }
 
         for match in text.matches(of: everyUnit) {
-            let unit = if match.output.contains("hora") { "hora" } else if match.output.contains("semana") { "semana" } else { "mes" }
+            let unit =
+                if match.output.contains("hora") { "hora" } else if match.output.contains("semana") {
+                    "semana"
+                } else { "mes" }
             add(match.range, .interval(components(1, unit: unit)))
         }
 
@@ -143,16 +160,20 @@ enum DayRules {
             // The singular goes with "toda" ("toda segunda"), the plural with
             // "todas as", "às" or "nas" ("às segundas e quartas").
             let plural = match.output.1 != "toda" && match.output.1 != "todo"
-            let days = match.output.2.split(whereSeparator: { $0 == " " || $0 == "," }).filter { $0 != "e" }.map { word in
-                let name = word.split(separator: "-").first.map(String.init) ?? ""
-                return name.hasSuffix("s") == plural ? weekdays[plural ? String(name.dropLast()) : name] : nil
-            }
+            let days = match.output.2.split(whereSeparator: { $0 == " " || $0 == "," }).filter { $0 != "e" }
+                .map { word in
+                    let name = word.split(separator: "-").first.map(String.init) ?? ""
+                    return name.hasSuffix("s") == plural
+                        ? weekdays[plural ? String(name.dropLast()) : name] : nil
+                }
             guard !days.isEmpty, !days.contains(nil) else { continue }
             add(match.range, .weekly(days.compactMap { $0 }))
         }
 
         for match in text.matches(of: weekday) {
-            let (prefix, name, feira, next) = (match.output.1, String(match.output.2), match.output.3, match.output.4)
+            let (prefix, name, feira, next) = (
+                match.output.1, String(match.output.2), match.output.3, match.output.4
+            )
             guard let day = weekdays[name] else { continue }
             let nextWeek = next?.contains("semana") ?? false
             let unambiguous = weekdaysAlone.contains(name) || prefix != nil || feira != nil || next != nil
@@ -165,7 +186,9 @@ enum DayRules {
         }
 
         for match in text.matches(of: isoDate) {
-            guard let year = Int(match.output.1), let month = Int(match.output.2), let day = Int(match.output.3) else { continue }
+            guard let year = Int(match.output.1), let month = Int(match.output.2),
+                let day = Int(match.output.3)
+            else { continue }
             add(match.range, .date(day: day, month: month, year: year))
         }
 
@@ -173,7 +196,8 @@ enum DayRules {
             let (_, dayText, of, monthText, yearText) = match.output
             // A day in words needs "de": "um mar de rosas" is not a date.
             guard Int(dayText) != nil || of != nil,
-                  let day = dayNumber(dayText), let month = months[String(monthText)] else { continue }
+                let day = dayNumber(dayText), let month = months[String(monthText)]
+            else { continue }
             add(match.range, .date(day: day, month: month, year: yearText.flatMap { Int($0) }))
         }
 
@@ -181,10 +205,14 @@ enum DayRules {
             let (_, opening, firstText, closing, lastText, monthText, yearText) = match.output
             // "de 3 e 5 de maio" is two days, not a range.
             guard (opening == "entre") == (closing == "e"),
-                  let first = dayNumber(firstText), let last = dayNumber(lastText),
-                  let month = months[String(monthText)] else { continue }
+                let first = dayNumber(firstText), let last = dayNumber(lastText),
+                let month = months[String(monthText)]
+            else { continue }
             let year = yearText.flatMap { Int($0) }
-            add(match.range, .range(.date(day: first, month: month, year: year), .date(day: last, month: month, year: year)))
+            add(
+                match.range,
+                .range(
+                    .date(day: first, month: month, year: year), .date(day: last, month: month, year: year)))
         }
 
         for match in text.matches(of: dayOfMonth) {
@@ -194,29 +222,36 @@ enum DayRules {
 
         for match in text.matches(of: holidayName) {
             let (_, preposition, name) = match.output
-            guard let entry = holidays[String(name)], preposition != nil || !entry.needsPreposition else { continue }
+            guard let entry = holidays[String(name)], preposition != nil || !entry.needsPreposition else {
+                continue
+            }
             add(match.range, .holiday(entry.holiday))
         }
 
         for match in text.matches(of: namedPeriod) {
-            let value: Value = switch match.output.1 {
-            case "fim de semana que vem", "final de semana que vem", "proximo fim de semana", "proximo final de semana":
-                .weekend(weeks: 1)
-            case "fim de semana passado", "final de semana passado": .weekend(weeks: -1)
-            case "fim do mes que vem", "final do mes que vem": .endOfMonth(months: 1)
-            case "esta semana", "essa semana", "nesta semana", "nessa semana": .thisWeek
-            case "semana que vem", "proxima semana", "prox semana", "essa semana que vem", "esta semana que vem": .nextWeek
-            case "este mes", "esse mes", "neste mes", "nesse mes": .thisMonth
-            case "mes que vem", "proximo mes", "prox mes": .nextMonth
-            case "comeco do mes que vem", "inicio do mes que vem", "comeco do proximo mes", "inicio do proximo mes":
-                .startOfNextMonth
-            case "fim do mes", "final do mes": .endOfMonth(months: 0)
-            case "ano que vem", "proximo ano", "prox ano": .nextYear
-            case "semana passada": .lastWeek
-            case "mes passado": .lastMonth
-            case "ano passado": .lastYear
-            default: .weekend(weeks: 0)
-            }
+            let value: Value =
+                switch match.output.1 {
+                case "fim de semana que vem", "final de semana que vem", "proximo fim de semana",
+                    "proximo final de semana":
+                    .weekend(weeks: 1)
+                case "fim de semana passado", "final de semana passado": .weekend(weeks: -1)
+                case "fim do mes que vem", "final do mes que vem": .endOfMonth(months: 1)
+                case "esta semana", "essa semana", "nesta semana", "nessa semana": .thisWeek
+                case "semana que vem", "proxima semana", "prox semana", "essa semana que vem",
+                    "esta semana que vem":
+                    .nextWeek
+                case "este mes", "esse mes", "neste mes", "nesse mes": .thisMonth
+                case "mes que vem", "proximo mes", "prox mes": .nextMonth
+                case "comeco do mes que vem", "inicio do mes que vem", "comeco do proximo mes",
+                    "inicio do proximo mes":
+                    .startOfNextMonth
+                case "fim do mes", "final do mes": .endOfMonth(months: 0)
+                case "ano que vem", "proximo ano", "prox ano": .nextYear
+                case "semana passada": .lastWeek
+                case "mes passado": .lastMonth
+                case "ano passado": .lastYear
+                default: .weekend(weeks: 0)
+                }
             add(match.range, value)
         }
 

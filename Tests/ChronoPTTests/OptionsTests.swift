@@ -1,23 +1,26 @@
 import Testing
+
 @testable import ChronoPT
 
 @Suite("Options")
 struct OptionsTests {
     static let past = ChronoPT.Options(allowsPast: true)
 
-    @Test("Past dates need allowsPast", arguments: [
-        ("pagar ontem", [2026, 9, 20]),
-        ("anteontem", [2026, 9, 19]),
-        ("antes de ontem", [2026, 9, 19]),
-        ("sexta passada", [2026, 9, 18]),
-        ("na sexta-feira passada", [2026, 9, 18]),
-        ("na última sexta", [2026, 9, 18]),
-        ("segunda passada", [2026, 9, 14]),
-        ("há 2 dias", [2026, 9, 19]),
-        ("3 dias atrás", [2026, 9, 18]),
-        ("faz uma semana", [2026, 9, 14]),
-        ("há um mês", [2026, 8, 21])
-    ])
+    @Test(
+        "Past dates need allowsPast",
+        arguments: [
+            ("pagar ontem", [2026, 9, 20]),
+            ("anteontem", [2026, 9, 19]),
+            ("antes de ontem", [2026, 9, 19]),
+            ("sexta passada", [2026, 9, 18]),
+            ("na sexta-feira passada", [2026, 9, 18]),
+            ("na última sexta", [2026, 9, 18]),
+            ("segunda passada", [2026, 9, 14]),
+            ("há 2 dias", [2026, 9, 19]),
+            ("3 dias atrás", [2026, 9, 18]),
+            ("faz uma semana", [2026, 9, 14]),
+            ("há um mês", [2026, 8, 21]),
+        ])
     func pastDay(_ example: (text: String, day: [Int])) throws {
         #expect(interpret(example.text) == nil)
         let found = try #require(interpret(example.text, options: Self.past))
@@ -25,13 +28,15 @@ struct OptionsTests {
         #expect(found.start.hasTime == false)
     }
 
-    @Test("Past periods run from their first to their last day", arguments: [
-        ("semana passada", [2026, 9, 14], [2026, 9, 20]),
-        ("no mês passado", [2026, 8, 1], [2026, 8, 31]),
-        ("ano passado", [2025, 1, 1], [2025, 12, 31]),
-        ("de ontem até sexta", [2026, 9, 20], [2026, 9, 25]),
-        ("fim de semana passado", [2026, 9, 19], [2026, 9, 20])
-    ])
+    @Test(
+        "Past periods run from their first to their last day",
+        arguments: [
+            ("semana passada", [2026, 9, 14], [2026, 9, 20]),
+            ("no mês passado", [2026, 8, 1], [2026, 8, 31]),
+            ("ano passado", [2025, 1, 1], [2025, 12, 31]),
+            ("de ontem até sexta", [2026, 9, 20], [2026, 9, 25]),
+            ("fim de semana passado", [2026, 9, 19], [2026, 9, 20]),
+        ])
     func pastPeriod(_ example: (text: String, start: [Int], end: [Int])) throws {
         #expect(interpret(example.text) == nil)
         let found = try #require(interpret(example.text, options: Self.past))
@@ -39,12 +44,14 @@ struct OptionsTests {
         #expect(ymd(found.end?.date) == example.end)
     }
 
-    @Test("Past times need allowsPast", arguments: [
-        ("ontem à noite", [2026, 9, 20], [19, 0]),
-        ("há 2 horas", [2026, 9, 21], [8, 0]),
-        ("20 minutos atrás", [2026, 9, 21], [9, 40]),
-        ("sexta passada às 10", [2026, 9, 18], [10, 0])
-    ])
+    @Test(
+        "Past times need allowsPast",
+        arguments: [
+            ("ontem à noite", [2026, 9, 20], [19, 0]),
+            ("há 2 horas", [2026, 9, 21], [8, 0]),
+            ("20 minutos atrás", [2026, 9, 21], [9, 40]),
+            ("sexta passada às 10", [2026, 9, 18], [10, 0]),
+        ])
     func pastTime(_ example: (text: String, day: [Int], time: [Int])) throws {
         #expect(interpret(example.text) == nil)
         let found = try #require(interpret(example.text, options: Self.past))

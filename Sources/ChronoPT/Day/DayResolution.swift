@@ -24,8 +24,10 @@ extension DayRules {
             }
             // The next time that weekday comes, not counting today: "sexta"
             // said on a Friday is next week's.
-            return calendar.nextDate(after: today, matching: DateComponents(weekday: weekday), matchingPolicy: .nextTime)
-                .map { ($0, nil) }
+            return calendar.nextDate(
+                after: today, matching: DateComponents(weekday: weekday), matchingPolicy: .nextTime
+            )
+            .map { ($0, nil) }
 
         case .date(let day, let month, let year):
             guard (1...12).contains(month), (1...daysInMonth[month - 1]).contains(day) else { return nil }
@@ -34,7 +36,8 @@ extension DayRules {
                 // The calendar rolls a date that doesn't exist over (29/02 in a
                 // common year becomes 01/03); then it is not a date.
                 guard let date = calendar.date(from: components),
-                      calendar.component(.day, from: date) == day else { return nil }
+                    calendar.component(.day, from: date) == day
+                else { return nil }
                 return (date, nil)
             }
             // Without a year, the next time that date comes, counting today.
@@ -60,19 +63,23 @@ extension DayRules {
 
         case .nextWeek:
             guard let monday = nextMonday(after: today, calendar: calendar),
-                  let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else { return nil }
+                let sunday = calendar.date(byAdding: .day, value: 6, to: monday)
+            else { return nil }
             return (monday, sunday)
 
         case .weekend(let weeks):
             let weekday = calendar.component(.weekday, from: today)
             // On Saturday it is this weekend; on Sunday, what is left of it.
             if weeks == 0, weekday == 1 { return (today, nil) }
-            let coming = weekday == 7
+            let coming =
+                weekday == 7
                 ? today
-                : calendar.nextDate(after: today, matching: DateComponents(weekday: 7), matchingPolicy: .nextTime)
+                : calendar.nextDate(
+                    after: today, matching: DateComponents(weekday: 7), matchingPolicy: .nextTime)
             guard let coming,
-                  let saturday = calendar.date(byAdding: .day, value: 7 * weeks, to: coming),
-                  let sunday = calendar.date(byAdding: .day, value: 1, to: saturday) else { return nil }
+                let saturday = calendar.date(byAdding: .day, value: 7 * weeks, to: coming),
+                let sunday = calendar.date(byAdding: .day, value: 1, to: saturday)
+            else { return nil }
             return (saturday, sunday)
 
         case .thisMonth:
@@ -82,7 +89,8 @@ extension DayRules {
 
         case .nextMonth:
             guard let first = firstDayOfNextMonth(today, calendar: calendar),
-                  let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
+                let last = lastDayOfMonth(first, calendar: calendar)
+            else { return nil }
             return (first, last)
 
         case .startOfNextMonth:
@@ -90,8 +98,9 @@ extension DayRules {
 
         case .nextYear:
             guard let thisYear = calendar.dateInterval(of: .year, for: today)?.start,
-                  let first = calendar.date(byAdding: .year, value: 1, to: thisYear),
-                  let last = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: first) else { return nil }
+                let first = calendar.date(byAdding: .year, value: 1, to: thisYear),
+                let last = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: first)
+            else { return nil }
             return (first, last)
 
         case .endOfMonth(let months):
@@ -110,20 +119,23 @@ extension DayRules {
             // Monday to Sunday of the week before this one.
             let weekday = calendar.component(.weekday, from: today)
             guard let thisMonday = calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: today),
-                  let monday = calendar.date(byAdding: .day, value: -7, to: thisMonday),
-                  let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else { return nil }
+                let monday = calendar.date(byAdding: .day, value: -7, to: thisMonday),
+                let sunday = calendar.date(byAdding: .day, value: 6, to: monday)
+            else { return nil }
             return (monday, sunday)
 
         case .lastMonth:
             guard let thisMonth = calendar.dateInterval(of: .month, for: today)?.start,
-                  let first = calendar.date(byAdding: .month, value: -1, to: thisMonth),
-                  let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
+                let first = calendar.date(byAdding: .month, value: -1, to: thisMonth),
+                let last = lastDayOfMonth(first, calendar: calendar)
+            else { return nil }
             return (first, last)
 
         case .lastYear:
             guard let thisYear = calendar.dateInterval(of: .year, for: today)?.start,
-                  let first = calendar.date(byAdding: .year, value: -1, to: thisYear),
-                  let last = calendar.date(byAdding: .day, value: -1, to: thisYear) else { return nil }
+                let first = calendar.date(byAdding: .year, value: -1, to: thisYear),
+                let last = calendar.date(byAdding: .day, value: -1, to: thisYear)
+            else { return nil }
             return (first, last)
 
         case .daily, .interval:
@@ -147,8 +159,11 @@ extension DayRules {
             // segunda a sexta" said on a Monday runs from next Monday to that
             // Friday.
             guard let first = resolve(from, reference: reference, calendar: calendar),
-                  var last = resolve(to, reference: reference, calendar: calendar) else { return nil }
-            if (last.end ?? last.start) < first.start, let later = resolve(to, reference: first.start, calendar: calendar) {
+                var last = resolve(to, reference: reference, calendar: calendar)
+            else { return nil }
+            if (last.end ?? last.start) < first.start,
+                let later = resolve(to, reference: first.start, calendar: calendar)
+            {
                 last = later
             }
             let end = last.end ?? last.start
@@ -174,10 +189,13 @@ extension DayRules {
             return calendar.date(from: DateComponents(year: year, month: month, day: day)).map { ($0, nil) }
         case .easter(let offset, let lastDay):
             guard let easter = easter(in: year, calendar: calendar),
-                  let start = calendar.date(byAdding: .day, value: offset, to: easter) else { return nil }
+                let start = calendar.date(byAdding: .day, value: offset, to: easter)
+            else { return nil }
             return (start, lastDay.flatMap { calendar.date(byAdding: .day, value: $0, to: easter) })
         case .secondSunday(let month):
-            guard let first = calendar.date(from: DateComponents(year: year, month: month, day: 1)) else { return nil }
+            guard let first = calendar.date(from: DateComponents(year: year, month: month, day: 1)) else {
+                return nil
+            }
             let firstSunday = (8 - calendar.component(.weekday, from: first)) % 7
             return calendar.date(byAdding: .day, value: firstSunday + 7, to: first).map { ($0, nil) }
         }
@@ -203,7 +221,8 @@ extension DayRules {
 
     static func lastDayOfMonth(_ day: Date, calendar: Calendar) -> Date? {
         guard let interval = calendar.dateInterval(of: .month, for: day),
-              let last = calendar.date(byAdding: .day, value: -1, to: interval.end) else { return nil }
+            let last = calendar.date(byAdding: .day, value: -1, to: interval.end)
+        else { return nil }
         return calendar.startOfDay(for: last)
     }
 

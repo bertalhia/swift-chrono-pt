@@ -50,7 +50,8 @@ extension TimeRules {
         }
         return groups.compactMap { group in
             guard let first = group.first, let last = group.last else { return nil }
-            return range(in: group, source: source) ?? resolve(group, range: first.range.lowerBound..<last.range.upperBound)
+            return range(in: group, source: source)
+                ?? resolve(group, range: first.range.lowerBound..<last.range.upperBound)
         }
     }
 
@@ -61,12 +62,13 @@ extension TimeRules {
         guard let first = group.first, let last = group.last else { return nil }
         for index in group.indices.dropFirst() {
             guard case let .clock(hour, minute, ambiguous, nextDay, _) = group[index - 1].value,
-                  case let .clock(endHour, endMinute, endAmbiguous, endNextDay, _) = group[index].value,
-                  let start = source.rangeStart(
-                      from: group[index - 1].range,
-                      to: group[index].range,
-                      bareStart: source.startsWithNumber(group[index - 1].range)
-                  ) else { continue }
+                case let .clock(endHour, endMinute, endAmbiguous, endNextDay, _) = group[index].value,
+                let start = source.rangeStart(
+                    from: group[index - 1].range,
+                    to: group[index].range,
+                    bareStart: source.startsWithNumber(group[index - 1].range)
+                )
+            else { continue }
             let period = group.lazy.compactMap { piece -> Int? in
                 if case let .period(hour, _) = piece.value { hour } else { nil }
             }.first
@@ -76,7 +78,8 @@ extension TimeRules {
                 period: period
             )
             let range = min(start, first.range.lowerBound)..<last.range.upperBound
-            return Expression(range: range, value: .between(from, until: until), needsDay: false, pieces: group)
+            return Expression(
+                range: range, value: .between(from, until: until), needsDay: false, pieces: group)
         }
         return nil
     }
@@ -89,7 +92,8 @@ extension TimeRules {
     static func range(from start: ClockPiece, to end: ClockPiece, period: Int?) -> (Clock, Clock) {
         let ends = readings(of: end, period: period)
         let single = minutes(of: start, period: period)
-        let from = ends.count == 1 ? readings(of: start, period: period).last { $0 < ends[0] } ?? single : single
+        let from =
+            ends.count == 1 ? readings(of: start, period: period).last { $0 < ends[0] } ?? single : single
         let until = ends.first { $0 > from } ?? ends[0] + 24 * 60
         return (time(minutes: from), time(minutes: until))
     }
@@ -125,12 +129,13 @@ extension TimeRules {
     /// 9:00. The range stays the part of the day's.
     static func joining(_ partOfDay: Expression, _ clock: Expression) -> Expression? {
         guard case .at = clock.value,
-              partOfDay.pieces.allSatisfy(\.value.isPeriod),
-              clock.pieces.allSatisfy(\.value.isClock),
-              case .at(let period) = partOfDay.value,
-              let joined = resolve(partOfDay.pieces + clock.pieces, range: partOfDay.range),
-              case .at(let time) = joined.value,
-              (time.hour >= 12) == (period.hour >= 12) else { return nil }
+            partOfDay.pieces.allSatisfy(\.value.isPeriod),
+            clock.pieces.allSatisfy(\.value.isClock),
+            case .at(let period) = partOfDay.value,
+            let joined = resolve(partOfDay.pieces + clock.pieces, range: partOfDay.range),
+            case .at(let time) = joined.value,
+            (time.hour >= 12) == (period.hour >= 12)
+        else { return nil }
         var settled = joined
         settled.settledRange = clock.range
         return settled
@@ -146,7 +151,8 @@ extension TimeRules {
         for piece in group {
             switch piece.value {
             case .fromNow(let minutes):
-                return Expression(range: range, value: .fromNow(minutes: minutes), needsDay: false, pieces: group)
+                return Expression(
+                    range: range, value: .fromNow(minutes: minutes), needsDay: false, pieces: group)
             case let .clock(hour, minute, ambiguous, nextDay, needsEnd):
                 if clock == nil, !needsEnd { clock = (hour, minute, ambiguous, nextDay) }
             case let .period(hour, needsDay):
@@ -159,7 +165,9 @@ extension TimeRules {
             return Expression(range: range, value: .at(time), needsDay: false, pieces: group)
         }
         if let period {
-            return Expression(range: range, value: .at(Clock(hour: period.hour, minute: 0, nextDay: false)), needsDay: period.needsDay, pieces: group)
+            return Expression(
+                range: range, value: .at(Clock(hour: period.hour, minute: 0, nextDay: false)),
+                needsDay: period.needsDay, pieces: group)
         }
         return nil
     }

@@ -13,15 +13,16 @@ struct TextSource {
 
     init(_ text: String) {
         original = text
-        normalized = String(text.map { character in
-            let folded = String(character).folding(
-                options: [.diacriticInsensitive, .caseInsensitive],
-                locale: Locale(identifier: "pt_BR")
-            )
-            guard folded.count == 1, let simple = folded.first else { return character }
-            if "–—".contains(simple) { return "-" }
-            return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
-        })
+        normalized = String(
+            text.map { character in
+                let folded = String(character).folding(
+                    options: [.diacriticInsensitive, .caseInsensitive],
+                    locale: Locale(identifier: "pt_BR")
+                )
+                guard folded.count == 1, let simple = folded.first else { return character }
+                if "–—".contains(simple) { return "-" }
+                return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
+            })
     }
 
     /// The same position in the original text.
@@ -40,7 +41,9 @@ struct TextSource {
     /// inside "da noite".
     func wordRanges(of phrase: String) -> [Range<String.Index>] {
         normalized.ranges(of: phrase).filter { range in
-            let before = range.lowerBound > normalized.startIndex ? normalized[normalized.index(before: range.lowerBound)] : nil
+            let before =
+                range.lowerBound > normalized.startIndex
+                ? normalized[normalized.index(before: range.lowerBound)] : nil
             let after = range.upperBound < normalized.endIndex ? normalized[range.upperBound] : nil
             return !Self.isWordCharacter(before) && !Self.isWordCharacter(after)
         }
@@ -59,7 +62,8 @@ struct TextSource {
             end = normalized.index(before: end)
         }
         var start = end
-        while start > normalized.startIndex, Self.isWordCharacter(normalized[normalized.index(before: start)]) {
+        while start > normalized.startIndex, Self.isWordCharacter(normalized[normalized.index(before: start)])
+        {
             start = normalized.index(before: start)
         }
         return start < end ? start..<end : nil
@@ -71,7 +75,8 @@ struct TextSource {
 
     /// The words right after the position: "8h por dia" is a duration.
     func words(after index: String.Index, count: Int) -> [String] {
-        normalized[index...].split(whereSeparator: { !Self.isWordCharacter($0) }).prefix(count).map(String.init)
+        normalized[index...].split(whereSeparator: { !Self.isWordCharacter($0) }).prefix(count).map(
+            String.init)
     }
 
     /// Only spaces and prepositions between the two ranges: "amanhã às 9",
@@ -93,12 +98,16 @@ struct TextSource {
     /// word of `second` ("às 16h", "até sexta"), or with a hyphen alone
     /// ("10h-11h", "seg-sex"). Articles may sit in between: "de hoje até o
     /// dia 30".
-    func rangeStart(from first: Range<String.Index>, to second: Range<String.Index>, bareStart: Bool = false) -> String.Index? {
+    func rangeStart(from first: Range<String.Index>, to second: Range<String.Index>, bareStart: Bool = false)
+        -> String.Index?
+    {
         guard first.upperBound <= second.lowerBound else { return nil }
         var opening: (word: String, start: String.Index)?
         if let word = words(after: first.lowerBound, count: 1).first, Self.rangeOpenings.contains(word) {
             opening = (word, first.lowerBound)
-        } else if let before = wordRange(before: first.lowerBound), Self.rangeOpenings.contains(String(normalized[before])) {
+        } else if let before = wordRange(before: first.lowerBound),
+            Self.rangeOpenings.contains(String(normalized[before]))
+        {
             opening = (String(normalized[before]), before.lowerBound)
         }
         guard opening != nil || bareStart else { return nil }
@@ -109,7 +118,8 @@ struct TextSource {
         // "de segunda e quarta" is two days, not a range.
         let closings: Set<String> = opening?.word == "entre" ? ["e"] : ["a", "as", "ao", "ate"]
         guard between.allSatisfy({ closings.contains($0) || Self.articles.contains($0) }),
-              (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains) else { return nil }
+            (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains)
+        else { return nil }
         return start
     }
 
@@ -122,7 +132,7 @@ struct TextSource {
     private static let articles: Set<String> = ["o", "a", "os", "as"]
 
     private static let connectors: Set<String> = [
-        "a", "as", "ao", "ate", "de", "do", "da", "no", "na", "pela", "pelo", "e", "la", "por", "volta"
+        "a", "as", "ao", "ate", "de", "do", "da", "no", "na", "pela", "pelo", "e", "la", "por", "volta",
     ]
 
     private static func isWordCharacter(_ character: Character?) -> Bool {

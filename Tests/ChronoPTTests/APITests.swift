@@ -1,18 +1,24 @@
 import Foundation
 import Testing
+
 @testable import ChronoPT
 
 @Suite("Public API")
 struct APITests {
-    @Test("The text without the dates", arguments: [
-        ("comprar pão amanhã no almoço", "comprar pão"),
-        ("dentista sexta às 14h, reunião dia 30 e ligar pro banco amanhã", "dentista, reunião e ligar pro banco"),
-        ("almoço de amanhã", "almoço"),
-        ("reunião às 14h amanhã", "reunião"),
-        ("plantão de segunda a sexta das 9 às 18", "plantão"),
-        ("comprar leite", "comprar leite"),
-        ("amanhã", "")
-    ])
+    @Test(
+        "The text without the dates",
+        arguments: [
+            ("comprar pão amanhã no almoço", "comprar pão"),
+            (
+                "dentista sexta às 14h, reunião dia 30 e ligar pro banco amanhã",
+                "dentista, reunião e ligar pro banco"
+            ),
+            ("almoço de amanhã", "almoço"),
+            ("reunião às 14h amanhã", "reunião"),
+            ("plantão de segunda a sexta das 9 às 18", "plantão"),
+            ("comprar leite", "comprar leite"),
+            ("amanhã", ""),
+        ])
     func strippingDates(_ example: (text: String, kept: String)) {
         #expect(strip(example.text) == example.kept)
     }
@@ -70,11 +76,13 @@ struct APITests {
     @Test("Options and recurrence survive a round trip through JSON")
     func codable() throws {
         let options = ChronoPT.Options(allowsPast: true, defaultHour: 9)
-        let decodedOptions = try JSONDecoder().decode(ChronoPT.Options.self, from: JSONEncoder().encode(options))
+        let decodedOptions = try JSONDecoder().decode(
+            ChronoPT.Options.self, from: JSONEncoder().encode(options))
         #expect(decodedOptions == options)
 
         let recurrence = ChronoPT.Recurrence.weekly(on: [.tuesday, .thursday])
-        let decoded = try JSONDecoder().decode(ChronoPT.Recurrence.self, from: JSONEncoder().encode(recurrence))
+        let decoded = try JSONDecoder().decode(
+            ChronoPT.Recurrence.self, from: JSONEncoder().encode(recurrence))
         #expect(decoded == recurrence)
     }
 }

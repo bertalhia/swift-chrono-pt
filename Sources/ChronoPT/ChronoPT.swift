@@ -33,7 +33,8 @@ public enum ChronoPT {
 
         for day in context.days {
             let adjacent = context.times.indices.first { index in
-                !usedTimes.contains(index) && context.source.onlyConnectors(between: day.range, and: context.times[index].range)
+                !usedTimes.contains(index)
+                    && context.source.onlyConnectors(between: day.range, and: context.times[index].range)
             }
             if let adjacent { usedTimes.insert(adjacent) }
             if let result = context.combine(day, adjacent.map { context.times[$0] }) {
@@ -68,7 +69,9 @@ public enum ChronoPT {
         guard let day = context.days.first(where: { context.resolve($0) != nil }) else {
             return context.times.lazy.compactMap { context.combine(nil, $0) }.first
         }
-        let attached = context.times.first { context.source.onlyConnectors(between: day.range, and: $0.range) }
+        let attached = context.times.first {
+            context.source.onlyConnectors(between: day.range, and: $0.range)
+        }
         let joined = attached.flatMap { attached in
             context.times.lazy.compactMap { TimeRules.joining(attached, $0) }.first
         }

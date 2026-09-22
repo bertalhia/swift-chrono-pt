@@ -4,7 +4,8 @@ import Foundation
 extension DayRules {
     static var relativeDay: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b((?:depois|dps) de (?:amanha|amn)|amanha|amn|hoje|hj|antes de ontem|anteontem|ontem)\b/#.wordBoundaryKind(.simple)
+            #/\b((?:depois|dps) de (?:amanha|amn)|amanha|amn|hoje|hj|antes de ontem|anteontem|ontem)\b/#
+                .wordBoundaryKind(.simple)
         }
     }
 
@@ -126,7 +127,9 @@ extension DayRules {
     }
 
     // "de 10 a 15 de outubro", "entre 3 e 5 de maio": the first day takes the month of the second
-    static var dayRangeInMonth: Regex<(Substring, Substring, Substring, Substring, Substring, Substring, Substring?)> {
+    static var dayRangeInMonth:
+        Regex<(Substring, Substring, Substring, Substring, Substring, Substring, Substring?)>
+    {
         RegexCache.regex {
             #/\b(de|entre) (\d{1,2}|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º)? (a|ao|ate|e) (\d{1,2}|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º)? de (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b(?: (?:de )?(\d{4})\b)?/#
                 .wordBoundaryKind(.simple)
@@ -136,7 +139,8 @@ extension DayRules {
     // "dia 30", "até dia 5", "dia primeiro", "dia quinze"; "dia 25/09" is left to `numericDate`.
     static var dayOfMonth: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\bdia (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)\b(?!/)/#.wordBoundaryKind(.simple)
+            #/\bdia (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)\b(?!/)/#
+                .wordBoundaryKind(.simple)
         }
     }
 
@@ -186,16 +190,22 @@ extension DayRules {
         "pascoa": HolidayName(holiday: .easter(offset: 0), needsPreposition: true),
         "corpus christi": HolidayName(holiday: .easter(offset: 60)),
         "dia das maes": HolidayName(holiday: .secondSunday(month: 5)),
-        "dia dos pais": HolidayName(holiday: .secondSunday(month: 8))
+        "dia dos pais": HolidayName(holiday: .secondSunday(month: 8)),
     ]
 
     /// Days, weeks or months, ready for `Calendar.date(byAdding:to:)`.
     static func components(_ count: Int, unit: some StringProtocol) -> DateComponents {
-        if unit.hasPrefix("hora") { DateComponents(hour: count) }
-        else if unit.hasPrefix("min") { DateComponents(minute: count) }
-        else if unit.hasPrefix("dia") { DateComponents(day: count) }
-        else if unit.hasPrefix("semana") { DateComponents(weekOfYear: count) }
-        else { DateComponents(month: count) }
+        if unit.hasPrefix("hora") {
+            DateComponents(hour: count)
+        } else if unit.hasPrefix("min") {
+            DateComponents(minute: count)
+        } else if unit.hasPrefix("dia") {
+            DateComponents(day: count)
+        } else if unit.hasPrefix("semana") {
+            DateComponents(weekOfYear: count)
+        } else {
+            DateComponents(month: count)
+        }
     }
 
     static func amount(_ count: Int, unit: Substring) -> Value {
@@ -203,12 +213,14 @@ extension DayRules {
     }
 
     /// `Calendar` weekday numbers, from 1, as `Locale.Weekday`.
-    static let localeWeekdays: [Locale.Weekday] = [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
+    static let localeWeekdays: [Locale.Weekday] = [
+        .sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday,
+    ]
 
     static let relativeDays = [
         "ontem": -1, "anteontem": -2, "antes de ontem": -2,
         "hoje": 0, "hj": 0, "amanha": 1, "amn": 1,
-        "depois de amanha": 2, "depois de amn": 2, "dps de amanha": 2, "dps de amn": 2
+        "depois de amanha": 2, "depois de amn": 2, "dps de amanha": 2, "dps de amn": 2,
     ]
 
     /// Abbreviations need the same hint as "segunda" to "sexta", even "sáb" and
@@ -217,7 +229,7 @@ extension DayRules {
     /// the two apart.
     static let weekdays = [
         "domingo": 1, "segunda": 2, "terca": 3, "quarta": 4, "quinta": 5, "sexta": 6, "sabado": 7,
-        "dom": 1, "seg": 2, "qua": 4, "qui": 5, "sex": 6, "sab": 7
+        "dom": 1, "seg": 2, "qua": 4, "qui": 5, "sex": 6, "sab": 7,
     ]
 
     /// Weekdays with no other meaning, which count on their own.
@@ -226,7 +238,8 @@ extension DayRules {
     static let months = [
         "janeiro": 1, "jan": 1, "fevereiro": 2, "fev": 2, "marco": 3, "mar": 3, "abril": 4, "abr": 4,
         "maio": 5, "mai": 5, "junho": 6, "jun": 6, "julho": 7, "jul": 7, "agosto": 8, "ago": 8,
-        "setembro": 9, "set": 9, "outubro": 10, "out": 10, "novembro": 11, "nov": 11, "dezembro": 12, "dez": 12
+        "setembro": 9, "set": 9, "outubro": 10, "out": 10, "novembro": 11, "nov": 11, "dezembro": 12,
+        "dez": 12,
     ]
 
     static func dayNumber(_ text: Substring) -> Int? {

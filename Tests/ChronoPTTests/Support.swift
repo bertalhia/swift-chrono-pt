@@ -1,4 +1,5 @@
 import Foundation
+
 @testable import ChronoPT
 
 /// Every test runs on Monday, 21 September 2026, at 10:00 in São Paulo, so
@@ -17,11 +18,15 @@ func reference(_ year: Int, _ month: Int, _ day: Int) -> Date {
     saoPaulo.date(from: DateComponents(year: year, month: month, day: day, hour: 10))!
 }
 
-func interpret(_ text: String, reference: Date = monday, options: ChronoPT.Options = ChronoPT.Options()) -> ChronoPT.Match? {
+func interpret(_ text: String, reference: Date = monday, options: ChronoPT.Options = ChronoPT.Options())
+    -> ChronoPT.Match?
+{
     ChronoPT.interpret(text, reference: reference, calendar: saoPaulo, options: options)
 }
 
-func parse(_ text: String, reference: Date = monday, options: ChronoPT.Options = ChronoPT.Options()) -> [ChronoPT.Match] {
+func parse(_ text: String, reference: Date = monday, options: ChronoPT.Options = ChronoPT.Options())
+    -> [ChronoPT.Match]
+{
     ChronoPT.parse(text, reference: reference, calendar: saoPaulo, options: options)
 }
 

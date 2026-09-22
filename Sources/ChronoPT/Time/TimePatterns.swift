@@ -25,13 +25,17 @@ extension TimeRules {
 
             if let meridiem {
                 let (hour, nextDay) = clockHour(base, meridiem: meridiem)
-                return Piece(range: match.range, value: .clock(hour: hour, minute: minute, ambiguous: false, nextDay: nextDay))
+                return Piece(
+                    range: match.range,
+                    value: .clock(hour: hour, minute: minute, ambiguous: false, nextDay: nextDay))
             }
             // Written "7h" or "07:00" is the 24-hour clock; spoken, "às 7"
             // doesn't say morning or evening.
             let written = separator != nil || unit?.first == "h" || hourText.hasPrefix("0")
             let ambiguous = (1...11).contains(base) && !written
-            return Piece(range: match.range, value: .clock(hour: base, minute: minute, ambiguous: ambiguous, nextDay: false))
+            return Piece(
+                range: match.range,
+                value: .clock(hour: base, minute: minute, ambiguous: ambiguous, nextDay: false))
         }
     }
 
@@ -42,7 +46,8 @@ extension TimeRules {
             let (_, minuteText, unit, hourText, meridiem) = match.output
             // Digits need "min": "de 3 pra 1" is a score.
             guard Int(minuteText) == nil || unit != nil,
-                  let minutes = SpokenNumber.value(minuteText), (1...30).contains(minutes) else { return nil }
+                let minutes = SpokenNumber.value(minuteText), (1...30).contains(minutes)
+            else { return nil }
 
             let clock: (hour: Int, ambiguous: Bool, nextDay: Bool)
             if hourText.hasPrefix("meio") {
@@ -58,7 +63,10 @@ extension TimeRules {
                     clock = (named, named <= 11, false)
                 }
             }
-            return Piece(range: match.range, value: .clock(hour: clock.hour, minute: -minutes, ambiguous: clock.ambiguous, nextDay: clock.nextDay))
+            return Piece(
+                range: match.range,
+                value: .clock(
+                    hour: clock.hour, minute: -minutes, ambiguous: clock.ambiguous, nextDay: clock.nextDay))
         }
     }
 
@@ -69,8 +77,10 @@ extension TimeRules {
             // Not a number inside a date or a clock time: "25/09 às 14:00".
             let before = source.normalized[..<match.range.lowerBound].last
             guard before.map({ !"/:-0123456789".contains($0) }) ?? true,
-                  let hour = SpokenNumber.value(match.output.1), (0...23).contains(hour) else { return nil }
-            let value = Value.clock(hour: hour, minute: 0, ambiguous: (1...11).contains(hour), nextDay: false, needsEnd: true)
+                let hour = SpokenNumber.value(match.output.1), (0...23).contains(hour)
+            else { return nil }
+            let value = Value.clock(
+                hour: hour, minute: 0, ambiguous: (1...11).contains(hour), nextDay: false, needsEnd: true)
             return Piece(range: match.range, value: value)
         }
     }
@@ -92,14 +102,17 @@ extension TimeRules {
             if word == "meio dia", prefix == nil { return nil }
             let minute = minuteWords.map { $0 == "meia" ? 30 : SpokenNumber.value($0) ?? 0 } ?? 0
             let midnight = word.hasPrefix("meia")
-            return Piece(range: match.range, value: .clock(hour: midnight ? 0 : 12, minute: minute, ambiguous: false, nextDay: midnight))
+            return Piece(
+                range: match.range,
+                value: .clock(hour: midnight ? 0 : 12, minute: minute, ambiguous: false, nextDay: midnight))
         }
     }
 
     /// "daqui 2 horas" ahead; "há 2 horas" and "20 minutos atrás" back.
     static func fromNow(in source: TextSource) -> [Piece<Value>] {
         let text = source.normalized
-        let found = text.matches(of: inTime).map { ($0.range, $0.output.1, $0.output.2, 1) }
+        let found =
+            text.matches(of: inTime).map { ($0.range, $0.output.1, $0.output.2, 1) }
             + text.matches(of: agoTime).map { ($0.range, $0.output.1, $0.output.2, -1) }
             + text.matches(of: timeAgo).map { ($0.range, $0.output.1, $0.output.2, -1) }
         return found.compactMap { range, amount, unit, sign in
@@ -124,11 +137,13 @@ extension TimeRules {
         return rateWords.contains { after.starts(with: $0) }
     }
 
-    static let durationWords: Set<String> = ["por", "durante", "ha", "faz", "cada", "daqui", "em", "apos", "umas", "uns"]
+    static let durationWords: Set<String> = [
+        "por", "durante", "ha", "faz", "cada", "daqui", "em", "apos", "umas", "uns",
+    ]
 
     static let rateWords: [[String]] = [
         ["por", "dia"], ["por", "noite"], ["por", "semana"], ["por", "mes"], ["ao", "dia"],
-        ["diarias"], ["diarios"], ["semanais"], ["seguidas"], ["seguidos"]
+        ["diarias"], ["diarios"], ["semanais"], ["seguidas"], ["seguidos"],
     ]
 
     // Computed, not stored: `Regex` is not `Sendable`. `RegexCache` keeps each
@@ -136,7 +151,9 @@ extension TimeRules {
 
     // "às 9", "14h", "9h30", "10:30", "15:30h", "15h30min", "às 7 e meia", "às sete da noite", "3 da tarde",
     // "às vinte e duas horas", "às oito e trinta e cinco"
-    static var clock: Regex<(Substring, Substring?, Substring, Substring?, Substring?, Substring?, Substring?, Substring?)> {
+    static var clock:
+        Regex<(Substring, Substring?, Substring, Substring?, Substring?, Substring?, Substring?, Substring?)>
+    {
         RegexCache.regex {
             #/\b(?:(as|ate as|pelas|la pelas|por volta das|a partir das|das) )?(\d{1,2}|vinte e uma|vinte e um|vinte e duas|vinte e dois|vinte e tres|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|duas|uma)(?:(:|h)(\d{2})(?:hs|h|min|m)?\b|( ?(?:hrs|hr|hs|horas|hora|h))\b|\b)(?: e (meia|(?:vinte|trinta|quarenta|cinquenta) e (?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)|vinte|trinta|quarenta|cinquenta|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|cinco|\d{1,2})\b)?(?: (?:da|de|pela) (manha|tarde|noite|madrugada)\b)?/#
                 .wordBoundaryKind(.simple)
