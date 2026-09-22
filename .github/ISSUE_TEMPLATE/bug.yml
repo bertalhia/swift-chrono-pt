@@ -10,6 +10,7 @@ body:
       placeholder: reunião sexta às 14h
     validations:
       required: true
+
   - type: input
     id: reference
     attributes:
@@ -17,6 +18,7 @@ body:
       placeholder: Monday, 21 September 2026, 10:00
     validations:
       required: true
+
   - type: input
     id: timezone
     attributes:
@@ -24,6 +26,7 @@ body:
       placeholder: America/Sao_Paulo
     validations:
       required: true
+
   - type: input
     id: got
     attributes:
@@ -31,6 +34,7 @@ body:
       placeholder: 25/09/2026 02:00, or nil
     validations:
       required: true
+
   - type: input
     id: expected
     attributes:
@@ -38,8 +42,15 @@ body:
       placeholder: 25/09/2026 14:00
     validations:
       required: true
+
   - type: input
     id: version
     attributes:
       label: Version
-      placeholder: 0.8.0
+      placeholder: 0.10.0
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where the text came from, such as a typed note or dictation, and what your app does with the date
