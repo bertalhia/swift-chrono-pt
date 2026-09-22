@@ -12,15 +12,20 @@ struct Context {
     init(
         text: String, reference: Date, calendar: Calendar, options: ChronoPT.Options, skipsRules: Bool = true
     ) {
-        source = TextSource(text, skipsRules: skipsRules)
+        let source = TextSource(text, skipsRules: skipsRules)
+        self.source = source
         let calendar = Self.gregorian(like: calendar)
-        // Days first: a number a day holds is not a time ("dia 10 às 14h").
-        let found = DayRules.candidates(in: source)
-        let times = TimeRules.expressions(
-            in: source, moments: options.moments, days: found.map(\.piece.range),
-            claimed: found.filter { $0.hint == .none }.map(\.piece.range))
-        let days = DayRules.expressions(
-            in: source, found: found, times: times, reference: reference, calendar: calendar)
+        // The rules run with a set of compiled regexes from the pool.
+        let (days, times) = RegexCache.using {
+            // Days first: a number a day holds is not a time ("dia 10 às 14h").
+            let found = DayRules.candidates(in: source)
+            let times = TimeRules.expressions(
+                in: source, moments: options.moments, days: found.map(\.piece.range),
+                claimed: found.filter { $0.hint == .none }.map(\.piece.range))
+            let days = DayRules.expressions(
+                in: source, found: found, times: times, reference: reference, calendar: calendar)
+            return (days, times)
+        }
         if options.allowsPast {
             self.times = times
             self.days = days

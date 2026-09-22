@@ -125,6 +125,22 @@ struct RobustnessTests {
         #expect(ymd(try #require(found).start.date) == [2030, 9, 19])
         #expect(elapsed < .seconds(1))
     }
+
+    @Test("A thread keeps no compiled set once its parse is done")
+    func regexPool() {
+        final class Result: @unchecked Sendable { var kept = true }
+        let result = Result()
+        let done = DispatchSemaphore(value: 0)
+        let thread = Thread {
+            _ = parse("reunião sexta às 14h, pagar dia 10")
+            result.kept = RegexCache.threadKeepsSet
+            done.signal()
+        }
+        thread.start()
+        done.wait()
+        #expect(!result.kept)
+        #expect(RegexCache.idleCount >= 1)
+    }
 }
 
 /// SplitMix64: the same seed gives the same text on every run.

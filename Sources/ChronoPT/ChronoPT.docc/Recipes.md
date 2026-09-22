@@ -99,5 +99,5 @@ switch to the alternative.
 ## Parse many texts the same way
 
 ``ChronoPT/Parser`` keeps a calendar and options. It is `Sendable`, and parsing
-is safe from any thread; each thread builds its regexes once, which costs
-about 10 ms on the first call.
+is safe from any thread. The regexes are compiled once for the process, which
+costs about 10 ms on the first call, and shared by every thread after that.

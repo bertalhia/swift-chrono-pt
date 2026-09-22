@@ -265,9 +265,10 @@ Documentation**.
 - **Any thread.** `parse`, `interpret`, `strippingDates` and `Parser` depend
   only on what you pass: give them a `reference` and the same text always
   gives the same answer; the default, `.now`, reads the clock. They are safe
-  from any thread or actor, and every result is `Sendable`. Each thread keeps
-  its own compiled regexes, so the first call on a new thread takes about
-  10 ms longer.
+  from any thread or actor, and every result is `Sendable`. Compiled regexes
+  are shared through a pool: the first parse in a process takes about 10 ms
+  longer, and later ones on any thread reuse them. Memory grows with how many
+  parses run at once, not with how many threads ever parsed.
 - **Cost.** In a release build on Apple silicon: 0.04 ms for a one-line note,
   3.6 ms for 10 KB of text with no dates, 28 ms for 7 KB of notes with a date
   on every line.

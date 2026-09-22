@@ -39,7 +39,7 @@ zone, the result you got and the result you expected.
 | `Engine/TextSource.swift` | Normalized text with a position map, word lookups, and the words that open and close a range |
 | `Engine/Piece.swift` | A match with its position, and overlap removal |
 | `Engine/SpokenNumber.swift` | Spelled-out numbers |
-| `Engine/RegexCache.swift` | Compiled regexes, kept per thread |
+| `Engine/RegexCache.swift` | Compiled regexes, shared through a pool |
 | `Engine/Context.swift` | Joins a day with a time and builds the result |
 | `Day/DayRules.swift` | Finds the days in the text, including ranges |
 | `Day/DayValue.swift` | What a day can be, and which components the text fixed |
