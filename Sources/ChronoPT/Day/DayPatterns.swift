@@ -143,6 +143,31 @@ extension DayRules {
         }
     }
 
+    // "25-12-2027", "25.12.2027": a hyphen or a dot needs the year, since
+    // "9-10" is more likely a time range than a date
+    static var separatedDate: Regex<(Substring, Substring, Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(\d{1,2})([-.])(\d{1,2})\2(\d{4}|\d{2})\b/#.wordBoundaryKind(.simple)
+        }
+    }
+
+    // "10/out", "25/dez/2026"
+    static var slashMonth: Regex<(Substring, Substring, Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:dia )?(\d{1,2})/(fevereiro|novembro|dezembro|setembro|janeiro|outubro|agosto|abril|marco|julho|junho|maio|fev|nov|jun|jul|ago|mar|jan|dez|set|abr|mai|out)(?:/(\d{4}|\d{2}))?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "dez/2027", "out/26", "12/2027": a whole month; a number needs the full year,
+    // since "10/12" is a day and a month
+    static var monthYear: Regex<(Substring, Substring?, Substring?, Substring?, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(fevereiro|novembro|dezembro|setembro|janeiro|outubro|agosto|abril|marco|julho|junho|maio|fev|nov|jun|jul|ago|mar|jan|dez|set|abr|mai|out)/(\d{4}|\d{2})|(\d{1,2})/(\d{4}))\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "2026-10-15"
     static var isoDate: Regex<(Substring, Substring, Substring, Substring)> {
         RegexCache.regex {
@@ -153,7 +178,7 @@ extension DayRules {
     // "15 de outubro", "dia 1º de maio", "vinte e três de outubro", "3 out 2027"
     static var monthName: Regex<(Substring, Substring, Substring?, Substring, Substring?)> {
         RegexCache.regex {
-            #/\b(?:dia )?(\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º)? (de )?(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b(?: (?:de )?(\d{4})\b)?/#
+            #/\b(?:dia )?(\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º)? (de )?(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b(?: +(?:de +)?(\d{4})\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }

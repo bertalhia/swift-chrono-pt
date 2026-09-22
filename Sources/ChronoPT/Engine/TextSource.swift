@@ -5,7 +5,8 @@ import Foundation
 /// A position found here is the same position in the writer's text, and
 /// "Almoço," matches "almoco".
 ///
-/// Slash, colon and hyphen stay: "25/09", "10:30", "meio-dia". En and em
+/// Slash, colon and hyphen stay: "25/09", "10:30", "meio-dia", and so does a
+/// dot between digits: "25.12.2027". En and em
 /// dashes become hyphens: "10h–11h", and ordinal indicators become the letter
 /// they stand for: "1º" reads as "1o", "6ª" as "6a".
 struct TextSource {
@@ -25,8 +26,18 @@ struct TextSource {
         original = text
         var normalized = ""
         normalized.reserveCapacity(text.utf8.count)
-        for character in text {
-            normalized.append(Self.normalized(character))
+        let characters = Array(text)
+        for (index, character) in characters.enumerated() {
+            // A dot between digits stays, so "25.12.2027" keeps its shape;
+            // anywhere else it is punctuation.
+            if character == ".", index > 0, index + 1 < characters.count,
+                characters[index - 1].isASCII, characters[index - 1].isNumber,
+                characters[index + 1].isASCII, characters[index + 1].isNumber
+            {
+                normalized.append(".")
+            } else {
+                normalized.append(Self.normalized(character))
+            }
         }
         self.normalized = normalized
         self.skipsRules = skipsRules
@@ -49,6 +60,18 @@ struct TextSource {
         orDigit: Bool = false
     ) -> [Regex<Output>.Match] {
         guard !skipsRules || (orDigit && hasDigit) || !triggers.isDisjoint(with: words) else { return [] }
+        return normalized.matches(of: regex())
+    }
+
+    /// The regex's matches, or none without running it when the text lacks
+    /// every one of the characters a match needs: the hyphen or the dot of
+    /// "25-12-2027" and "25.12.2027".
+    func matches<Output>(
+        of regex: @autoclosure () -> Regex<Output>, whenContainsAny characters: Set<Character>
+    )
+        -> [Regex<Output>.Match]
+    {
+        guard !skipsRules || (hasDigit && normalized.contains(where: characters.contains)) else { return [] }
         return normalized.matches(of: regex())
     }
 

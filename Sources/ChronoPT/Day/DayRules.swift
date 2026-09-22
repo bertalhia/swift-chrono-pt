@@ -238,6 +238,26 @@ enum DayRules {
             add(match.range, .date(day: day, month: month, year: match.output.3.flatMap { year(String($0)) }))
         }
 
+        for match in source.matches(of: separatedDate, whenContainsAny: ["-", "."]) {
+            let (_, dayText, _, monthText, yearText) = match.output
+            guard let day = Int(dayText), let month = Int(monthText) else { continue }
+            add(match.range, .date(day: day, month: month, year: year(String(yearText))))
+        }
+
+        for match in source.matches(of: slashMonth, whenContains: "/") {
+            guard let day = Int(match.output.1), let month = months[String(match.output.2)] else { continue }
+            add(match.range, .date(day: day, month: month, year: match.output.3.flatMap { year(String($0)) }))
+        }
+
+        for match in source.matches(of: monthYear, whenContains: "/") {
+            let (_, name, shortYear, number, fullYear) = match.output
+            if let name, let shortYear, let month = months[String(name)] {
+                add(match.range, .month(month, year: year(String(shortYear))))
+            } else if let number, let fullYear, let month = Int(number), (1...12).contains(month) {
+                add(match.range, .month(month, year: Int(fullYear)))
+            }
+        }
+
         for match in source.matches(of: isoDate, whenContains: "-") {
             guard let year = Int(match.output.1), let month = Int(match.output.2),
                 let day = Int(match.output.3)
