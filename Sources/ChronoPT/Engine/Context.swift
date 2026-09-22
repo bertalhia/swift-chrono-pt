@@ -14,7 +14,7 @@ struct Context {
     ) {
         source = TextSource(text, skipsRules: skipsRules)
         let calendar = Self.gregorian(like: calendar)
-        let times = TimeRules.expressions(in: source)
+        let times = TimeRules.expressions(in: source, moments: options.moments)
         let days = DayRules.expressions(in: source, times: times, reference: reference, calendar: calendar)
         if options.allowsPast {
             self.times = times

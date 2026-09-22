@@ -57,9 +57,9 @@ extension TimeRules {
     }
 
     /// The times mentioned in the text, in text order.
-    static func expressions(in source: TextSource) -> [Expression] {
+    static func expressions(in source: TextSource, moments: [String: Int] = [:]) -> [Expression] {
         var groups: [[Piece<Value>]] = []
-        for piece in candidates(in: source) {
+        for piece in candidates(in: source, moments: moments) {
             if let last = groups.last?.last, source.onlyConnectors(between: last.range, and: piece.range) {
                 groups[groups.count - 1].append(piece)
             } else {

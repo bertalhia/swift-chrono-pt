@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import ChronoPT
@@ -92,5 +93,43 @@ struct OptionsTests {
         #expect(ChronoPT.Options(defaultHour: -1).defaultHour == 0)
         let found = try #require(interpret("amanhã", options: ChronoPT.Options(defaultHour: 30)))
         #expect(hm(found.start.date) == [23, 0])
+    }
+
+    static let moments = ChronoPT.Options(moments: [
+        "no treino": 7, "na consulta": 14, "Na Aula": 19, "no jogo": 25,
+    ])
+
+    @Test(
+        "An app's own moments read like the built-in ones",
+        arguments: [
+            ("amanhã no treino", [2026, 9, 22], [7, 0]),
+            ("na consulta", [2026, 9, 21], [14, 0]),
+            ("sexta na aula", [2026, 9, 25], [19, 0]),
+            ("amanhã na áula", [2026, 9, 22], [19, 0]),
+        ])
+    func moments(_ example: (text: String, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text, options: Self.moments))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+    }
+
+    @Test("A moment with an hour outside the day is ignored")
+    func momentOutsideTheDay() throws {
+        let found = try #require(interpret("amanhã no jogo", options: Self.moments))
+        #expect(!found.start.hasTime)
+    }
+
+    @Test("An app's moment wins over a built-in one written the same way")
+    func momentOverridesTable() throws {
+        let found = try #require(
+            interpret("amanhã no almoço", options: ChronoPT.Options(moments: ["no almoço": 13])))
+        #expect(hm(found.start.date) == [13, 0])
+    }
+
+    @Test("Options saved before moments existed still decode")
+    func decodesWithoutMoments() throws {
+        let saved = Data(#"{"allowsPast":true,"hour":9}"#.utf8)
+        let options = try JSONDecoder().decode(ChronoPT.Options.self, from: saved)
+        #expect(options == ChronoPT.Options(allowsPast: true, defaultHour: 9))
     }
 }

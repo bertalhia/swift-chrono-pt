@@ -162,6 +162,14 @@ paid?.start.date  // yesterday at 9:00
 or "há 2 dias". A date that only names a day, such as "dia 15" or "sexta",
 still means the next one.
 
+`moments` adds your app's own phrases, with the hour each one means. They read
+like "no almoço", and win over a built-in phrase written the same way:
+
+```swift
+let gym = ChronoPT.Options(moments: ["no treino": 7, "na consulta": 14])
+ChronoPT.interpret("amanhã no treino", options: gym)?.start.date  // tomorrow at 7:00
+```
+
 ### The text without the date
 
 A notes app wants the title without the date, and cleaning that by hand leaves

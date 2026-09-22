@@ -132,11 +132,33 @@ extension TimeRules {
         return index
     }()
 
-    static func periods(in source: TextSource) -> [Piece<Value>] {
-        source.wordSpans().flatMap { word -> [Piece<Value>] in
-            guard let entries = phrasesByFirstWord[String(source.normalized[word])] else { return [] }
+    /// An app's moments, from `ChronoPT.Options.moments`, indexed like the
+    /// table: "No Treino" reads as "no treino".
+    static func index(of moments: [String: Int]) -> [String: [(phrase: String, value: Value)]] {
+        var index: [String: [(phrase: String, value: Value)]] = [:]
+        for (text, hour) in moments where (0...23).contains(hour) {
+            let words = TextSource(text).normalized.split(separator: " ")
+            guard let first = words.first else { continue }
+            index[String(first), default: []].append(
+                (words.joined(separator: " "), .period(hour: hour, minute: 0, needsDay: false)))
+        }
+        return index
+    }
+
+    /// The phrases of the index in the text. A higher priority wins a tie with
+    /// the same phrase from another index.
+    static func periods(
+        in source: TextSource,
+        index: [String: [(phrase: String, value: Value)]] = phrasesByFirstWord,
+        priority: Int = 0
+    ) -> [Piece<Value>] {
+        guard !index.isEmpty else { return [] }
+        return source.wordSpans().flatMap { word -> [Piece<Value>] in
+            guard let entries = index[String(source.normalized[word])] else { return [] }
             return entries.compactMap { entry in
-                source.phrase(entry.phrase, at: word.lowerBound).map { Piece(range: $0, value: entry.value) }
+                source.phrase(entry.phrase, at: word.lowerBound).map {
+                    Piece(range: $0, value: entry.value, priority: priority)
+                }
             }
         }
     }

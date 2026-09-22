@@ -53,6 +53,11 @@ struct ReadmeTests {
         let water = try #require(interpret("regar as plantas a cada 15 dias"))
         #expect(water.recurrence == .daily(every: 15))
 
+        let gym = ChronoPT.Options(moments: ["no treino": 7, "na consulta": 14])
+        let training = try #require(interpret("amanhã no treino", options: gym))
+        #expect(ymd(training.start.date) == [2026, 9, 22])
+        #expect(hm(training.start.date) == [7, 0])
+
         let paid = try #require(
             interpret("paguei ontem", options: ChronoPT.Options(allowsPast: true, defaultHour: 9)))
         #expect(ymd(paid.start.date) == [2026, 9, 20])
