@@ -36,7 +36,7 @@ public enum ChronoPT {
 
         for day in context.days {
             let adjacent = context.times.indices.first { index in
-                !usedTimes.contains(index) && !context.times[index].isFromNow
+                !usedTimes.contains(index) && context.fits(context.times[index], with: day)
                     && context.source.onlyConnectors(between: day.range, and: context.times[index].range)
             }
             if let adjacent { usedTimes.insert(adjacent) }
@@ -76,13 +76,13 @@ public enum ChronoPT {
             return context.times.lazy.compactMap { context.combine(nil, $0) }.first
         }
         let attached = context.times.first {
-            !$0.isFromNow && context.source.onlyConnectors(between: day.range, and: $0.range)
+            context.fits($0, with: day) && context.source.onlyConnectors(between: day.range, and: $0.range)
         }
         let joined = attached.flatMap { attached in
             context.times.lazy.compactMap { TimeRules.joining(attached, $0) }.first
         }
         // A time counted from now belongs to no day: "consulta dia 30, sair
         // daqui a 20 minutos" is the 30th, not twenty minutes from now.
-        return context.combine(day, joined ?? attached ?? context.times.first { !$0.isFromNow })
+        return context.combine(day, joined ?? attached ?? context.times.first { context.fits($0, with: day) })
     }
 }

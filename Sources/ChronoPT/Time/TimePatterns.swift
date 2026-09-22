@@ -133,6 +133,31 @@ extension TimeRules {
                 minutes = hours ? count * 60 : count
             }
             return Piece(range: range, value: .fromNow(minutes: sign * minutes))
+        } + vagueTimes(in: source)
+    }
+
+    /// "daqui a pouco" is half an hour from now and "mais tarde" two hours;
+    /// see docs on the decision. "agora" is left out: it is too common an
+    /// adverb to mean a reminder right now.
+    static func vagueTimes(in source: TextSource) -> [Piece<Value>] {
+        source.matches(of: vagueTime, whenAny: vagueWords).compactMap { match in
+            vagueMinutes[String(match.output.1)].map {
+                Piece(range: match.range, value: .fromNow(minutes: $0))
+            }
+        }
+    }
+
+    static let vagueMinutes = [
+        "daqui a pouquinho": 30, "daqui a pouco": 30, "daqui pouquinho": 30, "daqui pouco": 30, "ja ja": 30,
+        "hoje mais tarde": 120, "mais tarde hoje": 120, "mais tarde": 120, "logo mais": 120,
+    ]
+    static let vagueWords: Set<String> = ["pouco", "pouquinho", "ja", "tarde", "logo"]
+
+    // "daqui a pouco", "já já", "mais tarde", "logo mais"
+    static var vagueTime: Regex<(Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(daqui a pouquinho|daqui a pouco|daqui pouquinho|daqui pouco|ja ja|hoje mais tarde|mais tarde hoje|mais tarde|logo mais)\b/#
+                .wordBoundaryKind(.simple)
         }
     }
 

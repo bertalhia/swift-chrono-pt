@@ -232,6 +232,38 @@ struct TimeTests {
         #expect(hm(found.start.date) == example.time)
     }
 
+    @Test(
+        "Vague times count from now",
+        arguments: [
+            ("me lembra mais tarde", [12, 0]),
+            ("daqui a pouco", [10, 30]),
+            ("daqui a pouquinho", [10, 30]),
+            ("já já", [10, 30]),
+            ("logo mais", [12, 0]),
+            ("hoje mais tarde", [12, 0]),
+            ("mais tarde hoje", [12, 0]),
+        ])
+    func vagueTime(_ example: (text: String, time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == [2026, 9, 21])
+        #expect(hm(found.start.date) == example.time)
+    }
+
+    @Test("\"Agora\" alone is not a date, and \"à tarde\" is still the afternoon")
+    func agoraIsNotADate() throws {
+        #expect(interpret("agora vou comprar pão") == nil)
+        #expect(hm(try #require(interpret("amanhã à tarde")).start.date) == [15, 0])
+    }
+
+    @Test("A time from now joins a day only when it lands on that day")
+    func fromNowJoinsItsOwnDay() throws {
+        let today = try #require(interpret("hoje, daqui a 2 horas"))
+        #expect(hm(today.start.date) == [12, 0])
+        #expect(today.text == "hoje, daqui a 2 horas")
+        let other = try #require(interpret("reunião amanhã, ligar daqui a 2 horas"))
+        #expect(ymd(other.start.date) == [2026, 9, 22])
+    }
+
     @Test("A time range past midnight ends the next day")
     func overnightRange() throws {
         let found = try #require(interpret("amanhã das 22h às 2h"))

@@ -32,6 +32,15 @@ struct Context {
         self.options = options
     }
 
+    /// Whether a time can go with this day. A time counted from now belongs to
+    /// no day, unless it lands on this one: "hoje mais tarde" is two hours
+    /// from now, "consulta dia 30, sair daqui a 20 minutos" is the 30th.
+    func fits(_ time: TimeRules.Expression, with day: Piece<DayRules.Value>) -> Bool {
+        guard case .fromNow(let minutes) = time.value else { return true }
+        guard let days = resolve(day), days.end == nil else { return false }
+        return calendar.isDate(reference.addingTimeInterval(Double(minutes) * 60), inSameDayAs: days.start)
+    }
+
     /// The rules are Gregorian: month names, weekday names, holidays and the
     /// Easter computus all count Gregorian years. A caller who passes another
     /// calendar keeps its time zone, and the arithmetic runs in Gregorian, so

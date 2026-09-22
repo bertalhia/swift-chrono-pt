@@ -43,7 +43,7 @@ date always gives the same result.
 | Clock time | às 9, 14h, 9h30, 10:30, 15:30h, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
 | Part of the day | de manhã, à tarde, à noite, de madrugada, cedo, à tardinha, tarde da noite, no fim da tarde |
 | Moment | no almoço, na janta, depois do almoço, antes de dormir, ao acordar, no café da manhã, depois do trabalho |
-| From now | daqui 2 horas, em meia hora, daqui a 20 minutos |
+| From now | daqui 2 horas, em meia hora, daqui a 20 minutos, daqui a pouco, mais tarde, logo mais |
 | Counted from a date | dois dias antes do natal, véspera do ano novo, uma semana depois do dia 10, 3 dias antes de 25/10 |
 | Business days | em 5 dias úteis, prazo de 2 dias úteis, no próximo dia útil, primeiro dia útil do mês, último dia útil do mês |
 | Range | das 14h às 16h, 14h às 16h, 10h-11h, de 9 a 11h, entre 10 e 11h, de segunda a sexta, seg-sex, do dia 10 ao dia 15, de 10 a 15 de outubro |
@@ -215,6 +215,9 @@ Documentation**.
 
 ## How it reads ambiguous text
 
+- "daqui a pouco" is 30 minutes from now and "mais tarde" 2 hours. "agora" on
+  its own is not read: it is too common an adverb to mean a reminder right
+  now.
 - A time with no day is today, or tomorrow if that time has passed. A
   repeating date works the same way: "toda segunda às 9" said on a Monday at
   10:00 is next Monday.
