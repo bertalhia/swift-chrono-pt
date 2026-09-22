@@ -40,6 +40,7 @@ struct TextSource {
             }
         }
         self.normalized = normalized
+        self.cursor = Cursor(normalized: normalized.startIndex, original: text.startIndex)
         self.skipsRules = skipsRules
         var words = Set<String>()
         var hasDigit = false
@@ -115,13 +116,41 @@ struct TextSource {
 
     private static let foldingLocale = Locale(identifier: "pt_BR")
 
-    /// The same position in the original text.
+    /// The same position in the original text. Normalization keeps one
+    /// character for each character, so the two strings are walked in step;
+    /// the walk resumes where the last one stopped, so mapping every result
+    /// of a parse in text order costs one pass instead of one per result.
     func originalRange(_ range: Range<String.Index>) -> Range<String.Index> {
-        let start = normalized.distance(from: normalized.startIndex, to: range.lowerBound)
-        let length = length(of: range)
-        let lower = original.index(original.startIndex, offsetBy: start)
-        return lower..<original.index(lower, offsetBy: length)
+        let lower = originalIndex(for: range.lowerBound)
+        return lower..<originalIndex(for: range.upperBound)
     }
+
+    private func originalIndex(for index: String.Index) -> String.Index {
+        // Back up when the position is behind: a result maps its main range
+        // and then the same spans again, a few characters back.
+        while cursor.normalized > index {
+            cursor.normalized = normalized.index(before: cursor.normalized)
+            cursor.original = original.index(before: cursor.original)
+        }
+        while cursor.normalized < index {
+            cursor.normalized = normalized.index(after: cursor.normalized)
+            cursor.original = original.index(after: cursor.original)
+        }
+        return cursor.original
+    }
+
+    /// Where the last mapping to the original text stopped.
+    private final class Cursor {
+        var normalized: String.Index
+        var original: String.Index
+
+        init(normalized: String.Index, original: String.Index) {
+            self.normalized = normalized
+            self.original = original
+        }
+    }
+
+    private let cursor: Cursor
 
     func length(of range: Range<String.Index>) -> Int {
         normalized.distance(from: range.lowerBound, to: range.upperBound)
