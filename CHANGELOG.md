@@ -4,6 +4,64 @@ Versions follow [semantic versioning](https://semver.org). Up to 0.x, a minor
 release could break the API and a patch release could not. From 1.0.0, see
 Stability in the README.
 
+## 0.12.0
+
+The API as it is meant to stay for 1.0. See Stability in the README.
+
+### Breaking
+
+- `Recurrence.weekdays` is a set of `Recurrence.Weekday`, each with its own
+  place in the month (`.every(.monday)`, `.nth(-1, .friday)`);
+  `weekdayOrdinal` is gone.
+- `Recurrence.timesPerPeriod` becomes `rate`, a count with its own unit.
+- `Recurrence` and `Options` have chosen `Codable` forms: `End` writes
+  `{"until": …}` or `{"count": 5}`, sets are written in order, invalid values
+  are refused, and `Options` writes `defaultHour`. Options saved by 0.x still
+  decode.
+- `Options.moments` maps phrases to `ChronoPT.TimeOfDay`, so a moment can
+  have minutes; `["no treino": 7]` still compiles.
+- `Match.interval` becomes `dateInterval`: whole days for a date with no time,
+  start to end for a time range.
+- `Parser` defaults to `Calendar.autoupdatingCurrent`.
+
+### Added
+
+- `Recurrence.timesOfDay`: "remédio às 8h e às 20h todo dia" is one daily rule
+  at both times.
+- `PartialDate.timeZone` keeps the zone the text named.
+- A day inside a period: "semana que vem, na quarta", "dia 25 do mês que vem",
+  "em outubro, dia 5", "dia 20 de outubro do ano que vem".
+- Named days in a month: "a primeira segunda-feira de outubro", "na última
+  sexta do mês", "fim de outubro", "meados de outubro", "na primeira semana de
+  outubro", "5º dia útil", "último dia útil de outubro".
+- Ranges: "do dia 10 ao 15", "de 10 a 15/10", "10-15 de outubro", "de outubro
+  a dezembro", and a time at each end, "de segunda às 14h até sexta às 18h".
+- From now: "daqui a 1h", "em 30min", "daqui 1h30", "daqui a 2 horas e meia".
+- "às 7:30 pm", "à uma", "às 3 h", "9:30hrs"; "no natal de 2027"; "toda terça,
+  3 vezes ao dia".
+- A Stability section in the README, and doc comments on every public symbol.
+
+### Fixed
+
+- "dia 10 às 14h" was a range from 10:00 to 14:00; it is the 10th at 14:00.
+- A second clock time was dropped ("às 8h e às 20h"), and interpret took a
+  time that belonged to another day.
+- "todo dia 30 minutos" was monthly; "em setembro" said in September meant
+  next year; weekends counted wrong on a Sunday.
+- Ordinals, fractions, scores and street names were read as dates: "na
+  segunda fase", "1/2 xícara", "Rua 25 de Março".
+- "as 2 crianças" and "reunião de 2h" were times; "hoje às 9" said at 10:00
+  gave the past 9:00 instead of 21:00.
+- Normalization shifted positions after some Unicode marks, and
+  strippingDates was quadratic in a run of spaces.
+
+### Performance
+
+- Joining steps look only at neighbouring candidates, and each rule tries its
+  regex only near its trigger words: 7 KB of notes with a date on every line
+  went from 100 ms to 28 ms, and repeated dates that took seconds take tens
+  of milliseconds.
+
 ## 0.11.0
 
 ### Added
