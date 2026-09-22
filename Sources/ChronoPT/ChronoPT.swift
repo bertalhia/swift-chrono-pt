@@ -35,6 +35,11 @@ public enum ChronoPT {
         var usedTimes = Set<Int>()
 
         for day in context.days {
+            if let ends = context.endpoints(of: day, skipping: usedTimes) {
+                usedTimes.formUnion(ends.times)
+                if let result = context.combine(day, ends.range) { results.append(result) }
+                continue
+            }
             let adjacent = context.times.indices.first { index in
                 !usedTimes.contains(index) && context.fits(context.times[index], with: day)
                     && context.source.onlyConnectors(between: day.range, and: context.times[index].range)
@@ -78,6 +83,7 @@ public enum ChronoPT {
         guard let day = context.days.first(where: { context.resolve($0) != nil }) else {
             return context.times.lazy.compactMap { context.combine(nil, $0) }.first
         }
+        if let ends = context.endpoints(of: day, skipping: []) { return context.combine(day, ends.range) }
         let attachedIndex = context.times.indices.first {
             context.fits(context.times[$0], with: day)
                 && context.source.onlyConnectors(between: day.range, and: context.times[$0].range)

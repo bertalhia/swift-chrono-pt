@@ -711,4 +711,49 @@ struct DayTests {
         #expect(ymd(found.end?.date) == example.end)
         #expect(example.text.hasSuffix(found.text))
     }
+
+    @Test(
+        "More ways to write a range of days",
+        arguments: [
+            ("do dia 10 ao 15", [2026, 10, 10], [2026, 10, 15]),
+            ("dos dias 10 a 15", [2026, 10, 10], [2026, 10, 15]),
+            ("entre os dias 10 e 15", [2026, 10, 10], [2026, 10, 15]),
+            ("de 10 a 15/10", [2026, 10, 10], [2026, 10, 15]),
+            ("de 5 a 9/10", [2026, 10, 5], [2026, 10, 9]),
+            ("10-15 de outubro", [2026, 10, 10], [2026, 10, 15]),
+            ("de outubro a dezembro", [2026, 10, 1], [2026, 12, 31]),
+            ("de dezembro a fevereiro", [2026, 12, 1], [2027, 2, 28]),
+            ("entre março e maio de 2027", [2027, 3, 1], [2027, 5, 31]),
+        ])
+    func moreRanges(_ example: (text: String, start: [Int], end: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.start)
+        #expect(ymd(found.end?.date) == example.end)
+    }
+
+    @Test(
+        "A range of days with a time at each end",
+        arguments: [
+            ("de segunda às 14h até sexta às 18h", [2026, 9, 28], [14, 0], [2026, 10, 2], [18, 0]),
+            ("de sexta 14h até sábado 10h", [2026, 9, 25], [14, 0], [2026, 9, 26], [10, 0]),
+            ("de 25/09 14h a 26/09 18h", [2026, 9, 25], [14, 0], [2026, 9, 26], [18, 0]),
+        ])
+    func rangeWithTimes(_ example: (text: String, day: [Int], time: [Int], endDay: [Int], endTime: [Int]))
+        throws
+    {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        let end = try #require(found.end?.date)
+        #expect(ymd(end) == example.endDay)
+        #expect(hm(end) == example.endTime)
+        #expect(parse(example.text).count == 1)
+    }
+
+    @Test("A count of things is not a range of days")
+    func countIsNotARange() {
+        #expect(interpret("de 3 a 5 pessoas") == nil)
+    }
 }

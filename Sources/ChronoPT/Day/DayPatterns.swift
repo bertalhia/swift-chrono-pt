@@ -162,9 +162,7 @@ extension DayRules {
     }
 
     // "primeiro dia útil do mês", "5º dia útil", "último dia útil de outubro"
-    static var nthBusinessDay:
-        Regex<(Substring, Substring, Substring?, Substring?, Substring?, Substring?)>
-    {
+    static var nthBusinessDay: Regex<(Substring, Substring, Substring?, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
             #/\b(?:(?:no|o|ate o) )?(\d{1,2}o|primeiro|segundo|terceiro|quarto|quinto|sexto|setimo|oitavo|nono|decimo|ultimo|penultimo) dia util(?: (?:do|de) (?:(proximo mes|mes que vem)|(mes)|(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?))?\b/#
                 .wordBoundaryKind(.simple)
@@ -182,9 +180,7 @@ extension DayRules {
     }
 
     // "na primeira semana de outubro", "na última semana do mês"
-    static var weekOfMonth:
-        Regex<(Substring, Substring, Substring?, Substring?, Substring?, Substring?)>
-    {
+    static var weekOfMonth: Regex<(Substring, Substring, Substring?, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
             #/\b(?:(?:na|a) )?(primeira|segunda|terceira|quarta|ultima|[1-4]a) semana (?:do|de) (?:(proximo mes|mes que vem)|(mes)|(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?)\b/#
                 .wordBoundaryKind(.simple)
@@ -328,6 +324,41 @@ extension DayRules {
     {
         RegexCache.regex {
             #/\b(de|entre) (\d{1,2}|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º)? (a|ao|ate|e) (\d{1,2}|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o|º)? de (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b(?: (?:de )?(\d{4})\b)?/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "do dia 10 ao 15", "dos dias 10 a 15", "entre os dias 10 e 15": days of
+    // the month that say they are days
+    static var dayNumberRange: Regex<(Substring, Substring, Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(do dia|dos dias|de dia|entre os dias|entre o dia) (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o)? (a|ao|ate|e) (?:o dia |dia |o )?(\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o)?\b(?!/| de | do mes)/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "de 10 a 15/10", "entre 5 e 9/10/2026": the first day takes the end's month
+    static var dayRangeToDate:
+        Regex<(Substring, Substring, Substring, Substring, Substring, Substring, Substring?)>
+    {
+        RegexCache.regex {
+            #/\b(de|entre) (\d{1,2}) (a|ao|ate|e) (\d{1,2})/(\d{1,2})(?:/(\d{4}|\d{2}))?\b/#.wordBoundaryKind(
+                .simple)
+        }
+    }
+
+    // "10-15 de outubro", "10 - 15 de outubro de 2027"
+    static var hyphenDayRange: Regex<(Substring, Substring, Substring, Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(\d{1,2}) ?- ?(\d{1,2}) de (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b(?: (?:de )?(\d{4})\b)?/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "de outubro a dezembro", "entre março e maio de 2027"
+    static var monthRange: Regex<(Substring, Substring, Substring, Substring, Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(de|entre) (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez) (a|ate|e) (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b(?: de (\d{4}))?/#
                 .wordBoundaryKind(.simple)
         }
     }

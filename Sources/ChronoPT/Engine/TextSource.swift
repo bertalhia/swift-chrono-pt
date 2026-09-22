@@ -359,9 +359,13 @@ struct TextSource {
     /// Whether `second` closes the range `opening` opened at `first`. `nil`
     /// when the gap holds a word no range allows: every later end has that
     /// word in its gap too, so a caller walking ends in text order can stop.
-    func closesRange(_ opening: RangeOpening, from first: Range<String.Index>, to second: Range<String.Index>)
-        -> Bool?
-    {
+    ///
+    /// Words `skipping` accepts sit in the gap without opening or closing
+    /// anything: the time in "de segunda às 14h até sexta".
+    func closesRange(
+        _ opening: RangeOpening, from first: Range<String.Index>, to second: Range<String.Index>,
+        skipping: (Substring) -> Bool = { _ in false }
+    ) -> Bool? {
         let gap = first.upperBound..<second.lowerBound
         let closings = opening.closings
         var closed = false
@@ -369,10 +373,10 @@ struct TextSource {
             everyWord(
                 in: gap,
                 { word in
+                    if skipping(word) { return true }
                     let word = String(word)
                     if closings.contains(word) { closed = true }
-                    return closed && Self.articles.contains(word) || closings.contains(word)
-                        || Self.articles.contains(word)
+                    return closings.contains(word) || Self.articles.contains(word)
                 })
         else { return nil }
         if closed { return true }

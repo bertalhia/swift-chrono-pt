@@ -43,7 +43,7 @@ enum DayRules {
     ) -> [Piece<Value>] {
         let near = Neighbours(found)
         let candidates =
-            (found + ranges(of: near, in: source) + weekdaysWithDates(of: near, in: source)
+            (found + ranges(of: near, in: source, times: times) + weekdaysWithDates(of: near, in: source)
             + offsets(of: near, in: source) + lengths(of: near, in: source)
             + limits(of: near, in: source, times: times) + withins(of: near, in: source))
             .filter { candidate in
@@ -77,7 +77,9 @@ enum DayRules {
     /// 15", "de hoje até sexta", "segunda a sexta", "seg-sex". The range is the
     /// hint a weekday needs. With no opening word, the first day has to start
     /// right at its number or name.
-    private static func ranges(of near: Neighbours, in source: TextSource) -> [Candidate] {
+    private static func ranges(of near: Neighbours, in source: TextSource, times: [TimeRules.Expression])
+        -> [Candidate]
+    {
         let sorted = near.byStart
         return sorted.indices.flatMap { index -> [Candidate] in
             let first = sorted[index]
@@ -91,8 +93,11 @@ enum DayRules {
             // no later end can close this range.
             for second in sorted[(index + 1)...]
             where second.piece.range.lowerBound >= first.piece.range.upperBound {
+                // A time may sit inside: "de segunda às 14h até sexta às 18h".
                 guard
-                    let closes = source.closesRange(opening, from: first.piece.range, to: second.piece.range)
+                    let closes = source.closesRange(
+                        opening, from: first.piece.range, to: second.piece.range,
+                        skipping: { isInsideTime($0.startIndex, times, in: source) })
                 else { break }
                 guard closes else { continue }
                 // A day of the month takes the month of the end: "do dia 10 ao
@@ -127,7 +132,8 @@ enum DayRules {
         if text == "24/7" { return true }
         if let before = source.word(before: range.lowerBound), scoreWords.contains(before) { return true }
         let next = source.words(after: range.upperBound, count: 2)
-        guard let first = next.first else { return false }
+        // A time after it makes it a date: "25/09 14h".
+        guard let first = next.first, first.first?.isNumber != true else { return false }
         if ["de", "da", "do", "das", "dos"].contains(first) {
             return !(next.count > 1 && TimeRules.partsOfDay.contains(next[1]))
         }
@@ -150,7 +156,9 @@ enum DayRules {
 
     /// A day in the month the words after it name: none for this month's,
     /// "do mês que vem", or a month by name with its year.
-    private static func inMonth(_ inner: Value, next: Substring?, named: Substring?, year: Substring?) -> Value {
+    private static func inMonth(_ inner: Value, next: Substring?, named: Substring?, year: Substring?)
+        -> Value
+    {
         if next != nil { return .within(inner, .nextMonth) }
         if let named, let month = months[String(named)] {
             return .within(inner, .month(month, year: year.flatMap { Int($0) }))
@@ -173,9 +181,11 @@ enum DayRules {
             return (Array(after) + Array(before)).compactMap { outer in
                 guard holds(outer.piece.value, inner.piece.value) else { return nil }
                 let range =
-                    min(inner.piece.range.lowerBound, outer.piece.range.lowerBound)..<max(
+                    min(
+                        inner.piece.range.lowerBound, outer.piece.range.lowerBound)..<max(
                         inner.piece.range.upperBound, outer.piece.range.upperBound)
-                let piece = Piece(range: range, value: Value.within(inner.piece.value, outer.piece.value), priority: 1)
+                let piece = Piece(
+                    range: range, value: Value.within(inner.piece.value, outer.piece.value), priority: 1)
                 return Candidate(piece: piece, hint: .none)
             }
         }
@@ -198,7 +208,8 @@ enum DayRules {
         case (.dayOfMonth, .nextMonth), (.dayOfMonth, .thisMonth), (.dayOfMonth, .lastMonth),
             (.dayOfMonth, .month), (.dayOfMonth, .months):
             true
-        case (.date, .nextYear), (.date, .lastYear), (.date, .years), (.month, .nextYear), (.month, .lastYear),
+        case (.date, .nextYear), (.date, .lastYear), (.date, .years), (.month, .nextYear),
+            (.month, .lastYear),
             (.month, .years):
             true
         default:
@@ -290,12 +301,8 @@ enum DayRules {
                     saysUntil = true
                     return true
                 }
-                if ["o", "a", "os", "as"].contains(word) { return true }
-                // Inside a time: the one that starts last at or before it.
-                let next = firstIndex(in: times, from: source.normalized.index(after: word.startIndex)) {
-                    $0.range.lowerBound
-                }
-                return next > 0 && times[next - 1].range.contains(word.startIndex)
+                return ["o", "a", "os", "as"].contains(word)
+                    || isInsideTime(word.startIndex, times, in: source)
             }
             return joins ? saysUntil : nil
         }
@@ -366,6 +373,15 @@ enum DayRules {
             }
             return found
         }
+    }
+
+    /// Whether the position falls inside one of the times, which are in
+    /// text order: the one that starts last at or before it.
+    static func isInsideTime(_ index: String.Index, _ times: [TimeRules.Expression], in source: TextSource)
+        -> Bool
+    {
+        let next = firstIndex(in: times, from: source.normalized.index(after: index)) { $0.range.lowerBound }
+        return next > 0 && times[next - 1].range.contains(index)
     }
 
     /// The candidates in text order, so a joining step looks only at the
@@ -622,6 +638,54 @@ enum DayRules {
                     .date(day: first, month: month, year: year), .date(day: last, month: month, year: year)))
         }
 
+        for match in source.matches(of: dayNumberRange, whenAny: ["dia", "dias"]) {
+            let (_, opening, firstText, closing, lastText) = match.output
+            guard opening.hasPrefix("entre") == (closing == "e"), let first = dayNumber(firstText),
+                let last = dayNumber(lastText), first < last
+            else { continue }
+            add(match.range, .range(.dayOfMonth(first), .dayOfMonth(last)))
+        }
+
+        for match in source.matches(of: dayRangeToDate, whenContains: "/") {
+            let (_, opening, firstText, closing, lastText, monthText, yearText) = match.output
+            guard (opening == "entre") == (closing == "e"), let first = Int(firstText),
+                let last = Int(lastText),
+                let month = Int(monthText), first < last
+            else { continue }
+            let year = yearText.flatMap { year(String($0)) }
+            add(
+                match.range,
+                .range(
+                    .date(day: first, month: month, year: year), .date(day: last, month: month, year: year)))
+        }
+
+        for match in source.matches(of: hyphenDayRange, whenAny: monthWords) {
+            let (_, firstText, lastText, monthText, yearText) = match.output
+            guard let first = Int(firstText), let last = Int(lastText), first < last,
+                let month = months[String(monthText)]
+            else { continue }
+            let year = yearText.flatMap { Int($0) }
+            add(
+                match.range,
+                .range(
+                    .date(day: first, month: month, year: year), .date(day: last, month: month, year: year)))
+        }
+
+        for match in source.matches(of: monthRange, whenAny: monthWords) {
+            let (_, opening, firstText, closing, lastText, yearText) = match.output
+            guard (opening == "entre") == (closing == "e"), let first = months[String(firstText)],
+                let last = months[String(lastText)]
+            else { continue }
+            let year = yearText.flatMap { Int($0) }
+            // "de março a maio de 2027": the year is both ends' unless the
+            // range crosses into it.
+            add(
+                match.range,
+                .range(
+                    .month(first, year: first <= last ? year : year.map { $0 - 1 }), .month(last, year: year))
+            )
+        }
+
         for match in source.matches(of: dayOfMonth, whenAny: dayWords) {
             guard let day = dayNumber(match.output.1) else { continue }
             add(match.range, .dayOfMonth(day))
@@ -661,8 +725,12 @@ enum DayRules {
 
         for match in source.matches(of: nthWeekdayInMonth, whenAny: monthWords.union(["mes"])) {
             let (_, ordinal, name, next, _, named, year) = match.output
-            guard let place = ordinals[String(ordinal)], let weekday = weekdays[String(name)] else { continue }
-            add(match.range, inMonth(.nthWeekdayOfMonth(place, weekday: weekday), next: next, named: named, year: year))
+            guard let place = ordinals[String(ordinal)], let weekday = weekdays[String(name)] else {
+                continue
+            }
+            add(
+                match.range,
+                inMonth(.nthWeekdayOfMonth(place, weekday: weekday), next: next, named: named, year: year))
         }
 
         for match in source.matches(of: weekOfMonth, whenAny: ["semana"]) {

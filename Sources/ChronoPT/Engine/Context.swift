@@ -232,6 +232,30 @@ struct Context {
         }
     }
 
+    /// A range of days with a time at each end: "de segunda às 14h até sexta
+    /// às 18h", "de 25/09 14h a 26/09 18h". The time inside the range and the
+    /// one right after it, as one time range from the first day to the last.
+    func endpoints(of day: Piece<DayRules.Value>, skipping used: Set<Int>) -> (
+        times: [Int], range: TimeRules.Expression
+    )? {
+        guard case .range = day.value,
+            let inner = times.indices.first(where: { index in
+                !used.contains(index) && day.range.contains(times[index].range.lowerBound)
+                    && times[index].range.upperBound <= day.range.upperBound
+            }),
+            let after = times.indices.first(where: { index in
+                !used.contains(index) && times[index].range.lowerBound >= day.range.upperBound
+                    && source.onlyConnectors(between: day.range, and: times[index].range)
+            }),
+            case .at(let from) = times[inner].value, case .at(let until) = times[after].value
+        else { return nil }
+        let range = TimeRules.Expression(
+            range: times[inner].range.lowerBound..<times[after].range.upperBound,
+            value: .between(from, until: until), needsDay: false,
+            pieces: times[inner].pieces + times[after].pieces)
+        return ([inner, after], range)
+    }
+
     /// The times that go with a day, starting from the one next to it. A
     /// repeating day also takes every clock time chained to that one by
     /// connectors: "às 8h e às 20h todo dia" is both.

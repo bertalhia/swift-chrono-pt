@@ -509,7 +509,9 @@ extension DayRules {
     /// Where a day falls inside a period: the weekday in the period's week,
     /// the day in its month, the date in its year, the part of its month or
     /// week. `nil` when the two don't fit together.
-    static func inside(_ inner: Value, span: (start: Date, end: Date?), calendar: Calendar) -> (start: Date, end: Date?)? {
+    static func inside(_ inner: Value, span: (start: Date, end: Date?), calendar: Calendar) -> (
+        start: Date, end: Date?
+    )? {
         let first = span.start
         let year = calendar.component(.year, from: first)
         let month = calendar.component(.month, from: first)
@@ -530,17 +532,24 @@ extension DayRules {
             return (start, start == end ? nil : end)
         case .dayOfMonth(let dayNumber):
             guard DayRules.isValidDate(day: dayNumber, month: month, year: year) else { return nil }
-            return calendar.date(from: DateComponents(year: year, month: month, day: dayNumber)).map { ($0, nil) }
+            return calendar.date(from: DateComponents(year: year, month: month, day: dayNumber)).map {
+                ($0, nil)
+            }
         case .endOfMonth(months: 0):
             return (lastOfMonth, nil)
         case .date(let dayNumber, let dateMonth, nil):
             guard DayRules.isValidDate(day: dayNumber, month: dateMonth, year: year) else { return nil }
-            return calendar.date(from: DateComponents(year: year, month: dateMonth, day: dayNumber)).map { ($0, nil) }
+            return calendar.date(from: DateComponents(year: year, month: dateMonth, day: dayNumber)).map {
+                ($0, nil)
+            }
         case .month(let named, nil):
             return resolve(.month(named, year: year), reference: first, calendar: calendar)
         case .startOfYear, .middleOfYear, .endOfYear:
-            let (dateMonth, dayNumber) = inner == .startOfYear ? (1, 1) : inner == .middleOfYear ? (6, 30) : (12, 31)
-            return calendar.date(from: DateComponents(year: year, month: dateMonth, day: dayNumber)).map { ($0, nil) }
+            let (dateMonth, dayNumber) =
+                inner == .startOfYear ? (1, 1) : inner == .middleOfYear ? (6, 30) : (12, 31)
+            return calendar.date(from: DateComponents(year: year, month: dateMonth, day: dayNumber)).map {
+                ($0, nil)
+            }
         case .nthBusinessDayOfMonth(let place):
             var date = place > 0 ? firstOfMonth : lastOfMonth
             var left = abs(place)

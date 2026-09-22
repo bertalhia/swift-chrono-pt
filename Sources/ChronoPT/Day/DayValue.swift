@@ -183,7 +183,8 @@ extension DayRules {
             case .weekday, .lastWeekday, .nthWeekdayOfMonth:
                 [.day, .month, .year, .weekday]
             case .within(let inner, _):
-                inner.knownComponents.contains(.weekday) ? [.day, .month, .year, .weekday] : [.day, .month, .year]
+                inner.knownComponents.contains(.weekday)
+                    ? [.day, .month, .year, .weekday] : [.day, .month, .year]
             case .weekdayAndDay:
                 [.day, .weekday]
             case .date(_, _, let year):

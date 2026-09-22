@@ -47,7 +47,9 @@ mean more than one thing.
 - From now: daqui 2 horas, em meia hora, daqui a pouco (30 minutes), mais
   tarde (2 hours).
 - Ranges: das 14h às 16h, 14h às 16h, 10h-11h, entre 10 e 11h, de segunda a
-  sexta, do dia 10 ao dia 15, de 10 a 15 de outubro.
+  sexta, do dia 10 ao dia 15, do dia 10 ao 15, de 10 a 15 de outubro, de 10 a
+  15/10, 10-15 de outubro, de outubro a dezembro, and a time at each end: de
+  segunda às 14h até sexta às 18h.
 - Lengths: por 3 dias, durante uma semana, nos próximos 5 dias, pelas próximas
   2 semanas, amanhã por 3 dias. The span counts the first day: "por 3 dias"
   said on the 21st runs to the 23rd. "durante a semana" is today to Friday.
