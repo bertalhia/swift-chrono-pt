@@ -113,6 +113,31 @@ extension DayRules {
         }
     }
 
+    // "primeiro semestre", "3º trimestre de 2027"
+    static var yearPart: Regex<(Substring, Substring, Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(primeiro|segundo|terceiro|quarto|quinto|sexto|[1-6]o) (semestre|trimestre|quadrimestre|bimestre)(?: de (\d{4}))?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "este semestre", "no próximo trimestre", "semestre que vem"
+    static var yearPartFromNow: Regex<(Substring, Substring?, Substring?, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(?:este|esse|neste|nesse|deste|desse) (semestre|trimestre|quadrimestre|bimestre)|(?:proximo|prox) (semestre|trimestre|quadrimestre|bimestre)|(semestre|trimestre|quadrimestre|bimestre) que vem)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "primeira quinzena de outubro", "na 2ª quinzena": the preposition keeps
+    // "na 2ª" and "na segunda" from reading as Monday
+    static var halfMonth: Regex<(Substring, Substring, Substring?, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(?:na|da|a|ate a|para a|pra) )?(primeira|segunda|1a|2a) quinzena(?: do mes)?(?: (?:de|do mes de) (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?)?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "toda terça", "todas as sextas", "às segundas e quartas", "nas terças e quintas"
     static var everyWeekday: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
@@ -327,6 +352,16 @@ extension DayRules {
         "santa", "paixao", "pascoa", "corpus", "maes", "pais",
     ]
     static let businessWords: Set<String> = ["util", "uteis"]
+    static let yearPartWords: Set<String> = ["semestre", "trimestre", "quadrimestre", "bimestre"]
+    static let halfMonthWords: Set<String> = ["quinzena"]
+
+    /// How many of each part a year has.
+    static let yearParts = ["semestre": 2, "trimestre": 4, "quadrimestre": 3, "bimestre": 6]
+
+    static let ordinals = [
+        "primeiro": 1, "segundo": 2, "terceiro": 3, "quarto": 4, "quinto": 5, "sexto": 6,
+        "primeira": 1, "segunda": 2, "1o": 1, "2o": 2, "3o": 3, "4o": 4, "5o": 5, "6o": 6, "1a": 1, "2a": 2,
+    ]
     static let offsetWords: Set<String> = ["antes", "depois", "apos", "vespera", "antevespera"]
     static var monthWords: Set<String> { Set(months.keys) }
 

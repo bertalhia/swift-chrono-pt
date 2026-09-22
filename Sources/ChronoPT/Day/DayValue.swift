@@ -35,6 +35,16 @@ extension DayRules {
         case endOfWeek
         /// A whole month: "em outubro", "março de 2027".
         case month(Int, year: Int?)
+        /// A part of the year: "primeiro semestre" is part 1 of 2, "terceiro
+        /// trimestre" part 3 of 4. Without a year, the next one that has not
+        /// ended.
+        case yearPart(Int, of: Int, year: Int?)
+        /// The part of the year under way, or one after it: "este semestre"
+        /// is 0, "próximo trimestre" is 1.
+        case yearPartFromNow(Int, of: Int)
+        /// Half a month, a "quinzena": 1 is days 1 to 15, 2 the rest. Without
+        /// a month, this month's if it has not ended.
+        case halfMonth(Int, month: Int?, year: Int?)
         /// Days the banks are open: "em 5 dias úteis", "no próximo dia útil",
         /// "primeiro dia útil do mês", "último dia útil do mês".
         case businessDays(Int)
@@ -115,8 +125,12 @@ extension DayRules {
             case .startOfYear, .middleOfYear, .endOfYear, .startOfWeek, .middleOfWeek, .endOfWeek,
                 .businessDays, .firstBusinessDayOfMonth, .lastBusinessDayOfMonth:
                 [.day, .month, .year]
-            case .month(_, let year):
+            case .month(_, let year), .yearPart(_, _, let year):
                 year == nil ? [.month] : [.month, .year]
+            case .yearPartFromNow:
+                [.month, .year]
+            case .halfMonth(_, let month, let year):
+                month == nil ? [.day] : year == nil ? [.day, .month] : [.day, .month, .year]
             case .holiday:
                 [.day, .month]
             case .daily, .interval:

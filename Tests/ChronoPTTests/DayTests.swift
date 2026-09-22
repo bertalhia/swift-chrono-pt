@@ -382,6 +382,39 @@ struct DayTests {
     }
 
     @Test(
+        "Parts of the year and halves of the month",
+        arguments: [
+            ("no primeiro semestre", [2027, 1, 1], [2027, 6, 30]),
+            // Under way: from today.
+            ("no segundo semestre", [2026, 9, 21], [2026, 12, 31]),
+            ("segundo semestre de 2026", [2026, 7, 1], [2026, 12, 31]),
+            ("no próximo trimestre", [2026, 10, 1], [2026, 12, 31]),
+            ("no primeiro trimestre de 2027", [2027, 1, 1], [2027, 3, 31]),
+            ("este trimestre", [2026, 9, 21], [2026, 9, 30]),
+            ("semestre que vem", [2027, 1, 1], [2027, 6, 30]),
+            ("4º trimestre", [2026, 10, 1], [2026, 12, 31]),
+            ("sexto bimestre", [2026, 11, 1], [2026, 12, 31]),
+            ("primeira quinzena de outubro", [2026, 10, 1], [2026, 10, 15]),
+            ("segunda quinzena de outubro", [2026, 10, 16], [2026, 10, 31]),
+            ("segunda quinzena", [2026, 9, 21], [2026, 9, 30]),
+            // This month's first half has ended.
+            ("primeira quinzena", [2026, 10, 1], [2026, 10, 15]),
+            // Not Monday.
+            ("na 2ª quinzena", [2026, 9, 21], [2026, 9, 30]),
+        ])
+    func partsOfTheYear(_ example: (text: String, start: [Int], end: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.start)
+        #expect(ymd(found.end?.date) == example.end)
+    }
+
+    @Test(
+        "A part the year does not have is not a date", arguments: ["terceiro semestre", "quinto trimestre"])
+    func partTheYearDoesNotHave(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test(
         "A day counted from another",
         arguments: [
             ("dois dias antes do natal", [2026, 12, 23]),

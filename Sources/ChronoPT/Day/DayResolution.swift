@@ -229,6 +229,45 @@ extension DayRules {
             guard let first, let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
             return (first, last)
 
+        case .yearPart(let part, let parts, let year):
+            if let year { return yearPart(part, of: parts, year: year, calendar: calendar) }
+            let thisYear = calendar.component(.year, from: today)
+            return (thisYear...(thisYear + 1)).lazy
+                .compactMap { yearPart(part, of: parts, year: $0, calendar: calendar) }
+                .first { $0.end >= today }
+                .map { fromToday($0, today: today) }
+
+        case .yearPartFromNow(let offset, let parts):
+            guard parts > 0, 12 % parts == 0 else { return nil }
+            let index = (calendar.component(.month, from: today) - 1) / (12 / parts) + offset
+            let year = calendar.component(.year, from: today) + index / parts
+            return yearPart(index % parts + 1, of: parts, year: year, calendar: calendar)
+                .map { fromToday($0, today: today) }
+
+        case .halfMonth(let half, let month, let year):
+            if let month, let year {
+                return calendar.date(from: DateComponents(year: year, month: month, day: 1))
+                    .flatMap { halfMonth(half, from: $0, calendar: calendar) }
+            }
+            // The first months to try: this month's half or the next one's,
+            // or the month named in this year or the next.
+            let firsts: [Date?] =
+                if let month {
+                    (0...1).map {
+                        calendar.date(
+                            from: DateComponents(
+                                year: calendar.component(.year, from: today) + $0, month: month, day: 1))
+                    }
+                } else {
+                    (0...1).map { months in
+                        calendar.dateInterval(of: .month, for: today)
+                            .flatMap { calendar.date(byAdding: .month, value: months, to: $0.start) }
+                    }
+                }
+            return firsts.lazy.compactMap { $0.flatMap { halfMonth(half, from: $0, calendar: calendar) } }
+                .first { $0.end >= today }
+                .map { fromToday($0, today: today) }
+
         case .dateTime:
             return instant(of: value, calendar: calendar).map { (calendar.startOfDay(for: $0), nil) }
 
@@ -307,6 +346,39 @@ extension DayRules {
         let month = (h + l - 7 * m + 114) / 31
         let day = (h + l - 7 * m + 114) % 31 + 1
         return calendar.date(from: DateComponents(year: year, month: month, day: day))
+    }
+
+    /// The first and last day of part `part` of `parts` in the year.
+    static func yearPart(_ part: Int, of parts: Int, year: Int, calendar: Calendar) -> (
+        start: Date, end: Date
+    )? {
+        guard parts > 0, 12 % parts == 0, (1...parts).contains(part),
+            let first = calendar.date(
+                from: DateComponents(year: year, month: (part - 1) * 12 / parts + 1, day: 1)),
+            let last = calendar.date(byAdding: DateComponents(month: 12 / parts, day: -1), to: first)
+        else { return nil }
+        return (first, last)
+    }
+
+    /// The first and last day of a half of the month that starts on `first`.
+    static func halfMonth(_ half: Int, from first: Date, calendar: Calendar) -> (start: Date, end: Date)? {
+        guard let fifteenth = calendar.date(byAdding: .day, value: 14, to: first) else { return nil }
+        switch half {
+        case 1: return (first, fifteenth)
+        case 2:
+            guard let sixteenth = calendar.date(byAdding: .day, value: 1, to: fifteenth),
+                let last = lastDayOfMonth(first, calendar: calendar)
+            else { return nil }
+            return (sixteenth, last)
+        default: return nil
+        }
+    }
+
+    /// A period that has started runs from today: "no segundo semestre" said
+    /// in September.
+    static func fromToday(_ days: (start: Date, end: Date), today: Date) -> (start: Date, end: Date?) {
+        let start = max(days.start, today)
+        return (start, days.end == start ? nil : days.end)
     }
 
     static func firstDayOfNextMonth(_ day: Date, calendar: Calendar) -> Date? {

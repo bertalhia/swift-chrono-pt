@@ -361,6 +361,27 @@ enum DayRules {
             add(match.range, .month(month, year: year.flatMap { Int($0) }))
         }
 
+        for match in source.matches(of: yearPart, whenAny: yearPartWords) {
+            let (_, ordinal, unit, year) = match.output
+            guard let part = ordinals[String(ordinal)], let parts = yearParts[String(unit)], part <= parts
+            else { continue }
+            add(match.range, .yearPart(part, of: parts, year: year.flatMap { Int($0) }))
+        }
+
+        for match in source.matches(of: yearPartFromNow, whenAny: yearPartWords) {
+            let (_, this, next, coming) = match.output
+            guard let unit = this ?? next ?? coming, let parts = yearParts[String(unit)] else { continue }
+            add(match.range, .yearPartFromNow(this == nil ? 1 : 0, of: parts))
+        }
+
+        for match in source.matches(of: halfMonth, whenAny: halfMonthWords) {
+            let (_, ordinal, month, year) = match.output
+            guard let half = ordinals[String(ordinal)] else { continue }
+            add(
+                match.range,
+                .halfMonth(half, month: month.flatMap { months[String($0)] }, year: year.flatMap { Int($0) }))
+        }
+
         for match in source.matches(of: namedPeriod, whenAny: periodWords) {
             let value: Value =
                 switch match.output.1 {

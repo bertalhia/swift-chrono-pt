@@ -14,8 +14,10 @@ mean more than one thing.
 - Dates with a time, ISO style: 2026-10-15T14:30, 2026-10-15 14:30:00,
   2026-10-15T14:30:00-03:00. With an offset, the moment is the one it names.
 - Periods: esta semana, semana que vem, fim de semana, no meio da semana, este
-  mês, no início do mês, fim do mês, em outubro, março de 2027, dez/2027, ano
-  que vem, fim do ano.
+  mês, no início do mês, fim do mês, primeira quinzena de outubro, em outubro,
+  março de 2027, dez/2027, no próximo trimestre, primeiro semestre, ano que
+  vem, fim do ano. A period under way runs from today: "no segundo semestre"
+  said in September starts that day.
 - Holidays: no natal, véspera de natal, no ano novo, na páscoa, no carnaval,
   sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais.
 - Counted from another date: dois dias antes do natal, véspera do ano novo,
