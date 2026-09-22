@@ -81,6 +81,14 @@ extension DayRules {
         }
     }
 
+    // "em outubro", "em março de 2027", "março que vem", "no mês de outubro"
+    static var wholeMonth: Regex<(Substring, Substring?, Substring?, Substring?, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(?:em|no mes de|para|ate|no|neste|nesse) (fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio)|(fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio) que vem|(fevereiro|setembro|novembro|dezembro|janeiro|outubro|agosto|junho|abril|marco|julho|maio)(?= de \d{4}))\b(?: de (\d{4}))?/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "toda terça", "todas as sextas", "às segundas e quartas", "nas terças e quintas"
     static var everyWeekday: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
@@ -146,7 +154,7 @@ extension DayRules {
 
     static var namedPeriod: Regex<(Substring, Substring)> {
         RegexCache.regex {
-            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ano que vem|proximo ano|prox ano|semana passada|mes passado|ano passado)\b/#
+            #/\b(esta semana que vem|essa semana que vem|esta semana|essa semana|nesta semana|nessa semana|semana que vem|proxima semana|prox semana|fim de semana que vem|final de semana que vem|proximo fim de semana|proximo final de semana|fim de semana passado|final de semana passado|fim de semana|final de semana|fds|este mes|esse mes|neste mes|nesse mes|(?:comeco|inicio) do (?:mes que vem|proximo mes)|mes que vem|proximo mes|prox mes|fim do mes que vem|final do mes que vem|fim do mes|final do mes|ultimo dia do mes|primeiro dia do mes|inicio do mes|comeco do mes|meio do mes|metade do mes|inicio do ano|comeco do ano|meio do ano|metade do ano|fim do ano|final do ano|comeco da semana|inicio da semana|meio da semana|metade da semana|fim da semana|final da semana|ano que vem|proximo ano|prox ano|semana passada|mes passado|ano passado)\b/#
                 .wordBoundaryKind(.simple)
         }
     }

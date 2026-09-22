@@ -21,6 +21,17 @@ extension DayRules {
         /// Months from this one: 0 is "fim do mês", 1 is "fim do mês que vem".
         case endOfMonth(months: Int)
         case nextYear
+        /// The next 1 January, 30 June or 31 December.
+        case startOfYear
+        case middleOfYear
+        case endOfYear
+        /// Monday and Tuesday, Wednesday, or Thursday and Friday of the week
+        /// that has not gone by yet.
+        case startOfWeek
+        case middleOfWeek
+        case endOfWeek
+        /// A whole month: "em outubro", "março de 2027".
+        case month(Int, year: Int?)
         case holiday(Holiday)
         /// The last time that weekday came, before today: "sexta passada".
         case lastWeekday(Int)
@@ -85,6 +96,10 @@ extension DayRules {
                 [.month, .year]
             case .nextYear, .lastYear:
                 [.year]
+            case .startOfYear, .middleOfYear, .endOfYear, .startOfWeek, .middleOfWeek, .endOfWeek:
+                [.day, .month, .year]
+            case .month(_, let year):
+                year == nil ? [.month] : [.month, .year]
             case .holiday:
                 [.day, .month]
             case .daily, .interval:

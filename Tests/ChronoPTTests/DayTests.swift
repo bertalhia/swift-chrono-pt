@@ -56,6 +56,13 @@ struct DayTests {
             ("dom que vem", [2026, 9, 27]),
             ("prox sexta", [2026, 9, 25]),
             ("prazo de 5 dias", [2026, 9, 26]),
+            ("fim do ano", [2026, 12, 31]),
+            ("no início do ano", [2027, 1, 1]),
+            ("no meio do ano", [2027, 6, 30]),
+            ("pagar no início do mês", [2026, 10, 1]),
+            ("no meio do mês", [2026, 10, 15]),
+            ("no último dia do mês", [2026, 9, 30]),
+            ("no primeiro dia do mês", [2026, 10, 1]),
             ("no prazo de 30 dias", [2026, 10, 21]),
             ("em até 10 dias", [2026, 10, 1]),
             ("daqui a 1 ano", [2027, 9, 21]),
@@ -109,6 +116,13 @@ struct DayTests {
             ("no próximo ano", [2027, 1, 1], [2027, 12, 31]),
             ("prox semana", [2026, 9, 28], [2026, 10, 4]),
             ("fim de semana que vem", [2026, 10, 3], [2026, 10, 4]),
+            ("no começo da semana", [2026, 9, 21], [2026, 9, 22]),
+            ("no meio da semana", [2026, 9, 23], [2026, 9, 23]),
+            ("no fim da semana", [2026, 9, 24], [2026, 9, 25]),
+            ("férias em dezembro", [2026, 12, 1], [2026, 12, 31]),
+            ("em março de 2027", [2027, 3, 1], [2027, 3, 31]),
+            ("março que vem", [2027, 3, 1], [2027, 3, 31]),
+            ("no mês de outubro", [2026, 10, 1], [2026, 10, 31]),
             ("próximo fim de semana", [2026, 10, 3], [2026, 10, 4]),
             ("final de semana que vem", [2026, 10, 3], [2026, 10, 4]),
             ("de seg a sex", [2026, 9, 28], [2026, 10, 2]),
@@ -130,6 +144,14 @@ struct DayTests {
         let found = try #require(interpret(text))
         #expect(ymd(found.start.date) == [2026, 10, 1])
         #expect(found.end == nil)
+    }
+
+    @Test("\"Fim da semana\" is Thursday and Friday, not the weekend")
+    func endOfWeekIsNotTheWeekend() throws {
+        let week = try #require(interpret("no fim da semana"))
+        #expect(ymd(week.start.date) == [2026, 9, 24])
+        let weekend = try #require(interpret("no fim de semana"))
+        #expect(ymd(weekend.start.date) == [2026, 9, 26])
     }
 
     @Test("\"Esta semana\" on a Sunday is just that day")

@@ -172,6 +172,57 @@ extension DayRules {
             let end = last.end ?? last.start
             return end > first.start ? (first.start, end) : first
 
+        case .startOfYear, .middleOfYear, .endOfYear:
+            // The next 1 January, 30 June or 31 December, counting today.
+            let (month, day) =
+                switch value {
+                case .startOfYear: (1, 1)
+                case .middleOfYear: (6, 30)
+                default: (12, 31)
+                }
+            return calendar.nextDate(
+                after: today.addingTimeInterval(-1),
+                matching: DateComponents(month: month, day: day),
+                matchingPolicy: .strict
+            ).map { ($0, nil) }
+
+        case .startOfWeek, .middleOfWeek, .endOfWeek:
+            // Monday and Tuesday, Wednesday, or Thursday and Friday; the next
+            // week once this one's part has gone by.
+            let (first, last) =
+                switch value {
+                case .startOfWeek: (0, 1)
+                case .middleOfWeek: (2, 2)
+                default: (3, 4)
+                }
+            let weekday = calendar.component(.weekday, from: today)
+            guard let monday = calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: today),
+                var start = calendar.date(byAdding: .day, value: first, to: monday),
+                var end = calendar.date(byAdding: .day, value: last, to: monday)
+            else { return nil }
+            if end < today {
+                guard let later = calendar.date(byAdding: .day, value: 7, to: start),
+                    let laterEnd = calendar.date(byAdding: .day, value: 7, to: end)
+                else { return nil }
+                (start, end) = (later, laterEnd)
+            }
+            return (start, start == end ? end : end)
+
+        case .month(let month, let year):
+            // The whole month, the next one to come when the text gave no year.
+            let first: Date? =
+                if let year {
+                    calendar.date(from: DateComponents(year: year, month: month, day: 1))
+                } else {
+                    calendar.nextDate(
+                        after: calendar.date(byAdding: .day, value: -1, to: today) ?? today,
+                        matching: DateComponents(month: month, day: 1),
+                        matchingPolicy: .strict
+                    )
+                }
+            guard let first, let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
+            return (first, last)
+
         case .holiday(let holiday):
             // The next time the holiday comes, counting today; one that lasts
             // several days and has started counts from today.

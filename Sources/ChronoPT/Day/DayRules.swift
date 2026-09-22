@@ -232,6 +232,13 @@ enum DayRules {
             add(match.range, .holiday(entry.holiday))
         }
 
+        for match in text.matches(of: wholeMonth) {
+            let (_, withPreposition, comingMonth, withYear, year) = match.output
+            guard let name = withPreposition ?? comingMonth ?? withYear, let month = months[String(name)]
+            else { continue }
+            add(match.range, .month(month, year: year.flatMap { Int($0) }))
+        }
+
         for match in text.matches(of: namedPeriod) {
             let value: Value =
                 switch match.output.1 {
@@ -249,7 +256,15 @@ enum DayRules {
                 case "comeco do mes que vem", "inicio do mes que vem", "comeco do proximo mes",
                     "inicio do proximo mes":
                     .startOfNextMonth
-                case "fim do mes", "final do mes": .endOfMonth(months: 0)
+                case "fim do mes", "final do mes", "ultimo dia do mes": .endOfMonth(months: 0)
+                case "inicio do mes", "comeco do mes", "primeiro dia do mes": .dayOfMonth(1)
+                case "meio do mes", "metade do mes": .dayOfMonth(15)
+                case "inicio do ano", "comeco do ano": .startOfYear
+                case "meio do ano", "metade do ano": .middleOfYear
+                case "fim do ano", "final do ano": .endOfYear
+                case "comeco da semana", "inicio da semana": .startOfWeek
+                case "meio da semana", "metade da semana": .middleOfWeek
+                case "fim da semana", "final da semana": .endOfWeek
                 case "ano que vem", "proximo ano", "prox ano": .nextYear
                 case "semana passada": .lastWeek
                 case "mes passado": .lastMonth
