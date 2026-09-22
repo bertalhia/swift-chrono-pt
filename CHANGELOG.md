@@ -3,6 +3,19 @@
 Versions follow [semantic versioning](https://semver.org). While the package is
 `0.x`, a minor release may break the API and a patch release may not.
 
+## 0.11.0
+
+### Added
+
+- Approximate hours: "umas 8", "lá pras 3", "por volta de 15h", "em torno
+  das 10", "perto do meio-dia". They read like exact ones, and a bare number
+  needs the end of a phrase, so "umas 8 laranjas" and "umas 2 horas" are not
+  times.
+- Approximate amounts from now: "em uns 15 minutos", "daqui umas 2 horas".
+- With past dates on: "semana retrasada", "mês retrasado", "ano retrasado",
+  and a redundant "atrás" in "há duas semanas atrás".
+- The bug report form has an optional context field (thanks, @anjugoyal954).
+
 ## 0.10.0
 
 ### Breaking
