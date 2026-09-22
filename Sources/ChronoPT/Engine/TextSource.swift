@@ -14,27 +14,44 @@ struct TextSource {
 
     init(_ text: String) {
         original = text
-        normalized = String(
-            text.map { character in
-                let folded = String(character).folding(
-                    options: [.diacriticInsensitive, .caseInsensitive],
-                    locale: Locale(identifier: "pt_BR")
-                )
-                guard folded.count == 1, let simple = folded.first else {
-                    // A mark that folds to nothing, or to more than one character,
-                    // would merge with what came before and cost a position.
-                    return character.isLetter || character.isNumber ? character : " "
-                }
-                // A mark on its own would merge with the character before it
-                // and cost a position, breaking the one-for-one promise.
-                if simple.unicodeScalars.allSatisfy(\.properties.isGraphemeExtend) { return " " }
-                if "–—".contains(simple) { return "-" }
-                // Ordinal indicators read as the letter they stand for: "1º", "6ª".
-                if simple == "º" { return "o" }
-                if simple == "ª" { return "a" }
-                return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
-            })
+        var normalized = ""
+        normalized.reserveCapacity(text.utf8.count)
+        for character in text {
+            normalized.append(Self.normalized(character))
+        }
+        self.normalized = normalized
     }
+
+    /// One character as the rules read it. ASCII, nearly all of a note, takes
+    /// a table lookup; anything else goes through Foundation's folding.
+    private static func normalized(_ character: Character) -> Character {
+        if let ascii = character.asciiValue, character.isASCII {
+            switch ascii {
+            case UInt8(ascii: "A")...UInt8(ascii: "Z"): return Character(Unicode.Scalar(ascii + 32))
+            case UInt8(ascii: "a")...UInt8(ascii: "z"), UInt8(ascii: "0")...UInt8(ascii: "9"):
+                return character
+            case UInt8(ascii: "/"), UInt8(ascii: ":"), UInt8(ascii: "-"): return character
+            default: return " "
+            }
+        }
+        let folded = String(character).folding(
+            options: [.diacriticInsensitive, .caseInsensitive], locale: foldingLocale)
+        guard folded.count == 1, let simple = folded.first else {
+            // A mark that folds to nothing, or to more than one character,
+            // would merge with what came before and cost a position.
+            return character.isLetter || character.isNumber ? character : " "
+        }
+        // A mark on its own would merge with the character before it and cost
+        // a position, breaking the one-for-one promise.
+        if simple.unicodeScalars.allSatisfy(\.properties.isGraphemeExtend) { return " " }
+        if "–—".contains(simple) { return "-" }
+        // Ordinal indicators read as the letter they stand for: "1º", "6ª".
+        if simple == "º" { return "o" }
+        if simple == "ª" { return "a" }
+        return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
+    }
+
+    private static let foldingLocale = Locale(identifier: "pt_BR")
 
     /// The same position in the original text.
     func originalRange(_ range: Range<String.Index>) -> Range<String.Index> {
@@ -48,16 +65,35 @@ struct TextSource {
         normalized.distance(from: range.lowerBound, to: range.upperBound)
     }
 
-    /// Where the phrase appears as whole words: "a noite" does not match
-    /// inside "da noite".
-    func wordRanges(of phrase: String) -> [Range<String.Index>] {
-        normalized.ranges(of: phrase).filter { range in
-            let before =
-                range.lowerBound > normalized.startIndex
-                ? normalized[normalized.index(before: range.lowerBound)] : nil
-            let after = range.upperBound < normalized.endIndex ? normalized[range.upperBound] : nil
-            return !Self.isWordCharacter(before) && !Self.isWordCharacter(after)
+    /// Every word, in text order, with where it is.
+    func wordSpans() -> [Range<String.Index>] {
+        var spans: [Range<String.Index>] = []
+        var index = normalized.startIndex
+        while index < normalized.endIndex {
+            guard Self.isWordCharacter(normalized[index]) else {
+                index = normalized.index(after: index)
+                continue
+            }
+            var end = index
+            while end < normalized.endIndex, Self.isWordCharacter(normalized[end]) {
+                end = normalized.index(after: end)
+            }
+            spans.append(index..<end)
+            index = end
         }
+        return spans
+    }
+
+    /// Where the phrase sits when it starts at this position and ends on a
+    /// word boundary: "a noite" does not match inside "a noitinha".
+    func phrase(_ phrase: String, at start: String.Index) -> Range<String.Index>? {
+        var index = start
+        for character in phrase {
+            guard index < normalized.endIndex, normalized[index] == character else { return nil }
+            index = normalized.index(after: index)
+        }
+        guard index == normalized.endIndex || !Self.isWordCharacter(normalized[index]) else { return nil }
+        return start..<index
     }
 
     /// The word right before the position, for rules that depend on context:

@@ -89,13 +89,29 @@ extension TimeRules {
         Period(phrases: ["tarde da noite"], hour: 23),
     ]
 
+    /// The table by the first word of each phrase, so a parse walks the text
+    /// once instead of searching it for each of a hundred phrases.
+    static let phrasesByFirstWord: [String: [(phrase: String, period: Period)]] = {
+        var index: [String: [(phrase: String, period: Period)]] = [:]
+        for period in table {
+            for phrase in period.phrases {
+                let first = String(phrase.prefix { $0.isLetter || $0.isNumber })
+                index[first, default: []].append((phrase, period))
+            }
+        }
+        return index
+    }()
+
     static func periods(in source: TextSource) -> [Piece<Value>] {
-        table.flatMap { period in
-            period.phrases.flatMap { phrase in
-                source.wordRanges(of: phrase).map {
+        source.wordSpans().flatMap { word -> [Piece<Value>] in
+            guard let entries = phrasesByFirstWord[String(source.normalized[word])] else { return [] }
+            return entries.compactMap { entry in
+                source.phrase(entry.phrase, at: word.lowerBound).map {
                     Piece(
                         range: $0,
-                        value: .period(hour: period.hour, minute: period.minute, needsDay: period.needsDay)
+                        value: .period(
+                            hour: entry.period.hour, minute: entry.period.minute,
+                            needsDay: entry.period.needsDay)
                     )
                 }
             }
