@@ -46,6 +46,24 @@ struct RobustnessTests {
         #expect(concurrent == serial)
     }
 
+    /// Parsing used to be cubic: the pair loops asked questions about gaps
+    /// that scanned the rest of the text, so 2.4 KB of repeated weekdays took
+    /// 13 seconds. The ceiling is loose on purpose; a return to cubic misses it
+    /// by two orders of magnitude.
+    @Test(
+        "A long text parses in well under a second",
+        arguments: [
+            String(repeating: "segunda ", count: 300),
+            String(repeating: "amanha ", count: 300),
+            String(repeating: "1/1 ", count: 300),
+            String(repeating: "reunião dia 12 às 14h com o time sobre o lançamento, ", count: 120),
+        ])
+    func longTextIsFast(_ text: String) {
+        let start = ContinuousClock.now
+        _ = parse(text)
+        #expect(start.duration(to: .now) < .seconds(3), "\(text.count) characters")
+    }
+
     @Test("A lone combining mark after a line break keeps positions aligned")
     func combiningMarkAfterLineBreak() throws {
         let text = "\n\u{301}amanhã às 9"

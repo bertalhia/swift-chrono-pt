@@ -45,10 +45,13 @@ enum DayRules {
     /// hint a weekday needs. With no opening word, the first day has to start
     /// right at its number or name.
     private static func ranges(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
-        candidates.flatMap { first in
-            candidates.compactMap { second in
-                let firstWord = source.words(after: first.piece.range.lowerBound, count: 1).first ?? ""
-                let bareStart = source.startsWithNumber(first.piece.range) || weekdays[firstWord] != nil
+        candidates.flatMap { first -> [Candidate] in
+            // Hoisted: both only depend on the first candidate, and each one
+            // used to scan the rest of the text for every pair.
+            let firstWord = source.words(after: first.piece.range.lowerBound, count: 1).first ?? ""
+            let bareStart = source.startsWithNumber(first.piece.range) || weekdays[firstWord] != nil
+            return candidates.compactMap { second in
+                guard first.piece.range.upperBound <= second.piece.range.lowerBound else { return nil }
                 guard
                     let start = source.rangeStart(
                         from: first.piece.range, to: second.piece.range, bareStart: bareStart)
@@ -79,7 +82,7 @@ enum DayRules {
                 guard case .weekday = weekday.piece.value,
                     date.piece.value.isDate,
                     weekday.piece.range.upperBound <= date.piece.range.lowerBound,
-                    source.words(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound).isEmpty
+                    source.hasNoWord(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound)
                 else { return nil }
                 let range = weekday.piece.range.lowerBound..<date.piece.range.upperBound
                 return Candidate(piece: Piece(range: range, value: date.piece.value), needsTime: false)

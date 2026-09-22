@@ -79,8 +79,35 @@ struct TextSource {
 
     /// The words right after the position: "8h por dia" is a duration.
     func words(after index: String.Index, count: Int) -> [String] {
-        normalized[index...].split(whereSeparator: { !Self.isWordCharacter($0) }).prefix(count).map(
-            String.init)
+        normalized[index...]
+            .split(maxSplits: count, whereSeparator: { !Self.isWordCharacter($0) })
+            .prefix(count)
+            .map(String.init)
+    }
+
+    /// Whether every word in the range passes, stopping at the first one that
+    /// does not. The rules ask this about gaps that can be the whole text, so
+    /// splitting the range first would make every question cost its length.
+    func everyWord(in range: Range<String.Index>, _ isAllowed: (Substring) -> Bool) -> Bool {
+        var index = range.lowerBound
+        while index < range.upperBound {
+            guard Self.isWordCharacter(normalized[index]) else {
+                index = normalized.index(after: index)
+                continue
+            }
+            var end = index
+            while end < range.upperBound, Self.isWordCharacter(normalized[end]) {
+                end = normalized.index(after: end)
+            }
+            guard isAllowed(normalized[index..<end]) else { return false }
+            index = end
+        }
+        return true
+    }
+
+    /// Whether the range holds no word at all.
+    func hasNoWord(in range: Range<String.Index>) -> Bool {
+        !normalized[range].contains(where: Self.isWordCharacter)
     }
 
     /// Only spaces and prepositions between the two ranges: "amanhã às 9",
@@ -88,9 +115,7 @@ struct TextSource {
     func onlyConnectors(between first: Range<String.Index>, and second: Range<String.Index>) -> Bool {
         let (left, right) = first.lowerBound <= second.lowerBound ? (first, second) : (second, first)
         guard left.upperBound <= right.lowerBound else { return true }
-        return normalized[left.upperBound..<right.lowerBound]
-            .split(whereSeparator: { !Self.isWordCharacter($0) })
-            .allSatisfy { Self.connectors.contains(String($0)) }
+        return everyWord(in: left.upperBound..<right.lowerBound) { Self.connectors.contains(String($0)) }
     }
 
     /// Where a range from `first` to `second` starts, or nil when the words
@@ -117,12 +142,13 @@ struct TextSource {
         guard opening != nil || bareStart else { return nil }
         let start = opening?.start ?? first.lowerBound
         let gap = first.upperBound..<second.lowerBound
-        let between = words(in: gap)
-        if between.isEmpty, normalized[gap].contains("-") { return start }
         // "de segunda e quarta" is two days, not a range.
         let closings: Set<String> = opening?.word == "entre" ? ["e"] : ["a", "as", "ao", "ate"]
-        guard between.allSatisfy({ closings.contains($0) || Self.articles.contains($0) }),
-            (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains)
+        guard everyWord(in: gap, { closings.contains(String($0)) || Self.articles.contains(String($0)) })
+        else { return nil }
+        if hasNoWord(in: gap), normalized[gap].contains("-") { return start }
+        let between = words(in: gap)
+        guard (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains)
         else { return nil }
         return start
     }
