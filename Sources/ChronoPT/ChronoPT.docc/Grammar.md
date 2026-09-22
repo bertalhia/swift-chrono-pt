@@ -36,6 +36,8 @@ mean more than one thing.
 - Whole parts of the day: a manhã toda (6:00 to 12:00), a tarde inteira, toda a
   noite, a madrugada toda. The whole day, "o dia todo" or "dia inteiro", sets
   ``ChronoPT/Match/isAllDay`` and needs a day.
+- Time zones after a clock time: 15h BRT, 10h UTC, 16h GMT-3, às 9 horário de
+  Brasília, 14h no horário de SP. The clock time is read in that zone.
 - From now: daqui 2 horas, em meia hora, daqui a pouco (30 minutes), mais
   tarde (2 hours).
 - Ranges: das 14h às 16h, 14h às 16h, 10h-11h, entre 10 e 11h, de segunda a

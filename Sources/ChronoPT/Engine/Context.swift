@@ -112,12 +112,14 @@ struct Context {
                 date = reference.addingTimeInterval(Double(minutes) * 60)
                 end = nil
             case .at(let clock):
-                date = clock.on(days.start, calendar: calendar)
-                end = days.end.flatMap { clock.on($0, calendar: calendar) }
-                alternative = time.alternative.flatMap { $0.on(days.start, calendar: calendar) }
+                date = clock.on(days.start, calendar: calendar, in: time.zone)
+                end = days.end.flatMap { clock.on($0, calendar: calendar, in: time.zone) }
+                alternative = time.alternative.flatMap {
+                    $0.on(days.start, calendar: calendar, in: time.zone)
+                }
             case .between(let start, let until):
-                date = start.on(days.start, calendar: calendar)
-                end = until.on(days.end ?? days.start, calendar: calendar)
+                date = start.on(days.start, calendar: calendar, in: time.zone)
+                end = until.on(days.end ?? days.start, calendar: calendar, in: time.zone)
             case .allDay:
                 // The whole day has no hour to give: the day as if alone.
                 date = dayOnly(days.start)
@@ -158,22 +160,28 @@ struct Context {
             return result(
                 ChronoPT.PartialDate(date: date, knownComponents: known), end: nil, range: time.range)
         case .at(let clock):
-            guard let day = upcomingDay(for: clock), let date = clock.on(day, calendar: calendar) else {
+            guard let day = upcomingDay(for: clock, in: time.zone),
+                let date = clock.on(day, calendar: calendar, in: time.zone)
+            else {
                 return nil
             }
             // The other reading's next time: "às 7" at 10:00 is 19:00 today,
             // or 7:00 tomorrow.
             let alternative = time.alternative.flatMap { other in
-                upcomingDay(for: other).flatMap { other.on($0, calendar: calendar) }
+                upcomingDay(for: other, in: time.zone).flatMap {
+                    other.on($0, calendar: calendar, in: time.zone)
+                }
             }
             return result(
                 ChronoPT.PartialDate(date: date, knownComponents: known, alternative: alternative), end: nil,
                 range: time.range)
         case .between(let start, let until):
-            guard let day = upcomingDay(for: start), let date = start.on(day, calendar: calendar) else {
+            guard let day = upcomingDay(for: start, in: time.zone),
+                let date = start.on(day, calendar: calendar, in: time.zone)
+            else {
                 return nil
             }
-            let end = until.on(day, calendar: calendar).map {
+            let end = until.on(day, calendar: calendar, in: time.zone).map {
                 ChronoPT.PartialDate(date: $0, knownComponents: known)
             }
             return result(
@@ -212,8 +220,8 @@ struct Context {
     }
 
     /// Time only: today, or tomorrow if that time has passed.
-    private func upcomingDay(for clock: TimeRules.Clock) -> Date? {
-        guard let today = clock.on(reference, calendar: calendar) else { return nil }
+    private func upcomingDay(for clock: TimeRules.Clock, in zone: TimeZone?) -> Date? {
+        guard let today = clock.on(reference, calendar: calendar, in: zone) else { return nil }
         return today > reference ? reference : calendar.date(byAdding: .day, value: 1, to: reference)
     }
 

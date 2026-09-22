@@ -181,8 +181,10 @@ extension DayRules {
                 from.knownComponents
             case .shifted(let base, _), .lasting(let base, _):
                 base.knownComponents
-            case .dateTime:
-                [.day, .month, .year, .hour, .minute]
+            case .dateTime(_, let offset):
+                offset == nil
+                    ? [.day, .month, .year, .hour, .minute]
+                    : [.day, .month, .year, .hour, .minute, .timeZone]
             }
         }
 

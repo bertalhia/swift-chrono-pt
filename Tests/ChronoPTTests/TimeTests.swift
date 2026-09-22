@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import ChronoPT
@@ -409,5 +410,62 @@ struct TimeTests {
     func wholeDayNeedsADay(_ text: String) {
         #expect(interpret(text) == nil)
         #expect(parse(text).isEmpty)
+    }
+
+    static let lisbon: Calendar = {
+        var calendar = saoPaulo
+        calendar.timeZone = TimeZone(identifier: "Europe/Lisbon")!
+        return calendar
+    }()
+
+    @Test(
+        "A time zone in the text decides the instant, in any calendar",
+        arguments: [
+            // Expected in São Paulo time.
+            ("amanhã às 15h BRT", [2026, 9, 22], [15, 0]),
+            ("amanhã às 10h UTC", [2026, 9, 22], [7, 0]),
+            ("amanhã 16h GMT-3", [2026, 9, 22], [16, 0]),
+            ("amanhã 16h GMT+1", [2026, 9, 22], [12, 0]),
+            ("amanhã 10h UTC+05:30", [2026, 9, 22], [1, 30]),
+            ("amanhã às 9 horário de Brasília", [2026, 9, 22], [9, 0]),
+            ("amanhã 14h no horário de SP", [2026, 9, 22], [14, 0]),
+            ("amanhã 15h EST", [2026, 9, 22], [16, 0]),
+        ])
+    func zoneInText(_ example: (text: String, day: [Int], time: [Int])) throws {
+        for calendar in [saoPaulo, Self.lisbon] {
+            let found = try #require(ChronoPT.interpret(example.text, reference: monday, calendar: calendar))
+            #expect(found.text == example.text)
+            #expect(ymd(found.start.date) == example.day)
+            #expect(hm(found.start.date) == example.time)
+            #expect(found.start.knownComponents.contains(.timeZone))
+        }
+    }
+
+    @Test("A time with a zone and no day is the next time it comes")
+    func zoneWithoutDay() throws {
+        // 9:00 in Brasília is 13:00 in Lisbon, and it is 14:00 there.
+        let found = try #require(
+            ChronoPT.interpret("às 9 horário de Brasília", reference: monday, calendar: Self.lisbon))
+        #expect(ymd(found.start.date) == [2026, 9, 22])
+        #expect(hm(found.start.date) == [9, 0])
+    }
+
+    @Test("A time range in a zone")
+    func zoneRange() throws {
+        let found = try #require(interpret("das 14h às 16h UTC"))
+        #expect(hm(found.start.date) == [11, 0])
+        #expect(hm(try #require(found.end?.date)) == [13, 0])
+    }
+
+    @Test("A zone alone, or a phrase that is not one, is no time", arguments: ["horário de Brasília", "UTC"])
+    func zoneAlone(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
+
+    @Test("\"horário de verão\" is not a zone")
+    func summerTime() throws {
+        let found = try #require(interpret("amanhã às 9 horário de verão"))
+        #expect(found.text == "amanhã às 9")
+        #expect(!found.start.knownComponents.contains(.timeZone))
     }
 }

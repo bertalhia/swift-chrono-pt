@@ -118,6 +118,45 @@ extension TimeRules {
         }
     }
 
+    /// A time zone named after a clock time: "15h BRT", "10h UTC", "16h
+    /// GMT-3", "às 9 horário de Brasília". Alone it is no time.
+    static func zones(in source: TextSource) -> [Piece<Value>] {
+        source.matches(of: zone, whenAny: zoneWords).compactMap { match in
+            let (_, place, name, sign, hours, minutes) = match.output
+            let zone: TimeZone?
+            if let sign, let hours = Int(hours ?? ""), hours <= 14 {
+                let seconds = hours * 3600 + (minutes.flatMap { Int($0) } ?? 0) * 60
+                zone = TimeZone(secondsFromGMT: sign == "-" ? -seconds : seconds)
+            } else {
+                zone = (place ?? name).flatMap { zoneNames[String($0)] }.flatMap(TimeZone.init(identifier:))
+            }
+            return zone.map { Piece(range: match.range, value: .zone($0)) }
+        }
+    }
+
+    static let zoneWords: Set<String> = [
+        "horario", "hora", "brt", "utc", "gmt", "est", "edt", "pst", "pdt", "cet", "cest",
+    ]
+
+    /// Places and abbreviations, by the time zone they name.
+    static let zoneNames = [
+        "brasilia": "America/Sao_Paulo", "sao paulo": "America/Sao_Paulo", "sp": "America/Sao_Paulo",
+        "brt": "America/Sao_Paulo", "manaus": "America/Manaus", "acre": "America/Rio_Branco",
+        "lisboa": "Europe/Lisbon", "portugal": "Europe/Lisbon", "londres": "Europe/London",
+        "nova york": "America/New_York", "nova iorque": "America/New_York",
+        "utc": "UTC", "gmt": "UTC", "est": "America/New_York", "edt": "America/New_York",
+        "pst": "America/Los_Angeles", "pdt": "America/Los_Angeles", "cet": "Europe/Paris",
+        "cest": "Europe/Paris",
+    ]
+
+    // "horário de Brasília", "no horário de SP", "BRT", "UTC", "GMT-3", "UTC+05:30"
+    static var zone: Regex<(Substring, Substring?, Substring?, Substring?, Substring?, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:(?:no |pelo |pela )?(?:horario|hora) (?:de|do|da) (brasilia|sao paulo|sp|manaus|acre|lisboa|portugal|londres|nova york|nova iorque)|(brt|utc|gmt|est|edt|pst|pdt|cet|cest)(?:([+-])(\d{1,2})(?::?(\d{2}))?)?)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     static func noonAndMidnight(in source: TextSource) -> [Piece<Value>] {
         source.matches(of: noonOrMidnight, whenAny: noonWords).compactMap { match in
             let (_, prefix, word, minuteWords) = match.output

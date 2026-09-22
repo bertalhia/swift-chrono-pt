@@ -23,6 +23,9 @@ enum TimeRules {
         /// its own.
         case allDay
         case fromNow(minutes: Int)
+        /// The time zone the clock time is read in: "15h BRT", "às 9
+        /// horário de Brasília".
+        case zone(TimeZone)
 
         var isClock: Bool { if case .clock = self { true } else { false } }
         var isPeriod: Bool { if case .period = self { true } else { false } }
@@ -50,6 +53,19 @@ enum TimeRules {
             self.dayOffset = dayOffset
         }
 
+        /// The clock time on the calendar day of `day`, read in `zone` when
+        /// the text named one: "15h BRT" is 15:00 in Brasília on that day.
+        func on(_ day: Date, calendar: Calendar, in zone: TimeZone?) -> Date? {
+            guard let zone, zone != calendar.timeZone else { return on(day, calendar: calendar) }
+            var zoned = calendar
+            zoned.timeZone = zone
+            guard let start = zoned.date(from: calendar.dateComponents([.year, .month, .day], from: day))
+            else {
+                return nil
+            }
+            return on(start, calendar: zoned)
+        }
+
         func on(_ day: Date, calendar: Calendar) -> Date? {
             var time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)
             // A wall time inside a daylight saving gap does not exist, and
@@ -72,7 +88,7 @@ enum TimeRules {
             clocks(in: source) + englishClocks(in: source) + minutesToHour(in: source)
             + noonAndMidnight(in: source)
             + rangeStarts(in: source) + fromNow(in: source) + periods(in: source)
-            + periods(in: source, index: index(of: moments), priority: 1)
+            + periods(in: source, index: index(of: moments), priority: 1) + zones(in: source)
         return Piece.nonOverlapping(found, in: source)
     }
 

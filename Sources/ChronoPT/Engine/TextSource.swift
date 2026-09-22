@@ -5,8 +5,8 @@ import Foundation
 /// A position found here is the same position in the writer's text, and
 /// "Almoço," matches "almoco".
 ///
-/// Slash, colon and hyphen stay: "25/09", "10:30", "meio-dia", and so does a
-/// dot between digits: "25.12.2027". En and em
+/// Slash, colon and hyphen stay: "25/09", "10:30", "meio-dia", and so do a
+/// dot between digits, "25.12.2027", and a plus before one, "GMT+1". En and em
 /// dashes become hyphens: "10h–11h", and ordinal indicators become the letter
 /// they stand for: "1º" reads as "1o", "6ª" as "6a".
 struct TextSource {
@@ -28,13 +28,14 @@ struct TextSource {
         normalized.reserveCapacity(text.utf8.count)
         let characters = Array(text)
         for (index, character) in characters.enumerated() {
-            // A dot or a plus between digits stays, so "25.12.2027" and the
-            // offset of "14:30:00+01:00" keep their shape; anywhere else they
-            // are punctuation.
-            if character == "." || character == "+", index > 0, index + 1 < characters.count,
-                characters[index - 1].isASCII, characters[index - 1].isNumber,
-                characters[index + 1].isASCII, characters[index + 1].isNumber
-            {
+            // A dot between digits and a plus before one stay, so
+            // "25.12.2027", "14:30:00+01:00" and "GMT+1" keep their shape;
+            // anywhere else they are punctuation.
+            let digitAfter =
+                index + 1 < characters.count && characters[index + 1].isASCII
+                && characters[index + 1].isNumber
+            let digitBefore = index > 0 && characters[index - 1].isASCII && characters[index - 1].isNumber
+            if digitAfter && (character == "+" || (character == "." && digitBefore)) {
                 normalized.append(character)
             } else {
                 normalized.append(Self.normalized(character))

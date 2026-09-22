@@ -31,6 +31,12 @@ extension TimeRules {
             if case .fromNow = value { true } else { false }
         }
 
+        /// The time zone the text named for the clock time: "15h BRT".
+        var zone: TimeZone? {
+            pieces.lazy.compactMap { piece in if case .zone(let zone) = piece.value { zone } else { nil } }
+                .first
+        }
+
         /// "o dia todo": the day, with no hour.
         var isAllDay: Bool {
             if case .allDay = value { true } else { false }
@@ -40,6 +46,10 @@ extension TimeRules {
         /// gives the hour and the minute, a part of the day only the hour, and
         /// a time from now the whole date.
         var knownComponents: Set<Calendar.Component> {
+            zone == nil ? clockComponents : clockComponents.union([.timeZone])
+        }
+
+        private var clockComponents: Set<Calendar.Component> {
             switch value {
             case .fromNow:
                 [.day, .month, .year, .hour, .minute]
@@ -182,6 +192,8 @@ extension TimeRules {
                 if span == nil { span = (from, until) }
             case .allDay:
                 allDay = true
+            case .zone:
+                break
             }
         }
 
