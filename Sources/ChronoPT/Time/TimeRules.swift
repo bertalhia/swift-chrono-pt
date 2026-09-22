@@ -45,8 +45,17 @@ enum TimeRules {
         }
 
         func on(_ day: Date, calendar: Calendar) -> Date? {
-            guard let time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)
-            else { return nil }
+            var time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)
+            // A wall time inside a daylight saving gap does not exist, and
+            // Foundation answers with the next day. Count from the start of the
+            // day instead, which lands on the first time there is.
+            if let found = time, !calendar.isDate(found, inSameDayAs: day) {
+                time = calendar.date(
+                    byAdding: DateComponents(hour: hour, minute: minute),
+                    to: calendar.startOfDay(for: day)
+                )
+            }
+            guard let time else { return nil }
             return dayOffset == 0 ? time : calendar.date(byAdding: .day, value: dayOffset, to: time)
         }
     }

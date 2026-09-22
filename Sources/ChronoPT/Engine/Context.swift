@@ -26,8 +26,20 @@ struct Context {
             }
         }
         self.reference = reference
-        self.calendar = calendar
+        self.calendar = Self.gregorian(like: calendar)
         self.options = options
+    }
+
+    /// The rules are Gregorian: month names, weekday names, holidays and the
+    /// Easter computus all count Gregorian years. A caller who passes another
+    /// calendar keeps its time zone, and the arithmetic runs in Gregorian, so
+    /// "25/09/2026" is the same instant either way.
+    private static func gregorian(like calendar: Calendar) -> Calendar {
+        guard calendar.identifier != .gregorian, calendar.identifier != .iso8601 else { return calendar }
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        gregorian.locale = calendar.locale
+        return gregorian
     }
 
     func resolve(_ day: Piece<DayRules.Value>, from reference: Date? = nil) -> (start: Date, end: Date?)? {

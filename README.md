@@ -155,7 +155,7 @@ ChronoPT.strippingDates(from: "dentista sexta às 14h, reunião dia 30")
 ### Reference date and calendar
 
 Relative expressions are computed from `reference`, which defaults to now.
-Weekdays, midnight and the time zone come from `calendar`, which defaults to
+Midnight and the time zone come from `calendar`, which defaults to
 `Calendar.current`. Pass both on servers and in tests:
 
 ```swift
@@ -164,6 +164,12 @@ calendar.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
 
 let result = ChronoPT.interpret("sexta à noite", reference: someDate, calendar: calendar)
 ```
+
+Any calendar works. The grammar counts Gregorian months, weekdays, holidays
+and years, so a Buddhist or Hebrew calendar keeps its time zone and the
+arithmetic runs in Gregorian: "25/09/2026" is the same instant either way. A
+week runs Monday to Sunday whatever `firstWeekday` says, because that is what
+the Portuguese words mean.
 
 ### The result
 
