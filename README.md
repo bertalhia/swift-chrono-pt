@@ -224,7 +224,7 @@ public struct ChronoPT.Match: Sendable, Hashable {
     public let end: ChronoPT.PartialDate?    // the end of a period or a range
     public let recurrence: ChronoPT.Recurrence?
     public let isAllDay: Bool                // "amanhã o dia todo"
-    public var interval: DateInterval?       // start to end, when there is an end
+    public let dateInterval: DateInterval?   // whole days, or a time range
 }
 
 public struct ChronoPT.PartialDate: Sendable, Hashable {
@@ -233,13 +233,15 @@ public struct ChronoPT.PartialDate: Sendable, Hashable {
     public var hasTime: Bool                             // the text gave an hour
     public var hasDay: Bool                              // the text gave a day
     public let alternative: Date?                        // 7:00 for "às 7", read as 19:00
+    public let timeZone: TimeZone?                       // "15h BRT"
     public func dateComponents(in: Calendar) -> DateComponents
 }
 ```
 
 A day without a time is set to noon, or to `defaultHour`, away from the
 midnight shifts of daylight saving time. Check `hasTime` before showing the
-hour.
+hour. `dateInterval` is what a calendar shows: whole days for a date with no
+time ("amanhã" is the whole of tomorrow), start to end for a time range.
 
 ### What the text gave
 

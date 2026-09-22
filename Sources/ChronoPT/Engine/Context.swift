@@ -101,7 +101,9 @@ struct Context {
         if let day, case .dateTime = day.value {
             guard let date = DayRules.instant(of: day.value, calendar: calendar) else { return nil }
             let start = ChronoPT.PartialDate(date: date, knownComponents: day.value.knownComponents)
-            return result(start, end: nil, range: day.range)
+            var zone: TimeZone?
+            if case .dateTime(_, let offset?) = day.value { zone = TimeZone(secondsFromGMT: offset) }
+            return result(start, end: nil, range: day.range, zone: zone)
         }
         // An interval of hours counts from now, not from a day: "de 8 em 8 horas".
         if let day, time == nil, case .interval(let components) = day.value,
@@ -183,7 +185,8 @@ struct Context {
                 range: range,
                 ranges: ranges,
                 recurrence: recurrence,
-                isAllDay: time.isAllDay
+                isAllDay: time.isAllDay,
+                zone: time.zone
             )
         }
 
@@ -193,7 +196,8 @@ struct Context {
         case .fromNow(let minutes):
             let date = reference.addingTimeInterval(Double(minutes) * 60)
             return result(
-                ChronoPT.PartialDate(date: date, knownComponents: known), end: nil, range: time.range)
+                ChronoPT.PartialDate(date: date, knownComponents: known), end: nil, range: time.range,
+                zone: time.zone)
         case .at(let clock):
             guard let day = upcomingDay(for: clock, in: time.zone),
                 let date = clock.on(day, calendar: calendar, in: time.zone)
@@ -209,7 +213,7 @@ struct Context {
             }
             return result(
                 ChronoPT.PartialDate(date: date, knownComponents: known, alternative: alternative), end: nil,
-                range: time.range)
+                range: time.range, zone: time.zone)
         case .between(let start, let until):
             guard let day = upcomingDay(for: start, in: time.zone),
                 let date = start.on(day, calendar: calendar, in: time.zone)
@@ -220,7 +224,8 @@ struct Context {
                 ChronoPT.PartialDate(date: $0, knownComponents: known)
             }
             return result(
-                ChronoPT.PartialDate(date: date, knownComponents: known), end: end, range: time.range)
+                ChronoPT.PartialDate(date: date, knownComponents: known), end: end, range: time.range,
+                zone: time.zone)
         case .allDay:
             // Needs a day, and the guard above saw it has none.
             return nil
@@ -266,7 +271,7 @@ struct Context {
         let upper = spans.map(\.upperBound).max() ?? day.range.upperBound
         return result(
             ChronoPT.PartialDate(date: first.start.date, knownComponents: first.start.knownComponents),
-            end: first.end, range: lower..<upper, recurrence: recurrence)
+            end: first.end, range: lower..<upper, recurrence: recurrence, zone: first.start.timeZone)
     }
 
     /// How the day repeats, with the end the text gave: "toda terça até
@@ -313,17 +318,41 @@ struct Context {
         range: Range<String.Index>,
         ranges: [Range<String.Index>]? = nil,
         recurrence: ChronoPT.Recurrence? = nil,
-        isAllDay: Bool = false
+        isAllDay: Bool = false,
+        zone: TimeZone? = nil
     ) -> ChronoPT.Match {
         let original = source.originalRange(range)
+        let zoned = { (date: ChronoPT.PartialDate) in
+            ChronoPT.PartialDate(
+                date: date.date, knownComponents: date.knownComponents, alternative: date.alternative,
+                timeZone: zone ?? date.timeZone)
+        }
         return ChronoPT.Match(
             range: original,
             ranges: (ranges ?? [range]).map(source.originalRange),
             text: String(source.original[original]),
-            start: start,
-            end: end,
+            start: zoned(start),
+            end: end.map(zoned),
             recurrence: recurrence,
-            isAllDay: isAllDay
+            isAllDay: isAllDay,
+            dateInterval: dateInterval(from: start, to: end)
         )
+    }
+
+    /// Whole days for a date with no time; start to end for a time range;
+    /// nothing for a single moment.
+    private func dateInterval(from start: ChronoPT.PartialDate, to end: ChronoPT.PartialDate?)
+        -> DateInterval?
+    {
+        guard !start.hasTime else {
+            guard let end, end.date > start.date else { return nil }
+            return DateInterval(start: start.date, end: end.date)
+        }
+        let first = calendar.startOfDay(for: start.date)
+        guard
+            let after = calendar.date(
+                byAdding: .day, value: 1, to: calendar.startOfDay(for: (end ?? start).date))
+        else { return nil }
+        return after > first ? DateInterval(start: first, end: after) : nil
     }
 }

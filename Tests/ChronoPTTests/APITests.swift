@@ -35,13 +35,45 @@ struct APITests {
         #expect(single.ranges.count == 1)
     }
 
-    @Test("A range gives a DateInterval")
+    @Test("A time range gives its DateInterval, and a single moment none")
     func interval() throws {
         let shift = try #require(interpret("de segunda a sexta das 9 às 18"))
-        let interval = try #require(shift.interval)
+        let interval = try #require(shift.dateInterval)
         #expect(interval.start == shift.start.date)
         #expect(interval.end == shift.end?.date)
-        #expect(try #require(interpret("amanhã às 9")).interval == nil)
+        #expect(try #require(interpret("amanhã às 9")).dateInterval == nil)
+    }
+
+    @Test(
+        "A date with no time covers whole days",
+        arguments: [
+            ("amanhã", [2026, 9, 22], [2026, 9, 23]),
+            ("semana que vem", [2026, 9, 28], [2026, 10, 5]),
+            ("em outubro", [2026, 10, 1], [2026, 11, 1]),
+            ("amanhã o dia todo", [2026, 9, 22], [2026, 9, 23]),
+        ])
+    func wholeDays(_ example: (text: String, start: [Int], end: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        let interval = try #require(found.dateInterval)
+        #expect(ymd(interval.start) == example.start)
+        #expect(hm(interval.start) == [0, 0])
+        #expect(ymd(interval.end) == example.end)
+        #expect(hm(interval.end) == [0, 0])
+    }
+
+    @Test("A time zone the text named stays with the date")
+    func namedTimeZone() throws {
+        var utc = saoPaulo
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        let found = try #require(ChronoPT.interpret("amanhã às 15h BRT", reference: monday, calendar: utc))
+        #expect(found.start.timeZone == TimeZone(identifier: "America/Sao_Paulo"))
+        let parts = found.start.dateComponents(in: utc)
+        #expect(parts.hour == 15)
+        #expect(parts.timeZone == TimeZone(identifier: "America/Sao_Paulo"))
+        #expect(try #require(interpret("amanhã às 15h")).start.timeZone == nil)
+        #expect(
+            try #require(interpret("2026-10-15T14:30:00+01:00")).start.timeZone
+                == TimeZone(secondsFromGMT: 3600))
     }
 
     @Test("Known components as DateComponents")

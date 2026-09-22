@@ -34,13 +34,20 @@ import EventKit
 
 let event = EKEvent(eventStore: store)
 event.title = ChronoPT.strippingDates(from: note)
-event.startDate = match.start.date
-event.endDate = match.end?.date ?? match.start.date.addingTimeInterval(3600)
-event.isAllDay = !match.start.hasTime
+// A date with no time ("amanhã") or the whole day ("o dia todo").
+event.isAllDay = match.isAllDay || !match.start.hasTime
+if let span = match.dateInterval {
+    event.startDate = span.start
+    event.endDate = span.end
+} else {
+    event.startDate = match.start.date
+    event.endDate = match.start.date.addingTimeInterval(3600)
+}
 ```
 
-``ChronoPT/Match/interval`` gives the span as a `DateInterval` when the
-expression has an end. ``ChronoPT/Match/isAllDay`` marks "o dia todo".
+``ChronoPT/Match/dateInterval`` covers whole days for a date with no time,
+and runs from the start to the end of a time range. A single moment ("às 9")
+has none.
 
 ## Repeat an event
 
