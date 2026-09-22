@@ -223,6 +223,32 @@ extension DayRules {
             guard let first, let last = lastDayOfMonth(first, calendar: calendar) else { return nil }
             return (first, last)
 
+        case .businessDays(let count):
+            // Counting from today, skipping weekends and the days the banks close.
+            var date = today
+            var left = count
+            while left > 0 {
+                guard let next = calendar.date(byAdding: .day, value: 1, to: date) else { return nil }
+                date = next
+                if isBusinessDay(date, calendar: calendar) { left -= 1 }
+            }
+            return (date, nil)
+
+        case .firstBusinessDayOfMonth, .lastBusinessDayOfMonth:
+            // The next one to come: the month rolls over once this month's has gone by.
+            for months in 0...1 {
+                guard let month = calendar.date(byAdding: .month, value: months, to: today),
+                    let first = calendar.dateInterval(of: .month, for: month)?.start,
+                    let last = lastDayOfMonth(month, calendar: calendar)
+                else { return nil }
+                let day =
+                    value == .firstBusinessDayOfMonth
+                    ? businessDay(from: first, forward: true, calendar: calendar)
+                    : businessDay(from: last, forward: false, calendar: calendar)
+                if let day, day >= today { return (day, nil) }
+            }
+            return nil
+
         case .holiday(let holiday):
             // The next time the holiday comes, counting today; one that lasts
             // several days and has started counts from today.
@@ -271,6 +297,43 @@ extension DayRules {
     static func firstDayOfNextMonth(_ day: Date, calendar: Calendar) -> Date? {
         guard let thisMonth = calendar.dateInterval(of: .month, for: day)?.start else { return nil }
         return calendar.date(byAdding: .month, value: 1, to: thisMonth)
+    }
+
+    /// A day the banks are open: not a weekend, not a national holiday.
+    /// Carnival Monday and Tuesday and Corpus Christi count as closed, the way
+    /// the bank calendar does.
+    static func isBusinessDay(_ day: Date, calendar: Calendar) -> Bool {
+        let weekday = calendar.component(.weekday, from: day)
+        guard weekday != 1, weekday != 7 else { return false }
+        let year = calendar.component(.year, from: day)
+        return !bankHolidays(in: year, calendar: calendar).contains(calendar.startOfDay(for: day))
+    }
+
+    /// The first business day from this one, in that direction.
+    static func businessDay(from day: Date, forward: Bool, calendar: Calendar) -> Date? {
+        var date = day
+        for _ in 0...10 {
+            if isBusinessDay(date, calendar: calendar) { return date }
+            guard let next = calendar.date(byAdding: .day, value: forward ? 1 : -1, to: date) else {
+                return nil
+            }
+            date = next
+        }
+        return nil
+    }
+
+    /// The national holidays the banks close on, as dates in that year.
+    static func bankHolidays(in year: Int, calendar: Calendar) -> Set<Date> {
+        let fixed = [(1, 1), (4, 21), (5, 1), (9, 7), (10, 12), (11, 2), (11, 15), (11, 20), (12, 25)]
+        var dates = Set(
+            fixed.compactMap { calendar.date(from: DateComponents(year: year, month: $0.0, day: $0.1)) })
+        for offset in [-48, -47, -2, 60] {
+            guard let easter = easter(in: year, calendar: calendar),
+                let date = calendar.date(byAdding: .day, value: offset, to: easter)
+            else { continue }
+            dates.insert(date)
+        }
+        return dates
     }
 
     static func lastDayOfMonth(_ day: Date, calendar: Calendar) -> Date? {

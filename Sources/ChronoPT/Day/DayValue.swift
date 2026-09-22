@@ -32,6 +32,11 @@ extension DayRules {
         case endOfWeek
         /// A whole month: "em outubro", "março de 2027".
         case month(Int, year: Int?)
+        /// Days the banks are open: "em 5 dias úteis", "no próximo dia útil",
+        /// "primeiro dia útil do mês", "último dia útil do mês".
+        case businessDays(Int)
+        case firstBusinessDayOfMonth
+        case lastBusinessDayOfMonth
         case holiday(Holiday)
         /// The last time that weekday came, before today: "sexta passada".
         case lastWeekday(Int)
@@ -96,7 +101,8 @@ extension DayRules {
                 [.month, .year]
             case .nextYear, .lastYear:
                 [.year]
-            case .startOfYear, .middleOfYear, .endOfYear, .startOfWeek, .middleOfWeek, .endOfWeek:
+            case .startOfYear, .middleOfYear, .endOfYear, .startOfWeek, .middleOfWeek, .endOfWeek,
+                .businessDays, .firstBusinessDayOfMonth, .lastBusinessDayOfMonth:
                 [.day, .month, .year]
             case .month(_, let year):
                 year == nil ? [.month] : [.month, .year]

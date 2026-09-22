@@ -232,6 +232,21 @@ enum DayRules {
             add(match.range, .holiday(entry.holiday))
         }
 
+        for match in text.matches(of: businessDays) {
+            guard let count = SpokenNumber.value(match.output.1) else { continue }
+            add(match.range, .businessDays(count))
+        }
+
+        for match in text.matches(of: namedBusinessDay) {
+            let value: Value =
+                switch match.output.1 {
+                case "primeiro dia util": .firstBusinessDayOfMonth
+                case "ultimo dia util": .lastBusinessDayOfMonth
+                default: .businessDays(1)
+                }
+            add(match.range, value)
+        }
+
         for match in text.matches(of: wholeMonth) {
             let (_, withPreposition, comingMonth, withYear, year) = match.output
             guard let name = withPreposition ?? comingMonth ?? withYear, let month = months[String(name)]

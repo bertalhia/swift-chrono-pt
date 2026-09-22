@@ -81,6 +81,22 @@ extension DayRules {
         }
     }
 
+    // "em 5 dias úteis", "no prazo de 2 dias úteis", "compensa em 1 dia útil"
+    static var businessDays: Regex<(Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:em ate|em|daqui a|daqui|dentro de|no prazo de|com prazo de|prazo de|apos) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) dias? (?:uteis|util)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "no próximo dia útil", "primeiro dia útil do mês", "último dia útil"
+    static var namedBusinessDay: Regex<(Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:no |ate o |o )?(proximo dia util|primeiro dia util|ultimo dia util)(?: do mes)?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
     // "em outubro", "em março de 2027", "março que vem", "no mês de outubro"
     static var wholeMonth: Regex<(Substring, Substring?, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
