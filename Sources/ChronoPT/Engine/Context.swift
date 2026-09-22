@@ -7,9 +7,9 @@ struct Context {
     let times: [TimeRules.Expression]
     let reference: Date
     let calendar: Calendar
-    let options: ParseOptions
+    let options: ChronoPT.Options
 
-    init(text: String, reference: Date, calendar: Calendar, options: ParseOptions) {
+    init(text: String, reference: Date, calendar: Calendar, options: ChronoPT.Options) {
         source = TextSource(text)
         let times = TimeRules.expressions(in: source)
         let days = DayRules.expressions(in: source, times: times)
@@ -37,7 +37,7 @@ struct Context {
     /// Joins a day and a time; either one may be missing. A repeating date is
     /// the next time it happens: "toda segunda às 9" said on a Monday at 10:00
     /// is next Monday.
-    func combine(_ day: Piece<DayRules.Value>?, _ time: TimeRules.Expression?) -> ParsedResult? {
+    func combine(_ day: Piece<DayRules.Value>?, _ time: TimeRules.Expression?) -> ChronoPT.Match? {
         guard let day, day.value.recurrence != nil,
               let found = combine(day, time, from: reference), found.start.date < reference else {
             return combine(day, time, from: reference)
@@ -46,11 +46,11 @@ struct Context {
         return tomorrow.flatMap { combine(day, time, from: $0) } ?? found
     }
 
-    private func combine(_ day: Piece<DayRules.Value>?, _ time: TimeRules.Expression?, from dayReference: Date) -> ParsedResult? {
+    private func combine(_ day: Piece<DayRules.Value>?, _ time: TimeRules.Expression?, from dayReference: Date) -> ChronoPT.Match? {
         // An interval of hours counts from now, not from a day: "de 8 em 8 horas".
         if let day, time == nil, case .interval(let components) = day.value, components.hour != nil || components.minute != nil {
             guard let date = calendar.date(byAdding: components, to: reference) else { return nil }
-            let start = ParsedDate(date: date, knownComponents: [.day, .month, .year, .hour, .minute])
+            let start = ChronoPT.PartialDate(date: date, knownComponents: [.day, .month, .year, .hour, .minute])
             return result(start, end: nil, range: day.range, recurrence: day.value.recurrence)
         }
         if let day {
@@ -59,8 +59,8 @@ struct Context {
             guard let time else {
                 guard let start = dayOnly(days.start) else { return nil }
                 return result(
-                    ParsedDate(date: start, knownComponents: day.value.knownComponents),
-                    end: days.end.flatMap(dayOnly).map { ParsedDate(date: $0, knownComponents: day.value.endKnownComponents) },
+                    ChronoPT.PartialDate(date: start, knownComponents: day.value.knownComponents),
+                    end: days.end.flatMap(dayOnly).map { ChronoPT.PartialDate(date: $0, knownComponents: day.value.endKnownComponents) },
                     range: day.range,
                     recurrence: recurrence
                 )
@@ -79,14 +79,19 @@ struct Context {
                 end = until.on(days.end ?? days.start, calendar: calendar)
             }
             guard let date else { return nil }
-            // A day and a time next to each other come out together; apart, only the day.
-            let range = source.onlyConnectors(between: day.range, and: time.range)
+            // A day and a time next to each other come out together; apart,
+            // the day carries the match and the time keeps a span of its own.
+            let adjacent = source.onlyConnectors(between: day.range, and: time.range)
+            let range = adjacent
                 ? min(day.range.lowerBound, time.range.lowerBound)..<max(day.range.upperBound, time.range.upperBound)
                 : day.range
+            let spans = [range] + [adjacent ? nil : time.range, time.settledRange].compactMap { $0 }
+            let ranges = spans.sorted { $0.lowerBound < $1.lowerBound }
             return result(
-                ParsedDate(date: date, knownComponents: day.value.knownComponents.union(time.knownComponents)),
-                end: end.map { ParsedDate(date: $0, knownComponents: day.value.endKnownComponents.union(time.knownComponents)) },
+                ChronoPT.PartialDate(date: date, knownComponents: day.value.knownComponents.union(time.knownComponents)),
+                end: end.map { ChronoPT.PartialDate(date: $0, knownComponents: day.value.endKnownComponents.union(time.knownComponents)) },
                 range: range,
+                ranges: ranges,
                 recurrence: recurrence
             )
         }
@@ -96,14 +101,14 @@ struct Context {
         switch time.value {
         case .fromNow(let minutes):
             let date = reference.addingTimeInterval(Double(minutes) * 60)
-            return result(ParsedDate(date: date, knownComponents: known), end: nil, range: time.range)
+            return result(ChronoPT.PartialDate(date: date, knownComponents: known), end: nil, range: time.range)
         case .at(let clock):
             guard let day = upcomingDay(for: clock), let date = clock.on(day, calendar: calendar) else { return nil }
-            return result(ParsedDate(date: date, knownComponents: known), end: nil, range: time.range)
+            return result(ChronoPT.PartialDate(date: date, knownComponents: known), end: nil, range: time.range)
         case .between(let start, let until):
             guard let day = upcomingDay(for: start), let date = start.on(day, calendar: calendar) else { return nil }
-            let end = until.on(day, calendar: calendar).map { ParsedDate(date: $0, knownComponents: known) }
-            return result(ParsedDate(date: date, knownComponents: known), end: end, range: time.range)
+            let end = until.on(day, calendar: calendar).map { ChronoPT.PartialDate(date: $0, knownComponents: known) }
+            return result(ChronoPT.PartialDate(date: date, knownComponents: known), end: end, range: time.range)
         }
     }
 
@@ -113,20 +118,22 @@ struct Context {
         return today > reference ? reference : calendar.date(byAdding: .day, value: 1, to: reference)
     }
 
-    /// A day with no time: noon, or `ParseOptions.defaultHour`.
+    /// A day with no time: noon, or `ChronoPT.Options.defaultHour`.
     private func dayOnly(_ day: Date) -> Date? {
         calendar.date(bySettingHour: options.defaultHour, minute: 0, second: 0, of: day)
     }
 
     private func result(
-        _ start: ParsedDate,
-        end: ParsedDate?,
+        _ start: ChronoPT.PartialDate,
+        end: ChronoPT.PartialDate?,
         range: Range<String.Index>,
-        recurrence: Recurrence? = nil
-    ) -> ParsedResult {
+        ranges: [Range<String.Index>]? = nil,
+        recurrence: ChronoPT.Recurrence? = nil
+    ) -> ChronoPT.Match {
         let original = source.originalRange(range)
-        return ParsedResult(
+        return ChronoPT.Match(
             range: original,
+            ranges: (ranges ?? [range]).map(source.originalRange),
             text: String(source.original[original]),
             start: start,
             end: end,

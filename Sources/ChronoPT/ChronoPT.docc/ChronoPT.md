@@ -35,22 +35,28 @@ let results = ChronoPT.parse(text, reference: now, calendar: calendar)
 
 ### What the text gave
 
-``ParsedDate/knownComponents`` says which parts of the date the text fixed.
+``ChronoPT/PartialDate/knownComponents`` says which parts of the date the text fixed.
 The rest comes from the reference date, so "25/09" gives `[.day, .month]` and
 you can show it without inventing a year.
 
 ### Repeating and past dates
 
-``ParsedResult/recurrence`` says how a date repeats ("toda terça", "todo dia
-às 8", "todo dia 5", "a cada 15 dias"), and ``ParsedResult/start`` is the next
+``ChronoPT/Match/recurrence`` says how a date repeats ("toda terça", "todo dia
+às 8", "todo dia 5", "a cada 15 dias"), and ``ChronoPT/Match/start`` is the next
 time it happens.
 Past dates ("ontem", "sexta passada", "há 2 dias") count only with
-``ParseOptions/allowsPast``.
+``ChronoPT/Options/allowsPast``.
+
+### The text without the date
+
+``ChronoPT/strippingDates(from:reference:calendar:options:)`` gives the text
+with every date taken out, along with the word that introduced it, which is
+what a notes app keeps as the title.
 
 ### Dates without a time
 
-When the text gives only a day, ``ParsedDate/date`` is noon of that day, or
-``ParseOptions/defaultHour``, and ``ParsedDate/hasTime`` is `false`. Noon keeps the date away from the
+When the text gives only a day, ``ChronoPT/PartialDate/date`` is noon of that day, or
+``ChronoPT/Options/defaultHour``, and ``ChronoPT/PartialDate/hasTime`` is `false`. Noon keeps the date away from the
 midnight shifts of daylight saving time.
 
 ## Topics
@@ -59,10 +65,11 @@ midnight shifts of daylight saving time.
 
 - ``ChronoPT/interpret(_:reference:calendar:options:)``
 - ``ChronoPT/parse(_:reference:calendar:options:)``
-- ``ParseOptions``
+- ``ChronoPT/strippingDates(from:reference:calendar:options:)``
+- ``ChronoPT/Options``
 
 ### Results
 
-- ``ParsedResult``
-- ``ParsedDate``
-- ``Recurrence``
+- ``ChronoPT/Match``
+- ``ChronoPT/PartialDate``
+- ``ChronoPT/Recurrence``

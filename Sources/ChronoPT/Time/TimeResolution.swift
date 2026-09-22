@@ -12,12 +12,16 @@ extension TimeRules {
         /// The pieces the time was decided from.
         let pieces: [Piece<Value>]
 
-        /// "há 2 horas": counts only with `ParseOptions.allowsPast`.
+        /// The clock time that settled this part of the day, when it was said
+        /// apart: "amanhã de manhã, reunião às 7".
+        var settledRange: Range<String.Index>?
+
+        /// "há 2 horas": counts only with `ChronoPT.Options.allowsPast`.
         var isPast: Bool {
             if case .fromNow(let minutes) = value { minutes < 0 } else { false }
         }
 
-        /// What the time fixes; see `ParsedDate.knownComponents`. A clock time
+        /// What the time fixes; see `ChronoPT.PartialDate.knownComponents`. A clock time
         /// gives the hour and the minute, a part of the day only the hour, and
         /// a time from now the whole date.
         var knownComponents: Set<Calendar.Component> {
@@ -127,7 +131,9 @@ extension TimeRules {
               let joined = resolve(partOfDay.pieces + clock.pieces, range: partOfDay.range),
               case .at(let time) = joined.value,
               (time.hour >= 12) == (period.hour >= 12) else { return nil }
-        return joined
+        var settled = joined
+        settled.settledRange = clock.range
+        return settled
     }
 
     /// Time from now beats everything; a clock time beats a part of the day,

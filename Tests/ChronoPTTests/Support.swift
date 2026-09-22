@@ -17,12 +17,16 @@ func reference(_ year: Int, _ month: Int, _ day: Int) -> Date {
     saoPaulo.date(from: DateComponents(year: year, month: month, day: day, hour: 10))!
 }
 
-func interpret(_ text: String, reference: Date = monday, options: ParseOptions = ParseOptions()) -> ParsedResult? {
+func interpret(_ text: String, reference: Date = monday, options: ChronoPT.Options = ChronoPT.Options()) -> ChronoPT.Match? {
     ChronoPT.interpret(text, reference: reference, calendar: saoPaulo, options: options)
 }
 
-func parse(_ text: String, reference: Date = monday, options: ParseOptions = ParseOptions()) -> [ParsedResult] {
+func parse(_ text: String, reference: Date = monday, options: ChronoPT.Options = ChronoPT.Options()) -> [ChronoPT.Match] {
     ChronoPT.parse(text, reference: reference, calendar: saoPaulo, options: options)
+}
+
+func strip(_ text: String, options: ChronoPT.Options = ChronoPT.Options()) -> String {
+    ChronoPT.strippingDates(from: text, reference: monday, calendar: saoPaulo, options: options)
 }
 
 func ymd(_ date: Date?) -> [Int] {

@@ -25,10 +25,10 @@ public enum ChronoPT {
         _ text: String,
         reference: Date = .now,
         calendar: Calendar = .current,
-        options: ParseOptions = ParseOptions()
-    ) -> [ParsedResult] {
+        options: ChronoPT.Options = ChronoPT.Options()
+    ) -> [ChronoPT.Match] {
         let context = Context(text: text, reference: reference, calendar: calendar, options: options)
-        var results: [ParsedResult] = []
+        var results: [ChronoPT.Match] = []
         var usedTimes = Set<Int>()
 
         for day in context.days {
@@ -62,8 +62,8 @@ public enum ChronoPT {
         _ text: String,
         reference: Date = .now,
         calendar: Calendar = .current,
-        options: ParseOptions = ParseOptions()
-    ) -> ParsedResult? {
+        options: ChronoPT.Options = ChronoPT.Options()
+    ) -> ChronoPT.Match? {
         let context = Context(text: text, reference: reference, calendar: calendar, options: options)
         guard let day = context.days.first(where: { context.resolve($0) != nil }) else {
             return context.times.lazy.compactMap { context.combine(nil, $0) }.first

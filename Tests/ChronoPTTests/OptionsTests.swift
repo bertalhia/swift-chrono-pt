@@ -3,7 +3,7 @@ import Testing
 
 @Suite("Options")
 struct OptionsTests {
-    static let past = ParseOptions(allowsPast: true)
+    static let past = ChronoPT.Options(allowsPast: true)
 
     @Test("Past dates need allowsPast", arguments: [
         ("pagar ontem", [2026, 9, 20]),
@@ -68,7 +68,7 @@ struct OptionsTests {
 
     @Test("defaultHour sets the time of a day with no time")
     func defaultHour() throws {
-        let options = ParseOptions(defaultHour: 9)
+        let options = ChronoPT.Options(defaultHour: 9)
         let day = try #require(interpret("pagar amanhã", options: options))
         #expect(hm(day.start.date) == [9, 0])
         #expect(day.start.hasTime == false)
@@ -80,9 +80,9 @@ struct OptionsTests {
 
     @Test("defaultHour stays between 0 and 23")
     func defaultHourBounds() throws {
-        #expect(ParseOptions(defaultHour: 30).defaultHour == 23)
-        #expect(ParseOptions(defaultHour: -1).defaultHour == 0)
-        let found = try #require(interpret("amanhã", options: ParseOptions(defaultHour: 30)))
+        #expect(ChronoPT.Options(defaultHour: 30).defaultHour == 23)
+        #expect(ChronoPT.Options(defaultHour: -1).defaultHour == 0)
+        let found = try #require(interpret("amanhã", options: ChronoPT.Options(defaultHour: 30)))
         #expect(hm(found.start.date) == [23, 0])
     }
 }

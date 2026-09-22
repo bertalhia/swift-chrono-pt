@@ -45,7 +45,7 @@ extension DayRules {
         }
 
         /// "ontem", "sexta passada", "há 2 dias": counts only with
-        /// `ParseOptions.allowsPast`.
+        /// `ChronoPT.Options.allowsPast`.
         var isPast: Bool {
             switch self {
             case .days(let count), .weeks(let count), .months(let count), .weekend(let count): count < 0
@@ -55,7 +55,7 @@ extension DayRules {
             }
         }
 
-        var recurrence: Recurrence? {
+        var recurrence: ChronoPT.Recurrence? {
             switch self {
             case .daily: .daily
             case .interval(let components): .every(components)
@@ -65,7 +65,7 @@ extension DayRules {
             }
         }
 
-        /// What the text fixes at the start; see `ParsedDate.knownComponents`.
+        /// What the text fixes at the start; see `ChronoPT.PartialDate.knownComponents`.
         /// A count from the reference ("amanhã", "semana que vem") fixes the
         /// whole day; a month or a year period fixes only its month or year.
         var knownComponents: Set<Calendar.Component> {

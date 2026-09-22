@@ -129,7 +129,7 @@ Past dates are off by default, since a reminder in the past is useless. A day
 with no time is set to noon.
 
 ```swift
-let options = ParseOptions(allowsPast: true, defaultHour: 9)
+let options = ChronoPT.Options(allowsPast: true, defaultHour: 9)
 let paid = ChronoPT.interpret("paguei ontem", options: options)
 paid?.start.date  // yesterday at 9:00
 ```
@@ -137,6 +137,19 @@ paid?.start.date  // yesterday at 9:00
 `allowsPast` covers words that point back, such as "ontem", "sexta passada"
 or "há 2 dias". A date that only names a day, such as "dia 15" or "sexta",
 still means the next one.
+
+### The text without the date
+
+A notes app wants the title without the date, and cleaning that by hand leaves
+the prepositions and punctuation behind.
+
+```swift
+ChronoPT.strippingDates(from: "comprar pão amanhã no almoço")
+// "comprar pão"
+
+ChronoPT.strippingDates(from: "dentista sexta às 14h, reunião dia 30")
+// "dentista, reunião"
+```
 
 ### Reference date and calendar
 
@@ -154,18 +167,22 @@ let result = ChronoPT.interpret("sexta à noite", reference: someDate, calendar:
 ### The result
 
 ```swift
-public struct ParsedResult: Sendable, Equatable {
-    public let range: Range<String.Index>  // where the expression is in the input
-    public let text: String                // the expression as written
-    public let start: ParsedDate
-    public let end: ParsedDate?            // the end of a period or a range
-    public let recurrence: Recurrence?     // .daily, .weekly(on:), .monthly(day:)
+public struct ChronoPT.Match: Sendable, Hashable {
+    public let range: Range<String.Index>    // the day, with the time when they touch
+    public let ranges: [Range<String.Index>] // every span that produced the date
+    public let text: String                  // the expression as written
+    public let start: ChronoPT.PartialDate
+    public let end: ChronoPT.PartialDate?    // the end of a period or a range
+    public let recurrence: ChronoPT.Recurrence?
+    public var interval: DateInterval?       // start to end, when there is an end
 }
 
-public struct ParsedDate: Sendable, Equatable {
+public struct ChronoPT.PartialDate: Sendable, Hashable {
     public let date: Date
     public let knownComponents: Set<Calendar.Component>  // what the text fixed
-    public var hasTime: Bool { knownComponents.contains(.hour) }
+    public var hasTime: Bool                             // the text gave an hour
+    public var hasDay: Bool                              // the text gave a day
+    public func dateComponents(in: Calendar) -> DateComponents
 }
 ```
 
