@@ -1,0 +1,20 @@
+{
+  "version" : 1,
+  "lineLength" : 110,
+  "indentation" : { "spaces" : 4 },
+  "respectsExistingLineBreaks" : true,
+  "lineBreakBeforeEachArgument" : false,
+  "rules" : {
+    "AlwaysUseLowerCamelCase" : true,
+    "AmbiguousTrailingClosureOverload" : true,
+    "NoBlockComments" : true,
+    "NoEmptyTrailingClosureParentheses" : true,
+    "OneCasePerLine" : false,
+    "OrderedImports" : true,
+    "ReturnVoidInsteadOfEmptyTuple" : true,
+    "UseLetInEveryBoundCaseVariable" : false,
+    "UseShorthandTypeNames" : true,
+    "UseSynthesizedInitializer" : false,
+    "ValidateDocumentationComments" : true
+  }
+}

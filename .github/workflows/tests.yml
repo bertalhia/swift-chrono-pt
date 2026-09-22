@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,6 +24,7 @@ jobs:
           persist-credentials: false
       - run: swift --version
       - run: swift test
+      - run: swift build -c release
 
   linux:
     name: Linux, Swift ${{ matrix.swift }}
@@ -39,3 +41,27 @@ jobs:
           persist-credentials: false
       - run: swift --version
       - run: swift test
+
+  platforms:
+    name: Build for ${{ matrix.platform }}
+    runs-on: macos-26
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [watchOS, tvOS, visionOS]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: xcodebuild build -scheme swift-chrono-pt -destination "generic/platform=${{ matrix.platform }}"
+
+  format:
+    name: Format
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: swift format lint --recursive --strict Sources Tests

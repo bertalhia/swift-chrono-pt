@@ -1,0 +1,27 @@
+name: An expression that should parse
+description: Something people write that the parser does not understand yet
+labels: [enhancement]
+body:
+  - type: textarea
+    id: phrases
+    attributes:
+      label: The phrases
+      description: Several variants, the way people actually write them
+      placeholder: |
+        "no fim do trimestre"
+        "até o fim do trimestre"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What they should mean
+      description: Relative to a reference date you state
+      placeholder: From Monday, 21 September 2026, "no fim do trimestre" is 31 December 2026
+    validations:
+      required: true
+  - type: input
+    id: frequency
+    attributes:
+      label: How often you see it
+      placeholder: Common in billing notes

@@ -1,4 +1,5 @@
 import Testing
+
 @testable import ChronoPT
 
 @Suite("Robustness")
@@ -10,7 +11,7 @@ struct RobustnessTests {
         "sexta", "que vem", "no almoço", "à noite", "quinze para as oito", "vinte e três",
         "daqui", "2", "horas", "por dia", "no natal", "semana", "mês", "e meia", "meio-dia",
         "ÀS", "Amanhã,", "(sexta)", "—", "🇧🇷", "👍🏽", "e\u{301}", "\u{301}", "\n", "\r\n", "\t",
-        "ß", "ﬁ", "İ", "٣", "𝟗", "  ", ",", ".", "/", ":", "-"
+        "ß", "ﬁ", "İ", "٣", "𝟗", "  ", ",", ".", "/", ":", "-", "\u{064B}", "\u{0e31}", "\u{363}",
     ]
 
     @Test("Random text never crashes, and every range points into the input", arguments: 0..<200)
@@ -19,6 +20,10 @@ struct RobustnessTests {
         let count = Int.random(in: 1...12, using: &generator)
         let text = (0..<count).map { _ in Self.pieces.randomElement(using: &generator)! }
             .joined(separator: Bool.random(using: &generator) ? " " : "")
+
+        // The old check compared the range against text taken from that same
+        // range, so it could never fail. This one holds the real invariant.
+        #expect(TextSource(text).normalized.count == text.count, "\(text.debugDescription)")
 
         for result in parse(text) {
             #expect(text[result.range] == result.text[...], "\(text.debugDescription)")
@@ -43,6 +48,24 @@ struct RobustnessTests {
             return results
         }
         #expect(concurrent == serial)
+    }
+
+    /// Parsing used to be cubic: the pair loops asked questions about gaps
+    /// that scanned the rest of the text, so 2.4 KB of repeated weekdays took
+    /// 13 seconds. The ceiling is loose on purpose; a return to cubic misses it
+    /// by two orders of magnitude.
+    @Test(
+        "A long text parses in well under a second",
+        arguments: [
+            String(repeating: "segunda ", count: 300),
+            String(repeating: "amanha ", count: 300),
+            String(repeating: "1/1 ", count: 300),
+            String(repeating: "reunião dia 12 às 14h com o time sobre o lançamento, ", count: 120),
+        ])
+    func longTextIsFast(_ text: String) {
+        let start = ContinuousClock.now
+        _ = parse(text)
+        #expect(start.duration(to: .now) < .seconds(3), "\(text.count) characters")
     }
 
     @Test("A lone combining mark after a line break keeps positions aligned")

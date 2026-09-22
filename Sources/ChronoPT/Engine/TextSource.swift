@@ -6,22 +6,34 @@ import Foundation
 /// "Almoço," matches "almoco".
 ///
 /// Slash, colon and hyphen stay: "25/09", "10:30", "meio-dia". En and em
-/// dashes become hyphens: "10h–11h".
+/// dashes become hyphens: "10h–11h", and ordinal indicators become the letter
+/// they stand for: "1º" reads as "1o", "6ª" as "6a".
 struct TextSource {
     let original: String
     let normalized: String
 
     init(_ text: String) {
         original = text
-        normalized = String(text.map { character in
-            let folded = String(character).folding(
-                options: [.diacriticInsensitive, .caseInsensitive],
-                locale: Locale(identifier: "pt_BR")
-            )
-            guard folded.count == 1, let simple = folded.first else { return character }
-            if "–—".contains(simple) { return "-" }
-            return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
-        })
+        normalized = String(
+            text.map { character in
+                let folded = String(character).folding(
+                    options: [.diacriticInsensitive, .caseInsensitive],
+                    locale: Locale(identifier: "pt_BR")
+                )
+                guard folded.count == 1, let simple = folded.first else {
+                    // A mark that folds to nothing, or to more than one character,
+                    // would merge with what came before and cost a position.
+                    return character.isLetter || character.isNumber ? character : " "
+                }
+                // A mark on its own would merge with the character before it
+                // and cost a position, breaking the one-for-one promise.
+                if simple.unicodeScalars.allSatisfy(\.properties.isGraphemeExtend) { return " " }
+                if "–—".contains(simple) { return "-" }
+                // Ordinal indicators read as the letter they stand for: "1º", "6ª".
+                if simple == "º" { return "o" }
+                if simple == "ª" { return "a" }
+                return simple.isLetter || simple.isNumber || "/:-".contains(simple) ? simple : " "
+            })
     }
 
     /// The same position in the original text.
@@ -40,7 +52,9 @@ struct TextSource {
     /// inside "da noite".
     func wordRanges(of phrase: String) -> [Range<String.Index>] {
         normalized.ranges(of: phrase).filter { range in
-            let before = range.lowerBound > normalized.startIndex ? normalized[normalized.index(before: range.lowerBound)] : nil
+            let before =
+                range.lowerBound > normalized.startIndex
+                ? normalized[normalized.index(before: range.lowerBound)] : nil
             let after = range.upperBound < normalized.endIndex ? normalized[range.upperBound] : nil
             return !Self.isWordCharacter(before) && !Self.isWordCharacter(after)
         }
@@ -59,7 +73,8 @@ struct TextSource {
             end = normalized.index(before: end)
         }
         var start = end
-        while start > normalized.startIndex, Self.isWordCharacter(normalized[normalized.index(before: start)]) {
+        while start > normalized.startIndex, Self.isWordCharacter(normalized[normalized.index(before: start)])
+        {
             start = normalized.index(before: start)
         }
         return start < end ? start..<end : nil
@@ -71,7 +86,35 @@ struct TextSource {
 
     /// The words right after the position: "8h por dia" is a duration.
     func words(after index: String.Index, count: Int) -> [String] {
-        normalized[index...].split(whereSeparator: { !Self.isWordCharacter($0) }).prefix(count).map(String.init)
+        normalized[index...]
+            .split(maxSplits: count, whereSeparator: { !Self.isWordCharacter($0) })
+            .prefix(count)
+            .map(String.init)
+    }
+
+    /// Whether every word in the range passes, stopping at the first one that
+    /// does not. The rules ask this about gaps that can be the whole text, so
+    /// splitting the range first would make every question cost its length.
+    func everyWord(in range: Range<String.Index>, _ isAllowed: (Substring) -> Bool) -> Bool {
+        var index = range.lowerBound
+        while index < range.upperBound {
+            guard Self.isWordCharacter(normalized[index]) else {
+                index = normalized.index(after: index)
+                continue
+            }
+            var end = index
+            while end < range.upperBound, Self.isWordCharacter(normalized[end]) {
+                end = normalized.index(after: end)
+            }
+            guard isAllowed(normalized[index..<end]) else { return false }
+            index = end
+        }
+        return true
+    }
+
+    /// Whether the range holds no word at all.
+    func hasNoWord(in range: Range<String.Index>) -> Bool {
+        !normalized[range].contains(where: Self.isWordCharacter)
     }
 
     /// Only spaces and prepositions between the two ranges: "amanhã às 9",
@@ -79,9 +122,7 @@ struct TextSource {
     func onlyConnectors(between first: Range<String.Index>, and second: Range<String.Index>) -> Bool {
         let (left, right) = first.lowerBound <= second.lowerBound ? (first, second) : (second, first)
         guard left.upperBound <= right.lowerBound else { return true }
-        return normalized[left.upperBound..<right.lowerBound]
-            .split(whereSeparator: { !Self.isWordCharacter($0) })
-            .allSatisfy { Self.connectors.contains(String($0)) }
+        return everyWord(in: left.upperBound..<right.lowerBound) { Self.connectors.contains(String($0)) }
     }
 
     /// Where a range from `first` to `second` starts, or nil when the words
@@ -93,23 +134,29 @@ struct TextSource {
     /// word of `second` ("às 16h", "até sexta"), or with a hyphen alone
     /// ("10h-11h", "seg-sex"). Articles may sit in between: "de hoje até o
     /// dia 30".
-    func rangeStart(from first: Range<String.Index>, to second: Range<String.Index>, bareStart: Bool = false) -> String.Index? {
+    func rangeStart(from first: Range<String.Index>, to second: Range<String.Index>, bareStart: Bool = false)
+        -> String.Index?
+    {
         guard first.upperBound <= second.lowerBound else { return nil }
         var opening: (word: String, start: String.Index)?
         if let word = words(after: first.lowerBound, count: 1).first, Self.rangeOpenings.contains(word) {
             opening = (word, first.lowerBound)
-        } else if let before = wordRange(before: first.lowerBound), Self.rangeOpenings.contains(String(normalized[before])) {
+        } else if let before = wordRange(before: first.lowerBound),
+            Self.rangeOpenings.contains(String(normalized[before]))
+        {
             opening = (String(normalized[before]), before.lowerBound)
         }
         guard opening != nil || bareStart else { return nil }
         let start = opening?.start ?? first.lowerBound
         let gap = first.upperBound..<second.lowerBound
-        let between = words(in: gap)
-        if between.isEmpty, normalized[gap].contains("-") { return start }
         // "de segunda e quarta" is two days, not a range.
         let closings: Set<String> = opening?.word == "entre" ? ["e"] : ["a", "as", "ao", "ate"]
-        guard between.allSatisfy({ closings.contains($0) || Self.articles.contains($0) }),
-              (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains) else { return nil }
+        guard everyWord(in: gap, { closings.contains(String($0)) || Self.articles.contains(String($0)) })
+        else { return nil }
+        if hasNoWord(in: gap), normalized[gap].contains("-") { return start }
+        let between = words(in: gap)
+        guard (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains)
+        else { return nil }
         return start
     }
 
@@ -122,62 +169,11 @@ struct TextSource {
     private static let articles: Set<String> = ["o", "a", "os", "as"]
 
     private static let connectors: Set<String> = [
-        "a", "as", "ao", "ate", "de", "do", "da", "no", "na", "pela", "pelo", "e", "la", "por", "volta"
+        "a", "as", "ao", "ate", "de", "do", "da", "no", "na", "pela", "pelo", "e", "la", "por", "volta",
     ]
 
     private static func isWordCharacter(_ character: Character?) -> Bool {
         guard let character else { return false }
         return character.isLetter || character.isNumber
     }
-}
-
-/// A piece of text found by a rule, with its position in the normalized text.
-struct Piece<Value: Sendable>: Sendable {
-    let range: Range<String.Index>
-    let value: Value
-
-    /// Drops overlapping pieces: the one that starts first stays and, on a
-    /// tie, the longest. "Depois de amanhã" beats "amanhã"; "de manhã cedo"
-    /// beats "de manhã". The result is in text order.
-    static func nonOverlapping(_ pieces: [Self], in source: TextSource) -> [Self] {
-        let sorted = pieces.sorted { lhs, rhs in
-            if lhs.range.lowerBound != rhs.range.lowerBound { return lhs.range.lowerBound < rhs.range.lowerBound }
-            return source.length(of: lhs.range) > source.length(of: rhs.range)
-        }
-        var kept: [Self] = []
-        for piece in sorted where !kept.contains(where: { $0.range.overlaps(piece.range) }) {
-            kept.append(piece)
-        }
-        return kept
-    }
-}
-
-/// Spelled-out numbers, the ones people use for dates and times: "quinze",
-/// "vinte e três". A compound is a ten and a unit joined by "e".
-enum SpokenNumber {
-    static func value(_ text: some StringProtocol) -> Int? {
-        if let number = Int(text) { return number }
-        let parts = text.split(separator: " e ").map { String($0) }
-        switch parts.count {
-        case 1:
-            return units[parts[0]] ?? teens[parts[0]] ?? tens[parts[0]]
-        case 2:
-            guard let ten = tens[parts[0]], let unit = units[parts[1]] else { return nil }
-            return ten + unit
-        default:
-            return nil
-        }
-    }
-
-    private static let units: [String: Int] = [
-        "um": 1, "uma": 1, "dois": 2, "duas": 2, "tres": 3, "quatro": 4, "cinco": 5,
-        "seis": 6, "sete": 7, "oito": 8, "nove": 9
-    ]
-
-    private static let teens: [String: Int] = [
-        "dez": 10, "onze": 11, "doze": 12, "treze": 13, "catorze": 14, "quatorze": 14, "quinze": 15,
-        "dezesseis": 16, "dezessete": 17, "dezoito": 18, "dezenove": 19
-    ]
-
-    private static let tens: [String: Int] = ["vinte": 20, "trinta": 30, "quarenta": 40, "cinquenta": 50]
 }

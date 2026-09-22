@@ -38,12 +38,13 @@ date always gives the same result.
 | Relative day | hoje, hj, amanhã, amn, depois de amanhã, daqui 2 dias, em três semanas, daqui um mês |
 | Weekday | sexta que vem, próxima sexta, nesta quinta, na terça-feira, sábado, quarta da semana que vem, sexta dia 25, na seg, prox sexta |
 | Date | 25/09, 25/09/2026, 2026-10-15, 15 de outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze |
-| Period | esta semana, semana que vem, fim de semana, este mês, mês que vem, começo do mês que vem, fim do mês, ano que vem |
+| Period | esta semana, semana que vem, fim de semana, no meio da semana, este mês, mês que vem, no início do mês, no meio do mês, fim do mês, em outubro, março de 2027, ano que vem, fim do ano |
 | Holiday | no natal, véspera de natal, no ano novo, na páscoa, no carnaval, sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais |
 | Clock time | às 9, 14h, 9h30, 10:30, 15:30h, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
 | Part of the day | de manhã, à tarde, à noite, de madrugada, cedo, à tardinha, tarde da noite, no fim da tarde |
 | Moment | no almoço, na janta, depois do almoço, antes de dormir, ao acordar, no café da manhã, depois do trabalho |
 | From now | daqui 2 horas, em meia hora, daqui a 20 minutos |
+| Business days | em 5 dias úteis, prazo de 2 dias úteis, no próximo dia útil, primeiro dia útil do mês, último dia útil do mês |
 | Range | das 14h às 16h, 14h às 16h, 10h-11h, de 9 a 11h, entre 10 e 11h, de segunda a sexta, seg-sex, do dia 10 ao dia 15, de 10 a 15 de outubro |
 | Repeating | todo dia, todos os dias, toda terça, todas as sextas, às segundas e quartas, todo dia 5, todo mês no dia 10, a cada 15 dias, de 2 em 2 semanas, toda semana, mensalmente |
 | Past | ontem, anteontem, sexta passada, na última sexta, semana passada, mês passado, há 2 dias, 3 dias atrás, há 2 horas |
@@ -61,7 +62,7 @@ Add the package in Xcode with **File › Add Package Dependencies…** and the U
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/bertalhia/swift-chrono-pt.git", from: "0.7.0")
+    .package(url: "https://github.com/bertalhia/swift-chrono-pt.git", from: "0.8.0")
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -129,7 +130,7 @@ Past dates are off by default, since a reminder in the past is useless. A day
 with no time is set to noon.
 
 ```swift
-let options = ParseOptions(allowsPast: true, defaultHour: 9)
+let options = ChronoPT.Options(allowsPast: true, defaultHour: 9)
 let paid = ChronoPT.interpret("paguei ontem", options: options)
 paid?.start.date  // yesterday at 9:00
 ```
@@ -138,10 +139,23 @@ paid?.start.date  // yesterday at 9:00
 or "há 2 dias". A date that only names a day, such as "dia 15" or "sexta",
 still means the next one.
 
+### The text without the date
+
+A notes app wants the title without the date, and cleaning that by hand leaves
+the prepositions and punctuation behind.
+
+```swift
+ChronoPT.strippingDates(from: "comprar pão amanhã no almoço")
+// "comprar pão"
+
+ChronoPT.strippingDates(from: "dentista sexta às 14h, reunião dia 30")
+// "dentista, reunião"
+```
+
 ### Reference date and calendar
 
 Relative expressions are computed from `reference`, which defaults to now.
-Weekdays, midnight and the time zone come from `calendar`, which defaults to
+Midnight and the time zone come from `calendar`, which defaults to
 `Calendar.current`. Pass both on servers and in tests:
 
 ```swift
@@ -151,21 +165,31 @@ calendar.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
 let result = ChronoPT.interpret("sexta à noite", reference: someDate, calendar: calendar)
 ```
 
+Any calendar works. The grammar counts Gregorian months, weekdays, holidays
+and years, so a Buddhist or Hebrew calendar keeps its time zone and the
+arithmetic runs in Gregorian: "25/09/2026" is the same instant either way. A
+week runs Monday to Sunday whatever `firstWeekday` says, because that is what
+the Portuguese words mean.
+
 ### The result
 
 ```swift
-public struct ParsedResult: Sendable, Equatable {
-    public let range: Range<String.Index>  // where the expression is in the input
-    public let text: String                // the expression as written
-    public let start: ParsedDate
-    public let end: ParsedDate?            // the end of a period or a range
-    public let recurrence: Recurrence?     // .daily, .weekly(on:), .monthly(day:)
+public struct ChronoPT.Match: Sendable, Hashable {
+    public let range: Range<String.Index>    // the day, with the time when they touch
+    public let ranges: [Range<String.Index>] // every span that produced the date
+    public let text: String                  // the expression as written
+    public let start: ChronoPT.PartialDate
+    public let end: ChronoPT.PartialDate?    // the end of a period or a range
+    public let recurrence: ChronoPT.Recurrence?
+    public var interval: DateInterval?       // start to end, when there is an end
 }
 
-public struct ParsedDate: Sendable, Equatable {
+public struct ChronoPT.PartialDate: Sendable, Hashable {
     public let date: Date
     public let knownComponents: Set<Calendar.Component>  // what the text fixed
-    public var hasTime: Bool { knownComponents.contains(.hour) }
+    public var hasTime: Bool                             // the text gave an hour
+    public var hasDay: Bool                              // the text gave a day
+    public func dateComponents(in: Calendar) -> DateComponents
 }
 ```
 

@@ -1,60 +1,81 @@
 import Testing
+
 @testable import ChronoPT
 
 @Suite("Days")
 struct DayTests {
-    @Test("A day in every supported format", arguments: [
-        ("dentista hoje", [2026, 9, 21]),
-        ("aniversário da Ana amanhã", [2026, 9, 22]),
-        ("depois de amanhã", [2026, 9, 23]),
-        ("reunião sexta que vem", [2026, 9, 25]),
-        ("próxima sexta", [2026, 9, 25]),
-        ("nesta quinta", [2026, 9, 24]),
-        ("entrega na terça-feira", [2026, 9, 22]),
-        ("no sábado", [2026, 9, 26]),
-        ("domingo", [2026, 9, 27]),
-        ("na segunda", [2026, 9, 28]),
-        ("quarta da semana que vem", [2026, 9, 30]),
-        ("25/09", [2026, 9, 25]),
-        ("dia 25/09/2026", [2026, 9, 25]),
-        ("5/1/27", [2027, 1, 5]),
-        ("2026-10-15", [2026, 10, 15]),
-        ("reunião dia 15 de outubro", [2026, 10, 15]),
-        ("3 nov", [2026, 11, 3]),
-        ("1º de maio", [2027, 5, 1]),
-        ("primeiro de janeiro", [2027, 1, 1]),
-        ("dia primeiro", [2026, 10, 1]),
-        ("pagar o aluguel até dia 30", [2026, 9, 30]),
-        ("consulta dia 5", [2026, 10, 5]),
-        ("prazo dia 21", [2026, 9, 21]),
-        ("ligar pro banco daqui 2 dias", [2026, 9, 23]),
-        ("entregar em três dias", [2026, 9, 24]),
-        ("pagar daqui a um dia", [2026, 9, 22]),
-        ("daqui uma semana", [2026, 9, 28]),
-        ("em duas semanas", [2026, 10, 5]),
-        ("daqui um mês", [2026, 10, 21]),
-        ("fim do mês", [2026, 9, 30]),
-        ("vinte e três de outubro", [2026, 10, 23]),
-        ("trinta e um de dezembro", [2026, 12, 31]),
-        ("dezesseis de novembro", [2026, 11, 16]),
-        ("dia quinze", [2026, 10, 15]),
-        ("dia dois", [2026, 10, 2]),
-        ("até dia vinte e oito", [2026, 9, 28]),
-        ("15 de dez", [2026, 12, 15]),
-        ("dez de dez", [2026, 12, 10]),
-        ("a 5 de outubro", [2026, 10, 5]),
-        ("amn", [2026, 9, 22]),
-        ("dps de amanhã", [2026, 9, 23]),
-        ("dps de amn", [2026, 9, 23]),
-        ("na seg", [2026, 9, 28]),
-        ("até qui", [2026, 9, 24]),
-        ("sex que vem", [2026, 9, 25]),
-        ("no sáb", [2026, 9, 26]),
-        ("dom que vem", [2026, 9, 27]),
-        ("prox sexta", [2026, 9, 25]),
-        ("fim do mês que vem", [2026, 10, 31]),
-        ("final do mês que vem", [2026, 10, 31])
-    ])
+    @Test(
+        "A day in every supported format",
+        arguments: [
+            ("dentista hoje", [2026, 9, 21]),
+            ("aniversário da Ana amanhã", [2026, 9, 22]),
+            ("depois de amanhã", [2026, 9, 23]),
+            ("reunião sexta que vem", [2026, 9, 25]),
+            ("próxima sexta", [2026, 9, 25]),
+            ("nesta quinta", [2026, 9, 24]),
+            ("entrega na terça-feira", [2026, 9, 22]),
+            ("no sábado", [2026, 9, 26]),
+            ("domingo", [2026, 9, 27]),
+            ("na segunda", [2026, 9, 28]),
+            ("quarta da semana que vem", [2026, 9, 30]),
+            ("25/09", [2026, 9, 25]),
+            ("dia 25/09/2026", [2026, 9, 25]),
+            ("5/1/27", [2027, 1, 5]),
+            ("2026-10-15", [2026, 10, 15]),
+            ("reunião dia 15 de outubro", [2026, 10, 15]),
+            ("3 nov", [2026, 11, 3]),
+            ("1º de maio", [2027, 5, 1]),
+            ("primeiro de janeiro", [2027, 1, 1]),
+            ("dia primeiro", [2026, 10, 1]),
+            ("pagar o aluguel até dia 30", [2026, 9, 30]),
+            ("consulta dia 5", [2026, 10, 5]),
+            ("prazo dia 21", [2026, 9, 21]),
+            ("ligar pro banco daqui 2 dias", [2026, 9, 23]),
+            ("entregar em três dias", [2026, 9, 24]),
+            ("pagar daqui a um dia", [2026, 9, 22]),
+            ("daqui uma semana", [2026, 9, 28]),
+            ("em duas semanas", [2026, 10, 5]),
+            ("daqui um mês", [2026, 10, 21]),
+            ("fim do mês", [2026, 9, 30]),
+            ("vinte e três de outubro", [2026, 10, 23]),
+            ("trinta e um de dezembro", [2026, 12, 31]),
+            ("dezesseis de novembro", [2026, 11, 16]),
+            ("dia quinze", [2026, 10, 15]),
+            ("dia dois", [2026, 10, 2]),
+            ("até dia vinte e oito", [2026, 9, 28]),
+            ("15 de dez", [2026, 12, 15]),
+            ("dez de dez", [2026, 12, 10]),
+            ("a 5 de outubro", [2026, 10, 5]),
+            ("amn", [2026, 9, 22]),
+            ("dps de amanhã", [2026, 9, 23]),
+            ("dps de amn", [2026, 9, 23]),
+            ("na seg", [2026, 9, 28]),
+            ("até qui", [2026, 9, 24]),
+            ("sex que vem", [2026, 9, 25]),
+            ("no sáb", [2026, 9, 26]),
+            ("dom que vem", [2026, 9, 27]),
+            ("prox sexta", [2026, 9, 25]),
+            ("prazo de 5 dias", [2026, 9, 26]),
+            ("fim do ano", [2026, 12, 31]),
+            ("no início do ano", [2027, 1, 1]),
+            ("no meio do ano", [2027, 6, 30]),
+            ("pagar no início do mês", [2026, 10, 1]),
+            ("no meio do mês", [2026, 10, 15]),
+            ("no último dia do mês", [2026, 9, 30]),
+            ("no primeiro dia do mês", [2026, 10, 1]),
+            ("no prazo de 30 dias", [2026, 10, 21]),
+            ("em até 10 dias", [2026, 10, 1]),
+            ("daqui a 1 ano", [2027, 9, 21]),
+            ("em 2 anos", [2028, 9, 21]),
+            ("pagar dia 1º", [2026, 10, 1]),
+            ("reunião 6ª feira", [2026, 9, 25]),
+            ("2ª feira", [2026, 9, 28]),
+            ("sábado agora", [2026, 9, 26]),
+            ("sexta agora", [2026, 9, 25]),
+            ("quinta dessa semana", [2026, 9, 24]),
+            ("fim do mês que vem", [2026, 10, 31]),
+            ("final do mês que vem", [2026, 10, 31]),
+        ])
     func day(_ example: (text: String, day: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
@@ -83,20 +104,29 @@ struct DayTests {
         #expect(ymd(found.end?.date) == [2026, 10, 31])
     }
 
-    @Test("Named periods run from their first to their last day", arguments: [
-        ("terminar o relatório esta semana", [2026, 9, 21], [2026, 9, 27]),
-        ("nesta semana", [2026, 9, 21], [2026, 9, 27]),
-        ("essa semana que vem", [2026, 9, 28], [2026, 10, 4]),
-        ("pagar a fatura este mês", [2026, 9, 21], [2026, 9, 30]),
-        ("nesse mês", [2026, 9, 21], [2026, 9, 30]),
-        ("trocar de carro ano que vem", [2027, 1, 1], [2027, 12, 31]),
-        ("no próximo ano", [2027, 1, 1], [2027, 12, 31]),
-        ("prox semana", [2026, 9, 28], [2026, 10, 4]),
-        ("fim de semana que vem", [2026, 10, 3], [2026, 10, 4]),
-        ("próximo fim de semana", [2026, 10, 3], [2026, 10, 4]),
-        ("final de semana que vem", [2026, 10, 3], [2026, 10, 4]),
-        ("de seg a sex", [2026, 9, 28], [2026, 10, 2])
-    ])
+    @Test(
+        "Named periods run from their first to their last day",
+        arguments: [
+            ("terminar o relatório esta semana", [2026, 9, 21], [2026, 9, 27]),
+            ("nesta semana", [2026, 9, 21], [2026, 9, 27]),
+            ("essa semana que vem", [2026, 9, 28], [2026, 10, 4]),
+            ("pagar a fatura este mês", [2026, 9, 21], [2026, 9, 30]),
+            ("nesse mês", [2026, 9, 21], [2026, 9, 30]),
+            ("trocar de carro ano que vem", [2027, 1, 1], [2027, 12, 31]),
+            ("no próximo ano", [2027, 1, 1], [2027, 12, 31]),
+            ("prox semana", [2026, 9, 28], [2026, 10, 4]),
+            ("fim de semana que vem", [2026, 10, 3], [2026, 10, 4]),
+            ("no começo da semana", [2026, 9, 21], [2026, 9, 22]),
+            ("no meio da semana", [2026, 9, 23], [2026, 9, 23]),
+            ("no fim da semana", [2026, 9, 24], [2026, 9, 25]),
+            ("férias em dezembro", [2026, 12, 1], [2026, 12, 31]),
+            ("em março de 2027", [2027, 3, 1], [2027, 3, 31]),
+            ("março que vem", [2027, 3, 1], [2027, 3, 31]),
+            ("no mês de outubro", [2026, 10, 1], [2026, 10, 31]),
+            ("próximo fim de semana", [2026, 10, 3], [2026, 10, 4]),
+            ("final de semana que vem", [2026, 10, 3], [2026, 10, 4]),
+            ("de seg a sex", [2026, 9, 28], [2026, 10, 2]),
+        ])
     func namedPeriod(_ example: (text: String, start: [Int], end: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.start)
@@ -104,14 +134,24 @@ struct DayTests {
         #expect(found.start.hasTime == false)
     }
 
-    @Test("The start of next month is its first day, not the whole month", arguments: [
-        "renovar no começo do mês que vem",
-        "início do próximo mês"
-    ])
+    @Test(
+        "The start of next month is its first day, not the whole month",
+        arguments: [
+            "renovar no começo do mês que vem",
+            "início do próximo mês",
+        ])
     func startOfNextMonth(_ text: String) throws {
         let found = try #require(interpret(text))
         #expect(ymd(found.start.date) == [2026, 10, 1])
         #expect(found.end == nil)
+    }
+
+    @Test("\"Fim da semana\" is Thursday and Friday, not the weekend")
+    func endOfWeekIsNotTheWeekend() throws {
+        let week = try #require(interpret("no fim da semana"))
+        #expect(ymd(week.start.date) == [2026, 9, 24])
+        let weekend = try #require(interpret("no fim de semana"))
+        #expect(ymd(weekend.start.date) == [2026, 9, 26])
     }
 
     @Test("\"Esta semana\" on a Sunday is just that day")
@@ -122,26 +162,28 @@ struct DayTests {
         #expect(found.end == nil)
     }
 
-    @Test("Holidays, fixed and counted from Easter", arguments: [
-        ("ceia no natal", [2026, 12, 25]),
-        ("véspera de natal", [2026, 12, 24]),
-        ("festa no réveillon", [2026, 12, 31]),
-        ("viajar no ano novo", [2027, 1, 1]),
-        ("feriado de tiradentes", [2027, 4, 21]),
-        ("no dia do trabalho", [2027, 5, 1]),
-        ("dia da independência", [2027, 9, 7]),
-        ("presente pro dia das crianças", [2026, 10, 12]),
-        ("dia de finados", [2026, 11, 2]),
-        ("proclamação da república", [2026, 11, 15]),
-        ("dia da consciência negra", [2026, 11, 20]),
-        ("jantar no dia dos namorados", [2027, 6, 12]),
-        ("quarta-feira de cinzas", [2027, 2, 10]),
-        ("na sexta-feira santa", [2027, 3, 26]),
-        ("almoço na páscoa", [2027, 3, 28]),
-        ("corpus christi", [2027, 5, 27]),
-        ("ligar pra mãe no dia das mães", [2027, 5, 9]),
-        ("dia dos pais", [2027, 8, 8])
-    ])
+    @Test(
+        "Holidays, fixed and counted from Easter",
+        arguments: [
+            ("ceia no natal", [2026, 12, 25]),
+            ("véspera de natal", [2026, 12, 24]),
+            ("festa no réveillon", [2026, 12, 31]),
+            ("viajar no ano novo", [2027, 1, 1]),
+            ("feriado de tiradentes", [2027, 4, 21]),
+            ("no dia do trabalho", [2027, 5, 1]),
+            ("dia da independência", [2027, 9, 7]),
+            ("presente pro dia das crianças", [2026, 10, 12]),
+            ("dia de finados", [2026, 11, 2]),
+            ("proclamação da república", [2026, 11, 15]),
+            ("dia da consciência negra", [2026, 11, 20]),
+            ("jantar no dia dos namorados", [2027, 6, 12]),
+            ("quarta-feira de cinzas", [2027, 2, 10]),
+            ("na sexta-feira santa", [2027, 3, 26]),
+            ("almoço na páscoa", [2027, 3, 28]),
+            ("corpus christi", [2027, 5, 27]),
+            ("ligar pra mãe no dia das mães", [2027, 5, 9]),
+            ("dia dos pais", [2027, 8, 8]),
+        ])
     func holiday(_ example: (text: String, day: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
@@ -164,12 +206,14 @@ struct DayTests {
         #expect(ymd(carnival.end?.date) == [2027, 2, 9])
     }
 
-    @Test("A holiday name with another meaning needs a preposition", arguments: [
-        "comprar ovo de páscoa",
-        "fantasia de carnaval",
-        "livro sobre consciência negra",
-        "igreja nossa senhora aparecida"
-    ])
+    @Test(
+        "A holiday name with another meaning needs a preposition",
+        arguments: [
+            "comprar ovo de páscoa",
+            "fantasia de carnaval",
+            "livro sobre consciência negra",
+            "igreja nossa senhora aparecida",
+        ])
     func holidayNameWithoutPreposition(_ text: String) {
         #expect(interpret(text) == nil)
     }
@@ -180,19 +224,21 @@ struct DayTests {
         #expect(ymd(found.start.date) == [2026, 9, 22])
     }
 
-    @Test("A day range sets the first and the last day", arguments: [
-        ("de segunda a sexta", [2026, 9, 28], [2026, 10, 2]),
-        ("da segunda à sexta", [2026, 9, 28], [2026, 10, 2]),
-        ("entre segunda e quarta", [2026, 9, 28], [2026, 9, 30]),
-        ("de hoje até sexta", [2026, 9, 21], [2026, 9, 25]),
-        ("de amanhã até o dia 30", [2026, 9, 22], [2026, 9, 30]),
-        ("do dia 10 ao dia 15", [2026, 10, 10], [2026, 10, 15]),
-        ("do dia 10 ao dia 15 de novembro", [2026, 11, 10], [2026, 11, 15]),
-        ("de 10 a 15 de outubro", [2026, 10, 10], [2026, 10, 15]),
-        ("entre 3 e 5 de maio", [2027, 5, 3], [2027, 5, 5]),
-        ("de 10/10 a 15/10", [2026, 10, 10], [2026, 10, 15]),
-        ("de 28 de dezembro a 3 de janeiro", [2026, 12, 28], [2027, 1, 3])
-    ])
+    @Test(
+        "A day range sets the first and the last day",
+        arguments: [
+            ("de segunda a sexta", [2026, 9, 28], [2026, 10, 2]),
+            ("da segunda à sexta", [2026, 9, 28], [2026, 10, 2]),
+            ("entre segunda e quarta", [2026, 9, 28], [2026, 9, 30]),
+            ("de hoje até sexta", [2026, 9, 21], [2026, 9, 25]),
+            ("de amanhã até o dia 30", [2026, 9, 22], [2026, 9, 30]),
+            ("do dia 10 ao dia 15", [2026, 10, 10], [2026, 10, 15]),
+            ("do dia 10 ao dia 15 de novembro", [2026, 11, 10], [2026, 11, 15]),
+            ("de 10 a 15 de outubro", [2026, 10, 10], [2026, 10, 15]),
+            ("entre 3 e 5 de maio", [2027, 5, 3], [2027, 5, 5]),
+            ("de 10/10 a 15/10", [2026, 10, 10], [2026, 10, 15]),
+            ("de 28 de dezembro a 3 de janeiro", [2026, 12, 28], [2027, 1, 3]),
+        ])
     func dayRange(_ example: (text: String, start: [Int], end: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(found.text == example.text)
@@ -201,10 +247,12 @@ struct DayTests {
         #expect(found.start.hasTime == false)
     }
 
-    @Test("\"E\" closes a range only after \"entre\"", arguments: [
-        ("do dia 10 e dia 15", [2026, 10, 10]),
-        ("de 10 e 15 de outubro", [2026, 10, 15])
-    ])
+    @Test(
+        "\"E\" closes a range only after \"entre\"",
+        arguments: [
+            ("do dia 10 e dia 15", [2026, 10, 10]),
+            ("de 10 e 15 de outubro", [2026, 10, 15]),
+        ])
     func notADayRange(_ example: (text: String, day: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
@@ -222,33 +270,39 @@ struct DayTests {
         #expect(hm(end) == [18, 0])
     }
 
-    @Test("A weekday followed by its date is that date", arguments: [
-        ("segunda-feira, dia 5", [2026, 10, 5]),
-        ("sexta, dia 25", [2026, 9, 25]),
-        ("na quinta, 1º de outubro", [2026, 10, 1]),
-        ("sábado 3/10", [2026, 10, 3])
-    ])
+    @Test(
+        "A weekday followed by its date is that date",
+        arguments: [
+            ("segunda-feira, dia 5", [2026, 10, 5]),
+            ("sexta, dia 25", [2026, 9, 25]),
+            ("na quinta, 1º de outubro", [2026, 10, 1]),
+            ("sábado 3/10", [2026, 10, 3]),
+        ])
     func weekdayWithDate(_ example: (text: String, day: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
         #expect(parse(example.text).count == 1)
     }
 
-    @Test("An abbreviated weekday counts with a time right after it", arguments: [
-        ("qua 14h", [2026, 9, 23], [14, 0]),
-        ("seg às 9", [2026, 9, 28], [9, 0])
-    ])
+    @Test(
+        "An abbreviated weekday counts with a time right after it",
+        arguments: [
+            ("qua 14h", [2026, 9, 23], [14, 0]),
+            ("seg às 9", [2026, 9, 28], [9, 0]),
+        ])
     func abbreviatedWeekdayWithTime(_ example: (text: String, day: [Int], time: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
         #expect(hm(found.start.date) == example.time)
     }
 
-    @Test("A time before a weekday counts with \"de\"", arguments: [
-        ("consulta às 7 e meia da manhã de quinta", [2026, 9, 24], [7, 30]),
-        ("reunião às 10 de quinta", [2026, 9, 24], [10, 0]),
-        ("levar o bolo às 20h de sexta", [2026, 9, 25], [20, 0])
-    ])
+    @Test(
+        "A time before a weekday counts with \"de\"",
+        arguments: [
+            ("consulta às 7 e meia da manhã de quinta", [2026, 9, 24], [7, 30]),
+            ("reunião às 10 de quinta", [2026, 9, 24], [10, 0]),
+            ("levar o bolo às 20h de sexta", [2026, 9, 25], [20, 0]),
+        ])
     func timeBeforeWeekday(_ example: (text: String, day: [Int], time: [Int])) throws {
         let found = try #require(interpret(example.text))
         #expect(ymd(found.start.date) == example.day)
@@ -262,11 +316,13 @@ struct DayTests {
         #expect(hm(found.start.date) == [10, 0])
     }
 
-    @Test("An abbreviation with another meaning is not a weekday", arguments: [
-        "tem o dom de ensinar",
-        "esperar 30 seg",
-        "para ter certeza"
-    ])
+    @Test(
+        "An abbreviation with another meaning is not a weekday",
+        arguments: [
+            "tem o dom de ensinar",
+            "esperar 30 seg",
+            "para ter certeza",
+        ])
     func abbreviationWithAnotherMeaning(_ text: String) {
         #expect(interpret(text) == nil)
     }
@@ -278,11 +334,13 @@ struct DayTests {
         #expect(hm(found.start.date) == [15, 0])
     }
 
-    @Test("An ordinal is not a weekday", arguments: [
-        "pedir a segunda via do boleto",
-        "quinta série",
-        "a terça parte"
-    ])
+    @Test(
+        "An ordinal is not a weekday",
+        arguments: [
+            "pedir a segunda via do boleto",
+            "quinta série",
+            "a terça parte",
+        ])
     func ordinalIsNotADay(_ text: String) {
         #expect(interpret(text) == nil)
     }
@@ -299,15 +357,17 @@ struct DayTests {
         #expect(interpret(text) == nil)
     }
 
-    @Test("Text without a date gives no date", arguments: [
-        "comprar café",
-        "ideia: gravar vídeo sobre isso",
-        "pagar o boleto",
-        "tirar um dia de folga",
-        "não é um mar de rosas",
-        "comprar de 10 a 15 laranjas",
-        "comprar 2 pacotes de arroz"
-    ])
+    @Test(
+        "Text without a date gives no date",
+        arguments: [
+            "comprar café",
+            "ideia: gravar vídeo sobre isso",
+            "pagar o boleto",
+            "tirar um dia de folga",
+            "não é um mar de rosas",
+            "comprar de 10 a 15 laranjas",
+            "comprar 2 pacotes de arroz",
+        ])
     func noDate(_ text: String) {
         #expect(interpret(text) == nil)
         #expect(parse(text).isEmpty)

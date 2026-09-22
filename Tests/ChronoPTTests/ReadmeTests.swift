@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ChronoPT
 
 /// The README shows real behavior: its code examples and every example in its
@@ -37,7 +38,8 @@ struct ReadmeTests {
         let water = try #require(interpret("regar as plantas a cada 15 dias"))
         #expect(water.recurrence == .every(DateComponents(day: 15)))
 
-        let paid = try #require(interpret("paguei ontem", options: ParseOptions(allowsPast: true, defaultHour: 9)))
+        let paid = try #require(
+            interpret("paguei ontem", options: ChronoPT.Options(allowsPast: true, defaultHour: 9)))
         #expect(ymd(paid.start.date) == [2026, 9, 20])
         #expect(hm(paid.start.date) == [9, 0])
     }
@@ -59,13 +61,13 @@ struct ReadmeTests {
             .split(separator: "\n")
             .filter { $0.hasPrefix("| ") && !$0.hasPrefix("| Kind") }
             .map { $0.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) } }
-        #expect(rows.count == 12)
+        #expect(rows.count == 13)
 
         for row in rows {
             let (kind, examples) = (row[0], row[1].components(separatedBy: ", "))
             for example in examples {
                 switch kind {
-                case "Relative day", "Weekday", "Date", "Period", "Holiday":
+                case "Relative day", "Weekday", "Date", "Period", "Holiday", "Business days":
                     let found = interpret(example)
                     #expect(found?.start.hasTime == false, "\(kind): \(example)")
                 case "Clock time", "Part of the day", "Moment":
@@ -78,7 +80,9 @@ struct ReadmeTests {
                     #expect(interpret(example)?.recurrence != nil, "\(kind): \(example)")
                 case "Past":
                     #expect(interpret(example) == nil, "\(kind): \(example)")
-                    #expect(interpret(example, options: ParseOptions(allowsPast: true)) != nil, "\(kind): \(example)")
+                    #expect(
+                        interpret(example, options: ChronoPT.Options(allowsPast: true)) != nil,
+                        "\(kind): \(example)")
                 default:
                     Issue.record("Unknown kind in the README table: \(kind)")
                 }

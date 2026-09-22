@@ -8,7 +8,13 @@ let package = Package(
         .library(name: "ChronoPT", targets: ["ChronoPT"])
     ],
     targets: [
-        .target(name: "ChronoPT"),
+        .target(
+            name: "ChronoPT",
+            swiftSettings: [
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("MemberImportVisibility"),
+            ]
+        ),
         .testTarget(name: "ChronoPTTests", dependencies: ["ChronoPT"])
     ]
 )
