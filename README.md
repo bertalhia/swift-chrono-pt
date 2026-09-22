@@ -26,6 +26,7 @@ date always gives the same result.
 - [Installation](#installation)
 - [Usage](#usage)
 - [Options](#options)
+- [Integration](#integration)
 - [How it reads ambiguous text](#how-it-reads-ambiguous-text)
 - [Not supported yet](#not-supported-yet)
 - [Contributing](#contributing)
@@ -224,6 +225,39 @@ ChronoPT.interpret("às 9")?.start.knownComponents        // [.hour, .minute]
 Every public symbol has documentation comments. To browse them as DocC
 documentation, open the package in Xcode and choose **Product › Build
 Documentation**.
+
+## Integration
+
+- **`nil` means no date.** Nothing throws: `interpret` returns `nil` and `parse`
+  an empty array when the text has no date in it.
+- **Any thread.** `parse`, `interpret`, `strippingDates` and `Parser` are pure
+  functions, safe from any thread or actor, and every result is `Sendable`.
+  Each thread keeps its own compiled regexes, so the first call on a new
+  thread takes about 10 ms longer.
+- **Cost.** In a release build on Apple silicon: 0.28 ms for a one-line note,
+  28 ms for 7.7 KB of notes full of dates, 2.3 ms for 10 KB of text with none.
+- **Highlighting.** For UIKit, `NSRange(match.range, in: text)`. For SwiftUI,
+  convert each of `match.ranges`, which includes a time said apart from its
+  day:
+
+  ```swift
+  var attributed = AttributedString(text)
+  for match in ChronoPT.parse(text) {
+      for range in match.ranges {
+          guard let lower = AttributedString.Index(range.lowerBound, within: attributed),
+              let upper = AttributedString.Index(range.upperBound, within: attributed)
+          else { continue }
+          attributed[lower..<upper].inlinePresentationIntent = .stronglyEmphasized
+      }
+  }
+  ```
+
+- **Locale and time zone.** `calendar.timeZone` decides the instants.
+  `calendar.locale` does not change what is read, and `firstWeekday` is
+  ignored, since a Portuguese week runs Monday to Sunday.
+- **European Portuguese.** Common forms work ("pelas 9", "às 15h00", "ao
+  pequeno-almoço", "ao fim da tarde"), but the grammar is written for Brazil
+  first.
 
 ## How it reads ambiguous text
 

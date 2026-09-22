@@ -68,6 +68,12 @@ midnight shifts of daylight saving time.
 
 ## Topics
 
+### Essentials
+
+- <doc:GettingStarted>
+- <doc:Grammar>
+- <doc:Recipes>
+
 ### Parsing
 
 - ``ChronoPT/interpret(_:reference:calendar:options:)``
