@@ -232,6 +232,14 @@ struct Context {
         }
     }
 
+    /// The times that can be next to the range, in text order: the two that
+    /// end at or before it and the one that starts after. Any other has one
+    /// of these in between.
+    func nearbyTimes(_ range: Range<String.Index>) -> [Int] {
+        let after = DayRules.firstIndex(in: times, from: range.upperBound) { $0.range.lowerBound }
+        return Array(max(0, after - 2)..<min(times.count, after + 1))
+    }
+
     /// A range of days with a time at each end: "de segunda às 14h até sexta
     /// às 18h", "de 25/09 14h a 26/09 18h". The time inside the range and the
     /// one right after it, as one time range from the first day to the last.
@@ -243,7 +251,7 @@ struct Context {
                 !used.contains(index) && day.range.contains(times[index].range.lowerBound)
                     && times[index].range.upperBound <= day.range.upperBound
             }),
-            let after = times.indices.first(where: { index in
+            let after = nearbyTimes(day.range).first(where: { index in
                 !used.contains(index) && times[index].range.lowerBound >= day.range.upperBound
                     && source.onlyConnectors(between: day.range, and: times[index].range)
             }),
@@ -265,7 +273,8 @@ struct Context {
         var grew = true
         while grew {
             grew = false
-            for index in times.indices where !used.contains(index) && !chain.contains(index) {
+            let near = Set(chain.flatMap { nearbyTimes(times[$0].range) })
+            for index in near.sorted() where !used.contains(index) && !chain.contains(index) {
                 guard case .at = times[index].value, fits(times[index], with: day),
                     chain.contains(where: {
                         source.onlyConnectors(between: times[$0].range, and: times[index].range)

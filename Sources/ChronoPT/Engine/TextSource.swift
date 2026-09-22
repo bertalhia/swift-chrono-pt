@@ -18,6 +18,13 @@ struct TextSource {
     let words: Set<String>
     let hasDigit: Bool
 
+    /// Where each word is: its places among the words of the text.
+    private let places: [String: [Int]]
+    /// Where each word starts, in text order.
+    private let wordStarts: [String.Index]
+    /// The places of the words with a digit.
+    private let digitWords: [Int]
+
     /// Whether a rule skips its regex when none of its words is in the text.
     /// Off only in the test that proves skipping changes no result.
     let skipsRules: Bool
@@ -49,14 +56,19 @@ struct TextSource {
         self.normalized = normalized
         self.cursor = Cursor(normalized: normalized.startIndex, original: text.startIndex)
         self.skipsRules = skipsRules
-        var words = Set<String>()
-        var hasDigit = false
+        var places: [String: [Int]] = [:]
+        var wordStarts: [String.Index] = []
+        var digitWords: [Int] = []
         for word in normalized.split(whereSeparator: { !Self.isWordCharacter($0) }) {
-            words.insert(String(word))
-            hasDigit = hasDigit || word.contains(where: \.isNumber)
+            places[String(word), default: []].append(wordStarts.count)
+            if word.contains(where: \.isNumber) { digitWords.append(wordStarts.count) }
+            wordStarts.append(word.startIndex)
         }
-        self.words = words
-        self.hasDigit = hasDigit
+        self.words = Set(places.keys)
+        self.hasDigit = !digitWords.isEmpty
+        self.places = places
+        self.wordStarts = wordStarts
+        self.digitWords = digitWords
         self.sentenceBreaks = Self.sentenceBreaks(in: characters, normalized: normalized)
     }
 
@@ -95,14 +107,38 @@ struct TextSource {
     /// The regex's matches, or none without running it when the text holds
     /// none of the words every one of its matches needs. A regex pass costs
     /// its length in the text; a set lookup costs nothing.
+    ///
+    /// Every match holds one of those words, a few words at most after where
+    /// it starts, so the regex is tried only at the starts of the words just
+    /// before each of them, instead of at every position of the text. The
+    /// equivalence test in `PrefilterTests` runs every parse both ways.
     func matches<Output>(
         of regex: @autoclosure () -> Regex<Output>,
         whenAny triggers: Set<String>,
         orDigit: Bool = false
     ) -> [Regex<Output>.Match] {
-        guard !skipsRules || (orDigit && hasDigit) || !triggers.isDisjoint(with: words) else { return [] }
-        return normalized.matches(of: regex())
+        guard skipsRules else { return normalized.matches(of: regex()) }
+        var found = triggers.flatMap { places[$0] ?? [] }
+        if orDigit { found += digitWords }
+        guard !found.isEmpty else { return [] }
+        var starts = Set<Int>()
+        for place in found {
+            starts.formUnion(max(0, place - Self.reach)...place)
+        }
+        let regex = regex()
+        var matches: [Regex<Output>.Match] = []
+        var end = normalized.startIndex
+        for place in starts.sorted() where wordStarts[place] >= end {
+            guard let match = normalized[wordStarts[place]...].prefixMatch(of: regex) else { continue }
+            matches.append(match)
+            end = match.range.upperBound
+        }
+        return matches
     }
+
+    /// How many words a match can hold before its trigger word: "entre
+    /// vinte e um e vinte e cinco de outubro" holds nine.
+    private static let reach = 12
 
     /// The regex's matches, or none without running it when the text lacks
     /// every one of the characters a match needs: the hyphen or the dot of
