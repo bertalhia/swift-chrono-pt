@@ -160,7 +160,7 @@ extension DayRules {
         case .daily, .interval:
             return (today, nil)
 
-        case .weekly(let weekdays):
+        case .weekly(let weekdays, _):
             // The next of these weekdays, counting today.
             return weekdays.compactMap { weekday in
                 calendar.nextDate(
@@ -170,8 +170,13 @@ extension DayRules {
                 )
             }.min().map { ($0, nil) }
 
-        case .monthly(let day):
-            return resolve(.dayOfMonth(day), reference: reference, calendar: calendar)
+        case .monthly(let days):
+            // The first of the days to come; -1 is the last day of the month.
+            return days.compactMap { day in
+                resolve(
+                    day < 0 ? .endOfMonth(months: 0) : .dayOfMonth(day), reference: reference,
+                    calendar: calendar)
+            }.min { $0.start < $1.start }
 
         case .timesPer, .yearly(month: nil):
             return (today, nil)

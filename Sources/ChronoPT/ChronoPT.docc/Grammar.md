@@ -60,7 +60,10 @@ mean more than one thing.
 - Repeating: todo dia, toda terça, às segundas e quartas, todo dia 5, a cada
   15 dias, de 8 em 8 horas, 3x ao dia, duas vezes por semana, dia sim dia não,
   toda última sexta do mês, todo primeiro sábado do mês, todo ano em julho,
-  todo 25 de dezembro. See ``ChronoPT/Recurrence``.
+  todo 25 de dezembro, todo dia útil, todo fim de semana, todo fim de mês,
+  todo dia 15 e 30, toda segunda a sexta, segundas e quartas às 19h, toda
+  semana na quarta, quinzenal às quintas, toda noite às 22h, 8/8h. See
+  ``ChronoPT/Recurrence``.
 - Where it stops: toda terça até dezembro, todo dia até 30/09, todo dia por 10
   dias, toda segunda, 5 vezes. A time may sit in between: "toda terça às 20h
   até dezembro".

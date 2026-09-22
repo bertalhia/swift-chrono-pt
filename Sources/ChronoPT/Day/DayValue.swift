@@ -78,8 +78,11 @@ extension DayRules {
         /// Every so many days, weeks or months: "a cada 15 dias".
         case interval(DateComponents)
         /// Weekdays as `Calendar` numbers them, in the order of the text.
-        case weekly([Int])
-        case monthly(Int)
+        /// Every week, or every few: "toda terça", "quinzenal às quintas".
+        case weekly([Int], every: Int)
+        /// Days of every month; -1 is the last: "todo dia 15 e 30", "todo fim
+        /// de mês".
+        case monthly([Int])
         /// So many times in each day, week, month or year: "3x ao dia".
         case timesPer(Int, DateComponents)
         /// A weekday in its place in the month, each month: "toda última
@@ -156,8 +159,9 @@ extension DayRules {
             switch self {
             case .daily: .daily()
             case .interval(let components): ChronoPT.Recurrence(every: components)
-            case .weekly(let weekdays): .weekly(on: Set(weekdays.map { DayRules.localeWeekdays[$0 - 1] }))
-            case .monthly(let day): .monthly(day: day)
+            case .weekly(let weekdays, let interval):
+                .weekly(every: interval, on: Set(weekdays.map { DayRules.localeWeekdays[$0 - 1] }))
+            case .monthly(let days): ChronoPT.Recurrence(frequency: .monthly, daysOfMonth: Set(days))
             case .timesPer(let count, let unit):
                 // Once a week is every week.
                 ChronoPT.Recurrence(every: unit).map { rule in

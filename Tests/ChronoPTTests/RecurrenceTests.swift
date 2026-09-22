@@ -259,4 +259,44 @@ struct RecurrenceTests {
         #expect(hm(found.start.date) == example.time)
         #expect(found.recurrence?.rrule == example.rrule)
     }
+
+    @Test(
+        "Business days, weekends, month ends and lists",
+        arguments: [
+            ("todo dia útil", [2026, 9, 21], "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"),
+            ("todos os dias úteis às 9h", [2026, 9, 22], "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"),
+            ("todo fim de semana", [2026, 9, 26], "FREQ=WEEKLY;BYDAY=SA,SU"),
+            ("nos fins de semana", [2026, 9, 26], "FREQ=WEEKLY;BYDAY=SA,SU"),
+            ("todo fds", [2026, 9, 26], "FREQ=WEEKLY;BYDAY=SA,SU"),
+            ("todo fim de mês", [2026, 9, 30], "FREQ=MONTHLY;BYMONTHDAY=-1"),
+            ("todo último dia do mês", [2026, 9, 30], "FREQ=MONTHLY;BYMONTHDAY=-1"),
+            ("todo começo de mês", [2026, 10, 1], "FREQ=MONTHLY;BYMONTHDAY=1"),
+            ("todo dia 15 e 30", [2026, 9, 30], "FREQ=MONTHLY;BYMONTHDAY=15,30"),
+            ("toda segunda a sexta", [2026, 9, 21], "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"),
+            ("segundas e quartas às 19h", [2026, 9, 21], "FREQ=WEEKLY;BYDAY=MO,WE"),
+            ("toda semana na quarta", [2026, 9, 23], "FREQ=WEEKLY;BYDAY=WE"),
+            ("reunião quinzenal às quintas", [2026, 9, 24], "FREQ=WEEKLY;INTERVAL=2;BYDAY=TH"),
+            ("de 2 em 2 semanas na terça", [2026, 9, 22], "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU"),
+            ("quinzenalmente", [2026, 9, 21], "FREQ=WEEKLY;INTERVAL=2"),
+        ])
+    func moreRepeatingForms(_ example: (text: String, day: [Int], rrule: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == example.day)
+        #expect(found.recurrence?.rrule == example.rrule)
+        #expect(parse(example.text).count == 1)
+    }
+
+    @Test(
+        "Every part of the day",
+        arguments: [
+            ("toda noite às 22h", [2026, 9, 21], [22, 0]), ("toda manhã às 7h", [2026, 9, 22], [7, 0]),
+            ("todas as manhãs", [2026, 9, 22], [9, 0]), ("toda tarde", [2026, 9, 21], [15, 0]),
+        ])
+    func everyPartOfDay(_ example: (text: String, day: [Int], time: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.recurrence == .daily())
+    }
 }

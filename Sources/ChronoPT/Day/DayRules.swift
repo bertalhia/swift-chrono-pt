@@ -44,7 +44,7 @@ enum DayRules {
         let near = Neighbours(found)
         let candidates =
             (found + ranges(of: near, in: source, times: times) + weekdaysWithDates(of: near, in: source)
-            + datesWithWeekdays(of: near, in: source)
+            + datesWithWeekdays(of: near, in: source) + weeklyEvery(of: near, in: source)
             + offsets(of: near, in: source) + lengths(of: near, in: source)
             + limits(of: near, in: source, times: times) + withins(of: near, in: source))
             .filter { candidate in
@@ -67,7 +67,7 @@ enum DayRules {
                     }
                     // A time before the day only counts with "de": "às 10 de
                     // quinta" is Thursday, but "às 10 segunda via" is not Monday.
-                    return time.range.lowerBound >= candidate.piece.range.upperBound
+                    return time.range.lowerBound >= candidate.piece.range.lowerBound
                         || source.word(before: candidate.piece.range.lowerBound) == "de"
                 }
             }
@@ -406,6 +406,40 @@ enum DayRules {
         return next > 0 && times[next - 1].range.contains(index)
     }
 
+    /// Every few weeks, on these weekdays: "toda semana na quarta", "reunião
+    /// quinzenal às quintas", "às terças, de 2 em 2 semanas".
+    private static func weeklyEvery(of near: Neighbours, in source: TextSource) -> [Candidate] {
+        func weeks(_ value: Value) -> Int? {
+            guard case .interval(let components) = value, let weeks = components.weekOfYear,
+                components.day == nil, components.month == nil
+            else { return nil }
+            return weeks
+        }
+        func days(_ value: Value) -> [Int]? {
+            switch value {
+            case .weekday(let day, nil): [day]
+            case .weekly(let days, 1) where !days.isEmpty: days
+            default: nil
+            }
+        }
+        return near.byStart.flatMap { first -> [Candidate] in
+            near.starting(from: first.piece.range.upperBound).prefix { second in
+                source.onlyConnectors(between: first.piece.range, and: second.piece.range)
+            }.compactMap { second in
+                let pair =
+                    weeks(first.piece.value).flatMap { every in days(second.piece.value).map { ($0, every) } }
+                    ?? weeks(second.piece.value).flatMap { every in
+                        days(first.piece.value).map { ($0, every) }
+                    }
+                guard let (weekdays, every) = pair else { return nil }
+                let range = first.piece.range.lowerBound..<second.piece.range.upperBound
+                return Candidate(
+                    piece: Piece(range: range, value: .weekly(weekdays, every: every), priority: 1),
+                    hint: .none)
+            }
+        }
+    }
+
     /// A date followed by its weekday: "15/10, quinta", "28/9 (seg)",
     /// "02/10 sexta-feira". The date decides, as when the weekday comes first.
     private static func datesWithWeekdays(of near: Neighbours, in source: TextSource) -> [Candidate] {
@@ -536,6 +570,11 @@ enum DayRules {
         }
 
         for match in source.matches(of: everyUnit, whenAny: everyUnitWords) {
+            // "quinzenal" is every other week.
+            if match.output.contains("quinzena") {
+                add(match.range, .interval(DateComponents(weekOfYear: 2)))
+                continue
+            }
             let unit =
                 if match.output.contains("hora") { "hora" } else if match.output.contains("semana") {
                     "semana"
@@ -545,15 +584,47 @@ enum DayRules {
 
         for match in source.matches(of: monthlyDay, whenAny: monthlyWords) {
             guard let day = dayNumber(match.output.1), (1...31).contains(day) else { continue }
-            add(match.range, .monthly(day))
+            add(match.range, .monthly([day]))
         }
 
         for match in source.matches(of: everyMonth, whenAny: monthlyWords) {
-            // "todo dia 30 minutos" counts minutes every day.
+            // "todo dia 30 minutos" counts minutes every day. "todo dia 15 e
+            // 30" is both.
+            let more =
+                match.output.2.map { $0.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) } } ?? []
             guard let day = dayNumber(match.output.1), (1...31).contains(day),
+                more.allSatisfy((1...31).contains),
                 source.endsPhrase(at: match.range.upperBound)
             else { continue }
-            add(match.range, .monthly(day))
+            add(match.range, .monthly([day] + more))
+        }
+
+        for match in source.matches(of: everyMonthEnd, whenAny: monthlyWords) {
+            add(match.range, .monthly([match.output.1 == nil ? -1 : 1]))
+        }
+
+        for match in source.matches(of: everyBusinessDay, whenAny: businessWords) {
+            add(match.range, .weekly([2, 3, 4, 5, 6], every: 1))
+        }
+
+        for match in source.matches(of: everyWeekend, whenAny: ["fim", "fins", "final", "finais", "fds"]) {
+            add(match.range, .weekly([7, 1], every: 1))
+        }
+
+        for match in source.matches(of: everyWeekdayRange, whenAny: everyWeekdayWords) {
+            guard let first = weekdays[String(match.output.1)], let last = weekdays[String(match.output.2)]
+            else {
+                continue
+            }
+            // Monday to Friday, or across the weekend: "toda sexta a segunda".
+            let count = (last - first + 7) % 7
+            add(match.range, .weekly((0...count).map { (first - 1 + $0) % 7 + 1 }, every: 1))
+        }
+
+        // "toda noite": every day, at the time of that part of the day, which
+        // the time rules read from the same words.
+        for match in source.matches(of: everyPartOfDay, whenAny: everyWeekdayWords) {
+            add(match.range, .daily, hint: .time)
         }
 
         for match in source.matches(of: timesPer, whenAny: timesWords, orDigit: true) {
@@ -598,7 +669,20 @@ enum DayRules {
             }
             // "nas quartas de final", "as segundas intenções".
             guard !days.isEmpty, !days.contains(nil), !isOrdinal(match.range, in: source) else { continue }
-            add(match.range, .weekly(days.compactMap { $0 }))
+            add(match.range, .weekly(days.compactMap { $0 }, every: 1))
+        }
+
+        // "segundas e quartas às 19h": plural weekdays with no preposition
+        // still repeat, where a phrase can end or a time follows.
+        for match in source.matches(of: pluralWeekdays, whenAny: pluralWeekdayWords) {
+            let days = match.output.split(whereSeparator: { $0 == " " || $0 == "," }).filter { $0 != "e" }.map
+            {
+                weekdays[String(($0.split(separator: "-").first ?? $0).dropLast())]
+            }
+            guard !days.isEmpty, !days.contains(nil), !isOrdinal(match.range, in: source) else { continue }
+            add(
+                match.range, .weekly(days.compactMap { $0 }, every: 1),
+                hint: source.endsPhrase(at: match.range.upperBound) ? .none : .time)
         }
 
         for match in source.matches(of: weekday, whenAny: weekdayWords) {

@@ -87,6 +87,11 @@ extension TimeRules {
             ], hour: 19),
         Period(phrases: ["na boquinha da noite", "de boquinha da noite"], hour: 18, minute: 30),
         Period(phrases: ["tarde da noite"], hour: 23),
+        // A part of the day that repeats; the day rules read the repeating.
+        Period(phrases: ["toda manha", "todas as manhas"], hour: 9),
+        Period(phrases: ["toda tarde", "todas as tardes"], hour: 15),
+        Period(phrases: ["toda noite", "todas as noites"], hour: 19),
+        Period(phrases: ["toda madrugada", "todas as madrugadas"], hour: 5),
     ]
 
     /// Whole parts of the day, and the whole day. The longer phrase wins

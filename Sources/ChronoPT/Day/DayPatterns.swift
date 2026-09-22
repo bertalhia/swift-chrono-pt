@@ -52,7 +52,7 @@ extension DayRules {
     // "toda semana", "todo mês", "semanalmente", "mensalmente"
     static var everyUnit: Regex<Substring> {
         RegexCache.regex {
-            #/\b(?:toda(?:s as)? semanas?|todo(?:s os)? (?:mes|meses)|semanalmente|mensalmente|de hora em hora|a cada hora)\b/#
+            #/\b(?:toda(?:s as)? semanas?|todo(?:s os)? (?:mes|meses)|semanalmente|mensalmente|quinzenalmente|quinzenal|quinzenais|de hora em hora|a cada hora)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -74,9 +74,9 @@ extension DayRules {
     }
 
     // "todo dia 5", "todo mês no dia 10"
-    static var everyMonth: Regex<(Substring, Substring)> {
+    static var everyMonth: Regex<(Substring, Substring, Substring?)> {
         RegexCache.regex {
-            #/\b(?:todo mes(?: no)? dia|todos os dias|todo dia) (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o\b|\b)(?!/)/#
+            #/\b(?:todo mes(?: no)? dia|todos os dias|todo dia) (\d{1,2}|primeiro|vinte e (?:um|dois|tres|quatro|cinco|seis|sete|oito|nove)|trinta e um|trinta|vinte|dezenove|dezoito|dezessete|dezesseis|quinze|catorze|quatorze|treze|doze|onze|dez|nove|oito|sete|seis|cinco|quatro|tres|dois|um)(?:o\b|\b)((?:(?:,|, e| e) \d{1,2}o?\b)+)?(?!/)/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -225,6 +225,55 @@ extension DayRules {
     static var halfMonth: Regex<(Substring, Substring, Substring?, Substring?)> {
         RegexCache.regex {
             #/\b(?:(?:na|da|a|ate a|para a|pra) )?(primeira|segunda|1a|2a) quinzena(?: do mes)?(?: (?:de|do mes de) (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?: de (\d{4}))?)?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "todo fim de mês", "todo final do mês", "todo último dia do mês", "todo
+    // começo de mês"
+    static var everyMonthEnd: Regex<(Substring, Substring?)> {
+        RegexCache.regex {
+            #/\b(?:todo|todos os) (?:(?:fim|final|ultimo dia|fins|finais) (?:do|de) mes|(inicio|comeco|primeiro dia) (?:do|de) mes)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "todo dia útil", "todos os dias úteis"
+    static var everyBusinessDay: Regex<Substring> {
+        RegexCache.regex {
+            #/\b(?:todo dia util|td dia util|todos os dias uteis|em dias uteis|nos dias uteis)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "todo fim de semana", "nos fins de semana", "todo fds"
+    static var everyWeekend: Regex<Substring> {
+        RegexCache.regex {
+            #/\b(?:todo fim de semana|todo final de semana|todos os fins de semana|todos os finais de semana|nos fins de semana|aos fins de semana|nos finais de semana|aos finais de semana|todo fds)\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "toda segunda a sexta", "todas as segundas a sextas"
+    static var everyWeekdayRange: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:toda|todo|todas as|todos os) (segunda|terca|quarta|quinta|sexta|sabado|domingo)s?(?:-feiras?)? (?:a|ate) (segunda|terca|quarta|quinta|sexta|sabado|domingo)s?(?:-feiras?)?\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "toda noite", "todas as manhãs"
+    static var everyPartOfDay: Regex<Substring> {
+        RegexCache.regex {
+            #/\b(?:toda (?:manha|tarde|noite|madrugada)|todas as (?:manhas|tardes|noites|madrugadas))\b/#
+                .wordBoundaryKind(.simple)
+        }
+    }
+
+    // "segundas e quartas", "terças-feiras": plural weekdays with no preposition
+    static var pluralWeekdays: Regex<Substring> {
+        RegexCache.regex {
+            #/\b(?:(?:segunda|terca|quarta|quinta|sexta)s(?:-feiras)?|sabados|domingos)(?:(?:,|, e| e) (?:(?:segunda|terca|quarta|quinta|sexta)s(?:-feiras)?|sabados|domingos))*\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -476,7 +525,11 @@ extension DayRules {
     static let everyDayWords: Set<String> = ["todo", "todos", "td", "tds", "diariamente"]
     static let intervalWords: Set<String> = ["cada"]
     static let fromToWords: Set<String> = ["em"]
+    static let pluralWeekdayWords: Set<String> = [
+        "segundas", "tercas", "quartas", "quintas", "sextas", "sabados", "domingos",
+    ]
     static let everyUnitWords: Set<String> = [
+        "quinzenal", "quinzenalmente", "quinzenais",
         "toda", "todas", "todo", "todos", "semanalmente", "mensalmente", "hora", "cada",
     ]
     static let monthlyWords: Set<String> = ["cada", "todo", "todos"]
