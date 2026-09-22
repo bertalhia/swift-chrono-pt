@@ -8,7 +8,7 @@ In Xcode, choose **File › Add Package Dependencies…** and enter
 `https://github.com/bertalhia/swift-chrono-pt.git`. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/bertalhia/swift-chrono-pt.git", from: "0.11.0")
+.package(url: "https://github.com/bertalhia/swift-chrono-pt.git", from: "0.12.0")
 ```
 
 and add `.product(name: "ChronoPT", package: "swift-chrono-pt")` to the target.
