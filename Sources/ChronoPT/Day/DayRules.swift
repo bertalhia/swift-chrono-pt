@@ -478,7 +478,26 @@ enum DayRules {
 
         for match in source.matches(of: inAmount, whenAny: amountWords) {
             guard let count = SpokenNumber.value(match.output.2), count > 0 else { continue }
-            add(match.range, amount(count, unit: match.output.3))
+            let (unit, half) = (match.output.3, match.output.4 != nil)
+            // "1 mês e meio" is a month and fifteen days, "1 ano e meio" a year
+            // and six months, "uma semana e meia" a week and three days.
+            let extra: DateComponents? =
+                !half
+                ? nil
+                : unit.hasPrefix("mes")
+                    ? DateComponents(day: 15)
+                    : unit.hasPrefix("ano")
+                        ? DateComponents(month: 6)
+                        : unit.hasPrefix("semana") ? DateComponents(day: 3) : nil
+            guard !half || extra != nil else { continue }
+            add(
+                match.range,
+                extra.map { .shifted(amount(count, unit: unit), by: $0) } ?? amount(count, unit: unit))
+        }
+
+        for match in source.matches(of: prescription, whenContains: "/") {
+            guard let count = Int(match.output.1), count > 0, Int(match.output.2) == count else { continue }
+            add(match.range, .interval(DateComponents(hour: count)))
         }
 
         for match in source.matches(of: agoAmount, whenAny: agoWords) {

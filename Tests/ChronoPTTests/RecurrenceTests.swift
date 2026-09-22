@@ -242,4 +242,21 @@ struct RecurrenceTests {
     func everyDayInChat(_ text: String) throws {
         #expect(try #require(interpret(text)).recurrence == .daily())
     }
+
+    @Test(
+        "Hours written short, and prescriptions",
+        arguments: [
+            ("a cada 4h", [14, 0], "FREQ=HOURLY;INTERVAL=4"),
+            ("de 8 em 8h", [18, 0], "FREQ=HOURLY;INTERVAL=8"),
+            ("1 comprimido de 8/8h", [18, 0], "FREQ=HOURLY;INTERVAL=8"),
+            ("dipirona 6/6h", [16, 0], "FREQ=HOURLY;INTERVAL=6"),
+            ("amoxicilina 12/12h por 10 dias", [22, 0], "FREQ=HOURLY;INTERVAL=12;UNTIL=20261001T025959Z"),
+            ("tomar de 8 em 8h por 7 dias", [18, 0], "FREQ=HOURLY;INTERVAL=8;UNTIL=20260928T025959Z"),
+        ])
+    func shortHours(_ example: (text: String, time: [Int], rrule: String)) throws {
+        let found = try #require(interpret(example.text))
+        #expect(ymd(found.start.date) == [2026, 9, 21])
+        #expect(hm(found.start.date) == example.time)
+        #expect(found.recurrence?.rrule == example.rrule)
+    }
 }

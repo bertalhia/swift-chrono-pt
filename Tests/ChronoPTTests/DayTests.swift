@@ -831,4 +831,16 @@ struct DayTests {
     func ordinalEndingPhrase(_ text: String) {
         #expect(parse(text).isEmpty)
     }
+
+    @Test(
+        "Approximate and half amounts from today",
+        arguments: [
+            ("daqui uns 10 dias", [2026, 10, 1]), ("daqui 1 mês e meio", [2026, 11, 5]),
+            ("em 1 ano e meio", [2028, 3, 21]), ("daqui uma semana e meia", [2026, 10, 1]),
+        ])
+    func approximateAmounts(_ example: (text: String, day: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.day)
+    }
 }

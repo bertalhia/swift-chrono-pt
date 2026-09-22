@@ -108,6 +108,17 @@ extension DayRules {
         /// The offset, in seconds east of UTC, is the one the text gave.
         case dateTime(DateComponents, offset: Int?)
 
+        /// Every so many hours or minutes, however the repetition ends: "de 8 em
+        /// 8 horas", "8/8h por 7 dias".
+        var hourInterval: DateComponents? {
+            switch self {
+            case .interval(let components) where components.hour != nil || components.minute != nil:
+                components
+            case .repeating(let base, _), .rated(let base, _, _): base.hourInterval
+            default: nil
+            }
+        }
+
         /// A day of the month, with or without the month: "dia 25", "25/09",
         /// "1º de outubro".
         var isDate: Bool {

@@ -705,4 +705,18 @@ struct TimeTests {
     func hrsBeforeMinutes(_ text: String) throws {
         #expect(hm(try #require(interpret(text)).start.date) == [15, 30])
     }
+
+    @Test(
+        "Diminutives from now",
+        arguments: [("daqui 5 minutinhos", [10, 5]), ("daqui a uma horinha", [11, 0])])
+    func diminutivesFromNow(_ example: (text: String, time: [Int])) throws {
+        #expect(hm(try #require(interpret(example.text)).start.date) == example.time)
+    }
+
+    @Test(
+        "Hours of something are how long",
+        arguments: ["1 hora de academia", "2 horas de estudo", "jejum de 12 horas"])
+    func hoursOfSomething(_ text: String) {
+        #expect(interpret(text) == nil)
+    }
 }

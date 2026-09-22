@@ -36,7 +36,7 @@ extension DayRules {
     // "a cada 15 dias", "cada 2 meses"
     static var everyInterval: Regex<(Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\b(?:a )?cada (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (horas?|minutos?|min|dias?|semanas?|mes|meses|anos?)\b/#
+            #/\b(?:a )?cada (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) ?(horas?|hrs?|hs|h|minutos?|mins?|min|dias?|semanas?|mes|meses|anos?)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -44,7 +44,7 @@ extension DayRules {
     // "de 2 em 2 semanas"
     static var fromToInterval: Regex<(Substring, Substring, Substring, Substring)> {
         RegexCache.regex {
-            #/\bde (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) em (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (horas?|minutos?|min|dias?|semanas?|mes|meses|anos?)\b/#
+            #/\bde (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) em (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) ?(horas?|hrs?|hs|h|minutos?|mins?|min|dias?|semanas?|mes|meses|anos?)\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -238,9 +238,9 @@ extension DayRules {
     }
 
     // "daqui 2 dias", "daqui a três semanas", "em 3 dias", "dentro de um mês"
-    static var inAmount: Regex<(Substring, Substring, Substring, Substring)> {
+    static var inAmount: Regex<(Substring, Substring, Substring, Substring, Substring?)> {
         RegexCache.regex {
-            #/\b(daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b/#
+            #/\b(daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (?:uns |umas |cerca de )?(\d{1,3}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta) (dias?|semanas?|mes|meses|anos?)\b(?: e (meio|meia)\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -265,6 +265,14 @@ extension DayRules {
     // "ter." before a date
     static var tuesdayAbbreviation: Regex<Substring> {
         RegexCache.regex { #/\bter\b(?= )/#.wordBoundaryKind(.simple) }
+    }
+
+    // "8/8h", "de 6/6 horas": a dose every so many hours, as prescriptions
+    // write it
+    static var prescription: Regex<(Substring, Substring, Substring)> {
+        RegexCache.regex {
+            #/\b(?:de )?(\d{1,2}) ?\/ ?(\d{1,2}) ?(?:h|hs|hrs?|horas)\b/#.wordBoundaryKind(.simple)
+        }
     }
 
     // "25/09", "dia 25/09/2026", "5/1/27"
@@ -430,7 +438,7 @@ extension DayRules {
     static func components(_ count: Int, unit: some StringProtocol) -> DateComponents {
         if unit.hasPrefix("ano") {
             DateComponents(year: count)
-        } else if unit.hasPrefix("hora") {
+        } else if unit.hasPrefix("h") {
             DateComponents(hour: count)
         } else if unit.hasPrefix("min") {
             DateComponents(minute: count)

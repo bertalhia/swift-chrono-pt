@@ -20,6 +20,14 @@ extension TimeRules {
             let marked = prefix != nil || meridiem != nil || (!spoken && (separator != nil || unit != nil))
             guard marked, let base = SpokenNumber.value(hourText), (0...23).contains(base) else { return nil }
             if prefix == nil, meridiem == nil, isDuration(match.range, in: source) { return nil }
+            // "1 hora de academia", "2 horas de estudo": how long, while "8
+            // horas da manhã" is a time.
+            if prefix == nil, meridiem == nil, let unitWord, unitWord.hasPrefix("hora") {
+                let next = source.words(after: match.range.upperBound, count: 2)
+                if next.count == 2, ["de", "do", "da"].contains(next[0]), !partsOfDay.contains(next[1]) {
+                    return nil
+                }
+            }
             if let prefix {
                 // A word that also counts things marks a time only with "h", a
                 // colon, a part of the day or the end of a phrase: "chego umas
@@ -366,7 +374,7 @@ extension TimeRules {
     // "há 2 horas", "faz meia hora", "há 2h", "há umas 2 horas atrás"
     static var agoTime: Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:ha|faz) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horas?|hrs?|hs|h|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b(?: atras\b)?/#
+            #/\b(?:ha|faz) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horinhas?|horas?|hrs?|hs|h|minutinhos?|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b(?: atras\b)?/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -374,7 +382,7 @@ extension TimeRules {
     // "20 minutos atrás", "2h atrás"
     static var timeAgo: Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horas?|hrs?|hs|h|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b atras\b/#
+            #/\b(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horinhas?|horas?|hrs?|hs|h|minutinhos?|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b atras\b/#
                 .wordBoundaryKind(.simple)
         }
     }
@@ -383,7 +391,7 @@ extension TimeRules {
     // "daqui a 2 horas e meia", "em uns 15 minutos"
     static var inTime: Regex<(Substring, Substring, Substring, Substring?, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horas?|hrs?|hs|h|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b/#
+            #/\b(?:daqui a|daqui|em ate|em|dentro de ate|dentro de|no prazo de|com prazo de|prazo de) (?:umas |uns |cerca de )?(\d{1,3}|uma|um|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|quinze|vinte|trinta|quarenta|cinquenta|meia) ?(horinhas?|horas?|hrs?|hs|h|minutinhos?|minutos?|mins?|min)(?:( e meia)| e (\d{1,2}|cinco|dez|quinze|vinte|trinta|quarenta|cinquenta) ?(?:minutos?|mins?|min)|(\d{2})(?:min|m)?)?\b/#
                 .wordBoundaryKind(.simple)
         }
     }

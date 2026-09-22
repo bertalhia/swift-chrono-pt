@@ -110,10 +110,9 @@ struct Context {
             if case .dateTime(_, let offset?) = day.value { zone = TimeZone(secondsFromGMT: offset) }
             return result(start, end: nil, range: day.range, zone: zone)
         }
-        // An interval of hours counts from now, not from a day: "de 8 em 8 horas".
-        if let day, time == nil, case .interval(let components) = day.value,
-            components.hour != nil || components.minute != nil
-        {
+        // An interval of hours counts from now, not from a day: "de 8 em 8 horas",
+        // "8/8h por 7 dias".
+        if let day, time == nil, let components = day.value.hourInterval {
             guard let date = calendar.date(byAdding: components, to: reference) else { return nil }
             let start = ChronoPT.PartialDate(
                 date: date, knownComponents: [.day, .month, .year, .hour, .minute])
