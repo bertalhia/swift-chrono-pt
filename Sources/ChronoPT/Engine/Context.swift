@@ -9,8 +9,10 @@ struct Context {
     let calendar: Calendar
     let options: ChronoPT.Options
 
-    init(text: String, reference: Date, calendar: Calendar, options: ChronoPT.Options) {
-        source = TextSource(text)
+    init(
+        text: String, reference: Date, calendar: Calendar, options: ChronoPT.Options, skipsRules: Bool = true
+    ) {
+        source = TextSource(text, skipsRules: skipsRules)
         let times = TimeRules.expressions(in: source)
         let days = DayRules.expressions(in: source, times: times)
         if options.allowsPast {

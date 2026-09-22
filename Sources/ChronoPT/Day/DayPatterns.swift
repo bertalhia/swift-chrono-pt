@@ -245,6 +245,38 @@ extension DayRules {
         .sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday,
     ]
 
+    // Words each rule needs before its regex is worth running; see
+    // `TextSource.matches(of:whenAny:)`. Every alternative of the regex must
+    // contain one of them, or skipping it would lose a match. The equivalence
+    // test in `PrefilterTests` runs every parse both ways.
+    static let relativeDayWords: Set<String> = ["amanha", "amn", "hoje", "hj", "ontem", "anteontem"]
+    static let amountWords: Set<String> = ["daqui", "em", "dentro", "prazo"]
+    static let agoWords: Set<String> = ["ha", "faz"]
+    static let backWords: Set<String> = ["atras"]
+    static let lastWords: Set<String> = ["ultima", "ultimo", "passada", "passado"]
+    static let everyDayWords: Set<String> = ["todo", "todos", "diariamente"]
+    static let intervalWords: Set<String> = ["cada"]
+    static let fromToWords: Set<String> = ["em"]
+    static let everyUnitWords: Set<String> = [
+        "toda", "todas", "todo", "todos", "semanalmente", "mensalmente", "hora", "cada",
+    ]
+    static let monthlyWords: Set<String> = ["cada", "todo", "todos"]
+    static let everyWeekdayWords: Set<String> = ["toda", "todo", "todas", "todos", "as", "aos", "nas", "nos"]
+    static let weekdayWords: Set<String> = [
+        "segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo",
+        "seg", "qua", "qui", "sex", "sab", "dom", "2a", "3a", "4a", "5a", "6a",
+    ]
+    static let dayWords: Set<String> = ["dia"]
+    static let periodWords: Set<String> = ["semana", "fds", "mes", "ano"]
+    static let holidayWords: Set<String> = [
+        "natal", "reveillon", "virada", "ano", "novo", "tiradentes", "trabalho", "trabalhador",
+        "independencia",
+        "criancas", "aparecida", "finados", "proclamacao", "consciencia", "namorados", "carnaval", "cinzas",
+        "santa", "paixao", "pascoa", "corpus", "maes", "pais",
+    ]
+    static let businessWords: Set<String> = ["util", "uteis"]
+    static var monthWords: Set<String> { Set(months.keys) }
+
     static let relativeDays = [
         "ontem": -1, "anteontem": -2, "antes de ontem": -2,
         "hoje": 0, "hj": 0, "amanha": 1, "amn": 1,

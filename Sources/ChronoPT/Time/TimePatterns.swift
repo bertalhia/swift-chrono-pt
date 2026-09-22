@@ -3,7 +3,7 @@ import Foundation
 /// The clock rules and the regexes they match with.
 extension TimeRules {
     static func clocks(in source: TextSource) -> [Piece<Value>] {
-        source.normalized.matches(of: clock).compactMap { match in
+        source.matches(of: clock, whenAny: hourWords, orDigit: true).compactMap { match in
             let (_, prefix, hourText, separator, minuteText, unit, minuteWords, meridiem) = match.output
             let spoken = Int(hourText) == nil
             // A bare number is not a time: it needs "às", "h", ":" or "da tarde".
@@ -44,7 +44,7 @@ extension TimeRules {
     /// Minutes before the hour: "quinze para as oito" is 7:45. The named hour
     /// decides morning or evening, as in "às oito".
     static func minutesToHour(in source: TextSource) -> [Piece<Value>] {
-        source.normalized.matches(of: minutesTo).compactMap { match in
+        source.matches(of: minutesTo, whenAny: towardWords).compactMap { match in
             let (_, minuteText, unit, hourText, meridiem) = match.output
             // Digits need "min": "de 3 pra 1" is a score.
             guard Int(minuteText) == nil || unit != nil,
@@ -75,7 +75,7 @@ extension TimeRules {
     /// A bare hour after "de" or "entre", followed by the word that closes a
     /// range: "de 9" in "de 9 a 11h". It counts only with an end.
     static func rangeStarts(in source: TextSource) -> [Piece<Value>] {
-        source.normalized.matches(of: bareRangeStart).compactMap { match in
+        source.matches(of: bareRangeStart, whenAny: hourWords, orDigit: true).compactMap { match in
             // Not a number inside a date or a clock time: "25/09 às 14:00".
             let before = source.normalized[..<match.range.lowerBound].last
             guard before.map({ !"/:-0123456789".contains($0) }) ?? true,
@@ -98,7 +98,7 @@ extension TimeRules {
     }
 
     static func noonAndMidnight(in source: TextSource) -> [Piece<Value>] {
-        source.normalized.matches(of: noonOrMidnight).compactMap { match in
+        source.matches(of: noonOrMidnight, whenAny: noonWords).compactMap { match in
             let (_, prefix, word, minuteWords) = match.output
             // "Meio dia" as two words without "ao" may mean half a day: "meio dia de folga".
             if word == "meio dia", prefix == nil { return nil }
@@ -112,11 +112,16 @@ extension TimeRules {
 
     /// "daqui 2 horas" ahead; "há 2 horas" and "20 minutos atrás" back.
     static func fromNow(in source: TextSource) -> [Piece<Value>] {
-        let text = source.normalized
         let found =
-            text.matches(of: inTime).map { ($0.range, $0.output.1, $0.output.2, 1) }
-            + text.matches(of: agoTime).map { ($0.range, $0.output.1, $0.output.2, -1) }
-            + text.matches(of: timeAgo).map { ($0.range, $0.output.1, $0.output.2, -1) }
+            source.matches(of: inTime, whenAny: DayRules.amountWords).map {
+                ($0.range, $0.output.1, $0.output.2, 1)
+            }
+            + source.matches(of: agoTime, whenAny: DayRules.agoWords).map {
+                ($0.range, $0.output.1, $0.output.2, -1)
+            }
+            + source.matches(of: timeAgo, whenAny: DayRules.backWords).map {
+                ($0.range, $0.output.1, $0.output.2, -1)
+            }
         return found.compactMap { range, amount, unit, sign in
             let hours = unit.hasPrefix("hora")
             let minutes: Int
@@ -138,6 +143,16 @@ extension TimeRules {
         let after = source.words(after: range.upperBound, count: 2)
         return rateWords.contains { after.starts(with: $0) }
     }
+
+    // Words the clock rules need before their regex is worth running; a digit
+    // also opens them. See `DayRules.relativeDayWords`.
+    static let hourWords: Set<String> = [
+        "uma", "duas", "tres", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze",
+        "treze",
+        "catorze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove", "vinte",
+    ]
+    static let towardWords: Set<String> = ["para", "pras", "pra", "pro"]
+    static let noonWords: Set<String> = ["meio", "meia"]
 
     static let durationWords: Set<String> = [
         "por", "durante", "ha", "faz", "cada", "daqui", "em", "apos", "umas", "uns",

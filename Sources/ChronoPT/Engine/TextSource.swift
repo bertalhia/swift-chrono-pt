@@ -12,7 +12,16 @@ struct TextSource {
     let original: String
     let normalized: String
 
-    init(_ text: String) {
+    /// Every word in the text, so a rule can tell at once that its regex has
+    /// nothing to find.
+    let words: Set<String>
+    let hasDigit: Bool
+
+    /// Whether a rule skips its regex when none of its words is in the text.
+    /// Off only in the test that proves skipping changes no result.
+    let skipsRules: Bool
+
+    init(_ text: String, skipsRules: Bool = true) {
         original = text
         var normalized = ""
         normalized.reserveCapacity(text.utf8.count)
@@ -20,6 +29,36 @@ struct TextSource {
             normalized.append(Self.normalized(character))
         }
         self.normalized = normalized
+        self.skipsRules = skipsRules
+        var words = Set<String>()
+        var hasDigit = false
+        for word in normalized.split(whereSeparator: { !Self.isWordCharacter($0) }) {
+            words.insert(String(word))
+            hasDigit = hasDigit || word.contains(where: \.isNumber)
+        }
+        self.words = words
+        self.hasDigit = hasDigit
+    }
+
+    /// The regex's matches, or none without running it when the text holds
+    /// none of the words every one of its matches needs. A regex pass costs
+    /// its length in the text; a set lookup costs nothing.
+    func matches<Output>(
+        of regex: @autoclosure () -> Regex<Output>,
+        whenAny triggers: Set<String>,
+        orDigit: Bool = false
+    ) -> [Regex<Output>.Match] {
+        guard !skipsRules || (orDigit && hasDigit) || !triggers.isDisjoint(with: words) else { return [] }
+        return normalized.matches(of: regex())
+    }
+
+    /// The regex's matches, or none without running it when the text lacks a
+    /// character every match needs: the slash of "25/09".
+    func matches<Output>(of regex: @autoclosure () -> Regex<Output>, whenContains character: Character)
+        -> [Regex<Output>.Match]
+    {
+        guard !skipsRules || (hasDigit && normalized.contains(character)) else { return [] }
+        return normalized.matches(of: regex())
     }
 
     /// One character as the rules read it. ASCII, nearly all of a note, takes

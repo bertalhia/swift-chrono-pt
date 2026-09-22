@@ -73,6 +73,14 @@ struct APITests {
         #expect(found.debugDescription.contains("2026-09-22"))
     }
 
+    @Test("A recurrence prints the same way every time")
+    func stableDescription() throws {
+        let found = try #require(interpret("às quartas e segundas às 7h"))
+        #expect(found.recurrence?.description == "weekly on mon, wed")
+        #expect(ChronoPT.Recurrence.every(DateComponents(day: 15)).description == "every 15 days")
+        #expect(found.debugDescription.hasSuffix("repeating weekly on mon, wed"))
+    }
+
     @Test("Options and recurrence survive a round trip through JSON")
     func codable() throws {
         let options = ChronoPT.Options(allowsPast: true, defaultHour: 9)

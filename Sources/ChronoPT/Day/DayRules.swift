@@ -94,57 +94,56 @@ enum DayRules {
     }
 
     static func candidates(in source: TextSource) -> [Candidate] {
-        let text = source.normalized
         var found: [Candidate] = []
 
         func add(_ range: Range<String.Index>, _ value: Value, needsTime: Bool = false) {
             found.append(Candidate(piece: Piece(range: range, value: value), needsTime: needsTime))
         }
 
-        for match in text.matches(of: relativeDay) {
+        for match in source.matches(of: relativeDay, whenAny: relativeDayWords) {
             guard let days = relativeDays[String(match.output.1)] else { continue }
             add(match.range, .days(days))
         }
 
-        for match in text.matches(of: inAmount) {
+        for match in source.matches(of: inAmount, whenAny: amountWords) {
             guard let count = SpokenNumber.value(match.output.2) else { continue }
             add(match.range, amount(count, unit: match.output.3))
         }
 
-        for match in text.matches(of: agoAmount) {
+        for match in source.matches(of: agoAmount, whenAny: agoWords) {
             guard let count = SpokenNumber.value(match.output.1) else { continue }
             add(match.range, amount(-count, unit: match.output.2))
         }
 
-        for match in text.matches(of: amountAgo) {
+        for match in source.matches(of: amountAgo, whenAny: backWords) {
             guard let count = SpokenNumber.value(match.output.1) else { continue }
             add(match.range, amount(-count, unit: match.output.2))
         }
 
-        for match in text.matches(of: lastWeekday) {
+        for match in source.matches(of: lastWeekday, whenAny: lastWords) {
             guard let name = match.output.1 ?? match.output.2, let day = weekdays[String(name)] else {
                 continue
             }
             add(match.range, .lastWeekday(day))
         }
 
-        for match in text.matches(of: everyDay) {
+        for match in source.matches(of: everyDay, whenAny: everyDayWords) {
             add(match.range, .daily)
         }
 
-        for match in text.matches(of: everyInterval) {
+        for match in source.matches(of: everyInterval, whenAny: intervalWords) {
             guard let count = SpokenNumber.value(match.output.1) else { continue }
             add(match.range, .interval(components(count, unit: match.output.2)))
         }
 
-        for match in text.matches(of: fromToInterval) {
+        for match in source.matches(of: fromToInterval, whenAny: fromToWords) {
             // "de 2 em 3 semanas" is not an interval.
             guard let count = SpokenNumber.value(match.output.1), SpokenNumber.value(match.output.2) == count
             else { continue }
             add(match.range, .interval(components(count, unit: match.output.3)))
         }
 
-        for match in text.matches(of: everyUnit) {
+        for match in source.matches(of: everyUnit, whenAny: everyUnitWords) {
             let unit =
                 if match.output.contains("hora") { "hora" } else if match.output.contains("semana") {
                     "semana"
@@ -152,17 +151,17 @@ enum DayRules {
             add(match.range, .interval(components(1, unit: unit)))
         }
 
-        for match in text.matches(of: monthlyDay) {
+        for match in source.matches(of: monthlyDay, whenAny: monthlyWords) {
             guard let day = dayNumber(match.output.1), (1...31).contains(day) else { continue }
             add(match.range, .monthly(day))
         }
 
-        for match in text.matches(of: everyMonth) {
+        for match in source.matches(of: everyMonth, whenAny: monthlyWords) {
             guard let day = dayNumber(match.output.1), (1...31).contains(day) else { continue }
             add(match.range, .monthly(day))
         }
 
-        for match in text.matches(of: everyWeekday) {
+        for match in source.matches(of: everyWeekday, whenAny: everyWeekdayWords) {
             // The singular goes with "toda" ("toda segunda"), the plural with
             // "todas as", "às" or "nas" ("às segundas e quartas").
             let plural = match.output.1 != "toda" && match.output.1 != "todo"
@@ -178,7 +177,7 @@ enum DayRules {
             add(match.range, .weekly(days.compactMap { $0 }))
         }
 
-        for match in text.matches(of: weekday) {
+        for match in source.matches(of: weekday, whenAny: weekdayWords) {
             let (prefix, name, feira, next) = (
                 match.output.1, String(match.output.2), match.output.3, match.output.4
             )
@@ -190,19 +189,19 @@ enum DayRules {
             add(match.range, .weekday(day, nextWeek: nextWeek), needsTime: !unambiguous)
         }
 
-        for match in text.matches(of: numericDate) {
+        for match in source.matches(of: numericDate, whenContains: "/") {
             guard let day = Int(match.output.1), let month = Int(match.output.2) else { continue }
             add(match.range, .date(day: day, month: month, year: match.output.3.flatMap { year(String($0)) }))
         }
 
-        for match in text.matches(of: isoDate) {
+        for match in source.matches(of: isoDate, whenContains: "-") {
             guard let year = Int(match.output.1), let month = Int(match.output.2),
                 let day = Int(match.output.3)
             else { continue }
             add(match.range, .date(day: day, month: month, year: year))
         }
 
-        for match in text.matches(of: monthName) {
+        for match in source.matches(of: monthName, whenAny: monthWords) {
             let (_, dayText, of, monthText, yearText) = match.output
             // A day in words needs "de": "um mar de rosas" is not a date.
             guard Int(dayText) != nil || of != nil,
@@ -211,7 +210,7 @@ enum DayRules {
             add(match.range, .date(day: day, month: month, year: yearText.flatMap { Int($0) }))
         }
 
-        for match in text.matches(of: dayRangeInMonth) {
+        for match in source.matches(of: dayRangeInMonth, whenAny: monthWords) {
             let (_, opening, firstText, closing, lastText, monthText, yearText) = match.output
             // "de 3 e 5 de maio" is two days, not a range.
             guard (opening == "entre") == (closing == "e"),
@@ -225,12 +224,12 @@ enum DayRules {
                     .date(day: first, month: month, year: year), .date(day: last, month: month, year: year)))
         }
 
-        for match in text.matches(of: dayOfMonth) {
+        for match in source.matches(of: dayOfMonth, whenAny: dayWords) {
             guard let day = dayNumber(match.output.1) else { continue }
             add(match.range, .dayOfMonth(day))
         }
 
-        for match in text.matches(of: holidayName) {
+        for match in source.matches(of: holidayName, whenAny: holidayWords) {
             let (_, preposition, name) = match.output
             guard let entry = holidays[String(name)], preposition != nil || !entry.needsPreposition else {
                 continue
@@ -238,12 +237,12 @@ enum DayRules {
             add(match.range, .holiday(entry.holiday))
         }
 
-        for match in text.matches(of: businessDays) {
+        for match in source.matches(of: businessDays, whenAny: businessWords) {
             guard let count = SpokenNumber.value(match.output.1) else { continue }
             add(match.range, .businessDays(count))
         }
 
-        for match in text.matches(of: namedBusinessDay) {
+        for match in source.matches(of: namedBusinessDay, whenAny: businessWords) {
             let value: Value =
                 switch match.output.1 {
                 case "primeiro dia util": .firstBusinessDayOfMonth
@@ -253,14 +252,14 @@ enum DayRules {
             add(match.range, value)
         }
 
-        for match in text.matches(of: wholeMonth) {
+        for match in source.matches(of: wholeMonth, whenAny: monthWords) {
             let (_, withPreposition, comingMonth, withYear, year) = match.output
             guard let name = withPreposition ?? comingMonth ?? withYear, let month = months[String(name)]
             else { continue }
             add(match.range, .month(month, year: year.flatMap { Int($0) }))
         }
 
-        for match in text.matches(of: namedPeriod) {
+        for match in source.matches(of: namedPeriod, whenAny: periodWords) {
             let value: Value =
                 switch match.output.1 {
                 case "fim de semana que vem", "final de semana que vem", "proximo fim de semana",
