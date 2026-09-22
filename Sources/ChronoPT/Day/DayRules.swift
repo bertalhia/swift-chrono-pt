@@ -28,6 +28,7 @@ enum DayRules {
             .filter { candidate in
                 guard candidate.needsTime else { return true }
                 return times.contains { time in
+                    guard !time.isFromNow else { return false }
                     guard source.onlyConnectors(between: candidate.piece.range, and: time.range) else {
                         return false
                     }
@@ -85,7 +86,9 @@ enum DayRules {
                     source.hasNoWord(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound)
                 else { return nil }
                 let range = weekday.piece.range.lowerBound..<date.piece.range.upperBound
-                return Candidate(piece: Piece(range: range, value: date.piece.value), needsTime: false)
+                // "sáb - 3/10" is that date, not a range from Saturday to it.
+                let piece = Piece(range: range, value: date.piece.value, priority: 1)
+                return Candidate(piece: piece, needsTime: false)
             }
         }
     }

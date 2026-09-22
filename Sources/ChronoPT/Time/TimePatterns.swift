@@ -15,7 +15,9 @@ extension TimeRules {
 
             let minute: Int
             if let minuteText {
-                minute = Int(minuteText) ?? 0
+                // `\d` matches any digit in the world; `Int` only reads ASCII.
+                guard let written = Int(minuteText) else { return nil }
+                minute = written
             } else if let minuteWords {
                 minute = minuteWords == "meia" ? 30 : SpokenNumber.value(minuteWords) ?? 0
             } else {

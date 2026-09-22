@@ -20,7 +20,14 @@ struct TextSource {
                     options: [.diacriticInsensitive, .caseInsensitive],
                     locale: Locale(identifier: "pt_BR")
                 )
-                guard folded.count == 1, let simple = folded.first else { return character }
+                guard folded.count == 1, let simple = folded.first else {
+                    // A mark that folds to nothing, or to more than one character,
+                    // would merge with what came before and cost a position.
+                    return character.isLetter || character.isNumber ? character : " "
+                }
+                // A mark on its own would merge with the character before it
+                // and cost a position, breaking the one-for-one promise.
+                if simple.unicodeScalars.allSatisfy(\.properties.isGraphemeExtend) { return " " }
                 if "–—".contains(simple) { return "-" }
                 // Ordinal indicators read as the letter they stand for: "1º", "6ª".
                 if simple == "º" { return "o" }

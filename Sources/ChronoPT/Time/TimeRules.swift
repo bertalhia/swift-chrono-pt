@@ -34,14 +34,20 @@ enum TimeRules {
     struct Clock: Sendable {
         let hour: Int
         let minute: Int
-        /// Midnight of a day is the start of the next day.
-        let nextDay: Bool
+        /// Days past the one it is read on: midnight is the start of the next,
+        /// and the end of a range can be further still.
+        let dayOffset: Int
+
+        init(hour: Int, minute: Int, dayOffset: Int = 0) {
+            self.hour = hour
+            self.minute = minute
+            self.dayOffset = dayOffset
+        }
 
         func on(_ day: Date, calendar: Calendar) -> Date? {
-            guard let time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) else {
-                return nil
-            }
-            return nextDay ? calendar.date(byAdding: .day, value: 1, to: time) : time
+            guard let time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)
+            else { return nil }
+            return dayOffset == 0 ? time : calendar.date(byAdding: .day, value: dayOffset, to: time)
         }
     }
 

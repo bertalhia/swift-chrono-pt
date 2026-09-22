@@ -21,6 +21,12 @@ extension TimeRules {
             if case .fromNow(let minutes) = value { minutes < 0 } else { false }
         }
 
+        /// A time counted from now, which belongs to no day: "daqui a 2 horas"
+        /// in "consulta dia 30, sair daqui a 20 minutos".
+        var isFromNow: Bool {
+            if case .fromNow = value { true } else { false }
+        }
+
         /// What the time fixes; see `ChronoPT.PartialDate.knownComponents`. A clock time
         /// gives the hour and the minute, a part of the day only the hour, and
         /// a time from now the whole date.
@@ -120,7 +126,7 @@ extension TimeRules {
     /// the hour move back from the named hour: "dez para a meia-noite" is 23:50
     /// of the same day.
     static func time(minutes: Int) -> Clock {
-        Clock(hour: minutes / 60 % 24, minute: minutes % 60, nextDay: minutes >= 24 * 60)
+        Clock(hour: minutes / 60 % 24, minute: minutes % 60, dayOffset: minutes / (24 * 60))
     }
 
     /// A part of the day next to the day and a clock time said further on make
@@ -166,7 +172,7 @@ extension TimeRules {
         }
         if let period {
             return Expression(
-                range: range, value: .at(Clock(hour: period.hour, minute: period.minute, nextDay: false)),
+                range: range, value: .at(Clock(hour: period.hour, minute: period.minute)),
                 needsDay: period.needsDay, pieces: group)
         }
         return nil

@@ -11,7 +11,7 @@ struct RobustnessTests {
         "sexta", "que vem", "no almoço", "à noite", "quinze para as oito", "vinte e três",
         "daqui", "2", "horas", "por dia", "no natal", "semana", "mês", "e meia", "meio-dia",
         "ÀS", "Amanhã,", "(sexta)", "—", "🇧🇷", "👍🏽", "e\u{301}", "\u{301}", "\n", "\r\n", "\t",
-        "ß", "ﬁ", "İ", "٣", "𝟗", "  ", ",", ".", "/", ":", "-",
+        "ß", "ﬁ", "İ", "٣", "𝟗", "  ", ",", ".", "/", ":", "-", "\u{064B}", "\u{0e31}", "\u{363}",
     ]
 
     @Test("Random text never crashes, and every range points into the input", arguments: 0..<200)
@@ -20,6 +20,10 @@ struct RobustnessTests {
         let count = Int.random(in: 1...12, using: &generator)
         let text = (0..<count).map { _ in Self.pieces.randomElement(using: &generator)! }
             .joined(separator: Bool.random(using: &generator) ? " " : "")
+
+        // The old check compared the range against text taken from that same
+        // range, so it could never fail. This one holds the real invariant.
+        #expect(TextSource(text).normalized.count == text.count, "\(text.debugDescription)")
 
         for result in parse(text) {
             #expect(text[result.range] == result.text[...], "\(text.debugDescription)")
