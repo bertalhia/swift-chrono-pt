@@ -240,4 +240,18 @@ struct APITests {
             try JSONDecoder().decode(ChronoPT.Options.self, from: Data(old.utf8))
                 == ChronoPT.Options(allowsPast: true, defaultHour: 9, moments: ["no treino": 7]))
     }
+
+    @Test(
+        "strippingDates takes the phrase that opens a date",
+        arguments: [
+            ("férias a partir de amanhã", "férias"), ("entregar antes de 15/11", "entregar"),
+            ("ligar antes das 10", "ligar"), ("sair depois das 18h", "sair"), ("sair dps das 18h", "sair"),
+            ("pagar no próximo dia 15", "pagar"), ("comprar p/ amanhã", "comprar"),
+            ("descansar nesse fds", "descansar"), ("ficar a partir do dia 10", "ficar"),
+            // "partir" alone is a verb.
+            ("vou partir amanhã", "vou partir"),
+        ])
+    func strippingOpeningPhrases(_ example: (text: String, stripped: String)) {
+        #expect(strip(example.text) == example.stripped)
+    }
 }

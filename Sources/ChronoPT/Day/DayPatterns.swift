@@ -248,7 +248,7 @@ extension DayRules {
     // "na sexta", "segunda-feira", "sexta que vem", "quarta da semana que vem"
     static var weekday: Regex<(Substring, Substring?, Substring, Substring?, Substring?)> {
         RegexCache.regex {
-            #/\b(?:(na|no|nesta|neste|esta|este|essa|esse|nessa|nesse|proxima|proximo|prox|ate|pra|para|pro) +)?(segunda|terca|quarta|quinta|sexta|sabado|domingo|seg|qua|qui|sex|sab|dom|[2-6]a)(-feira| feira)?( (?:que|q) vem| da semana (?:que|q) vem| da proxima semana| agora| dessa semana| desta semana| proxima| proximo)?\b/#
+            #/\b(?:(a partir de|a partir da|desde|antes de|na|no|nesta|neste|esta|este|essa|esse|nessa|nesse|proxima|proximo|prox|ate|pra|para|pro) +)?(segunda|terca|quarta|quinta|sexta|sabado|domingo|seg|qua|qui|sex|sab|dom|[2-6]a)(-feira| feira)?( (?:que|q) vem| da semana (?:que|q) vem| da proxima semana| agora| dessa semana| desta semana| proxima| proximo)?\b/#
                 .wordBoundaryKind(.simple)
         }
     }

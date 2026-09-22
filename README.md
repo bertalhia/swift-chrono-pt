@@ -37,7 +37,7 @@ date always gives the same result.
 | Kind | Examples |
 |---|---|
 | Relative day | hoje, hj, amanhã, amn, depois de amanhã, daqui 2 dias, em três semanas, daqui um mês |
-| Weekday | sexta que vem, próxima sexta, nesta quinta, na terça-feira, sábado, quarta da semana que vem, sexta dia 25, sexta 25, na seg, prox sexta, a primeira segunda-feira de outubro, na última sexta do mês, sexta q vem, próx. segunda, sexta próxima |
+| Weekday | sexta que vem, próxima sexta, nesta quinta, na terça-feira, sábado, quarta da semana que vem, sexta dia 25, sexta 25, na seg, prox sexta, a primeira segunda-feira de outubro, na última sexta do mês, sexta q vem, próx. segunda, sexta próxima, a partir de segunda |
 | Date | 25/09, 25/09/2026, 25-12-2027, 25.12.2027, 10/out, 2026-10-15, 15 de outubro, vinte e três de outubro, 1º de maio, dia 30, dia quinze, 1º/10, dia 1° |
 | Period | esta semana, semana que vem, fim de semana, no meio da semana, este mês, mês que vem, no início do mês, no meio do mês, fim do mês, primeira quinzena de outubro, em outubro, março de 2027, dez/2027, 12/2027, no próximo trimestre, primeiro semestre, ano que vem, fim do ano, fim de outubro, meados de outubro, na primeira semana de outubro, dia 25 do mês que vem, semana que vem na terça, em outubro do ano que vem, semana q vem |
 | Holiday | no natal, véspera de natal, no ano novo, na páscoa, no carnaval, sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais |

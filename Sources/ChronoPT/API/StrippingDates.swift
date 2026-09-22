@@ -25,8 +25,8 @@ extension String {
         var cuts: [Range<String.Index>] = []
         for span in spans.sorted(by: { $0.lowerBound < $1.lowerBound }) {
             var start = span.lowerBound
-            while let word = wordRange(before: start), Self.leadIns.contains(folded(self[word])) {
-                start = word.lowerBound
+            while let lead = leadIn(before: start) {
+                start = lead
             }
             if let last = cuts.last, last.upperBound >= start {
                 cuts[cuts.count - 1] = last.lowerBound..<Swift.max(last.upperBound, span.upperBound)
@@ -45,11 +45,40 @@ extension String {
         return kept.tidied()
     }
 
+    /// Where the words that introduce a date begin, when the ones right
+    /// before the position do: a phrase ("a partir de", "antes das") or a
+    /// single word ("de", "para").
+    private func leadIn(before index: String.Index) -> String.Index? {
+        var words: [Range<String.Index>] = []
+        var position = index
+        while words.count < 3, let word = wordRange(before: position) {
+            words.insert(word, at: 0)
+            position = word.lowerBound
+        }
+        for length in stride(from: words.count, through: 2, by: -1) {
+            let phrase = words.suffix(length)
+            if Self.leadInPhrases.contains(phrase.map { folded(self[$0]) }), let first = phrase.first {
+                return first.lowerBound
+            }
+        }
+        guard let last = words.last, Self.leadIns.contains(folded(self[last])) else { return nil }
+        return last.lowerBound
+    }
+
     /// Words that only introduce a date and have nothing left to say once it
     /// is gone: "almoço de amanhã" keeps "almoço".
     private static let leadIns: Set<String> = [
         "de", "do", "da", "em", "no", "na", "nos", "nas", "para", "pra", "pro", "ate", "a", "ao", "as", "aos",
-        "o", "os",
+        "o", "os", "desde", "ainda", "p", "proximo", "proxima", "neste", "nesta", "nesse", "nessa",
+    ]
+
+    /// Phrases that do the same: "a partir de amanhã", "antes das 10",
+    /// "depois das 18h".
+    private static let leadInPhrases: Set<[String]> = [
+        ["a", "partir", "de"], ["a", "partir", "do"], ["a", "partir", "da"], ["a", "partir", "das"],
+        ["antes", "de"], ["antes", "do"], ["antes", "da"], ["antes", "das"],
+        ["depois", "de"], ["depois", "do"], ["depois", "da"], ["depois", "das"],
+        ["dps", "de"], ["dps", "do"], ["dps", "da"], ["dps", "das"],
     ]
 
     private func folded(_ text: Substring) -> String {

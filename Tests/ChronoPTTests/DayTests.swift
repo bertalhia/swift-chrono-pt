@@ -777,4 +777,16 @@ struct DayTests {
         let found = try #require(interpret("sábado retrasado", options: ChronoPT.Options(allowsPast: true)))
         #expect(ymd(found.start.date) == [2026, 9, 12])
     }
+
+    @Test(
+        "A weekday after an opening phrase",
+        arguments: [
+            ("a partir de segunda", [2026, 9, 28]), ("desde segunda", [2026, 9, 28]),
+            ("antes de quinta", [2026, 9, 24]),
+        ])
+    func weekdayAfterOpening(_ example: (text: String, day: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.day)
+    }
 }
