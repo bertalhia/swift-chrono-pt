@@ -17,6 +17,11 @@ enum TimeRules {
         /// Part of the day or moment. `needsDay` when it is not a time on its
         /// own: "chegar cedo".
         case period(hour: Int, minute: Int, needsDay: Bool)
+        /// A whole part of the day, in hours: "a manhã toda" is 6 to 12.
+        case span(from: Int, until: Int)
+        /// The whole day, which has no hours: "o dia todo". Not a time on
+        /// its own.
+        case allDay
         case fromNow(minutes: Int)
 
         var isClock: Bool { if case .clock = self { true } else { false } }
@@ -28,6 +33,7 @@ enum TimeRules {
         case at(Clock)
         /// A time range: "das 14h às 16h".
         case between(Clock, until: Clock)
+        case allDay
         case fromNow(minutes: Int)
     }
 

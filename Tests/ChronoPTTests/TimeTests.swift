@@ -350,4 +350,64 @@ struct TimeTests {
         #expect(ymd(day30.start.date) == [2026, 9, 30])
         #expect(hm(day30.start.date) == [19, 0])
     }
+
+    @Test(
+        "A whole part of the day is a range of hours",
+        arguments: [
+            ("amanhã a manhã toda", [2026, 9, 22], [6, 0], [2026, 9, 22], [12, 0]),
+            ("amanhã toda a manhã", [2026, 9, 22], [6, 0], [2026, 9, 22], [12, 0]),
+            ("sexta a tarde inteira", [2026, 9, 25], [12, 0], [2026, 9, 25], [18, 0]),
+            ("hoje a noite toda", [2026, 9, 21], [18, 0], [2026, 9, 22], [0, 0]),
+            ("sábado a madrugada toda", [2026, 9, 26], [0, 0], [2026, 9, 26], [6, 0]),
+            // No day: today, since noon has not come yet.
+            ("a tarde toda", [2026, 9, 21], [12, 0], [2026, 9, 21], [18, 0]),
+        ])
+    func wholePartOfTheDay(
+        _ example: (text: String, day: [Int], start: [Int], endDay: [Int], end: [Int])
+    ) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.text == example.text)
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == example.start)
+        let end = try #require(found.end?.date)
+        #expect(ymd(end) == example.endDay)
+        #expect(hm(end) == example.end)
+        #expect(!found.isAllDay)
+    }
+
+    @Test(
+        "The whole day has no hour",
+        arguments: [
+            ("amanhã o dia todo", [2026, 9, 22]),
+            ("sexta o dia inteiro", [2026, 9, 25]),
+            ("sexta, dia inteiro", [2026, 9, 25]),
+            ("amanhã, evento de dia inteiro", [2026, 9, 22]),
+        ])
+    func wholeDay(_ example: (text: String, day: [Int])) throws {
+        let found = try #require(interpret(example.text))
+        #expect(found.isAllDay)
+        #expect(!found.start.hasTime)
+        #expect(ymd(found.start.date) == example.day)
+        #expect(hm(found.start.date) == [12, 0])
+    }
+
+    @Test("The whole day of a range or a repeating day")
+    func wholeDayOfARange() throws {
+        let week = try #require(interpret("de segunda a sexta o dia todo"))
+        #expect(week.isAllDay)
+        #expect(ymd(week.start.date) == [2026, 9, 28])
+        #expect(ymd(week.end?.date) == [2026, 10, 2])
+        #expect(week.end?.hasTime == false)
+
+        let weekly = try #require(interpret("toda terça o dia todo"))
+        #expect(weekly.isAllDay)
+        #expect(weekly.recurrence == .weekly(on: [.tuesday]))
+    }
+
+    @Test(
+        "The whole day needs a day", arguments: ["o dia todo", "choveu o dia todo", "evento de dia inteiro"])
+    func wholeDayNeedsADay(_ text: String) {
+        #expect(interpret(text) == nil)
+        #expect(parse(text).isEmpty)
+    }
 }

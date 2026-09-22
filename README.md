@@ -42,7 +42,7 @@ date always gives the same result.
 | Period | esta semana, semana que vem, fim de semana, no meio da semana, este mês, mês que vem, no início do mês, no meio do mês, fim do mês, primeira quinzena de outubro, em outubro, março de 2027, dez/2027, 12/2027, no próximo trimestre, primeiro semestre, ano que vem, fim do ano |
 | Holiday | no natal, véspera de natal, no ano novo, na páscoa, no carnaval, sexta-feira santa, corpus christi, dia de finados, dia das mães, dia dos pais |
 | Clock time | às 9, 14h, 9h30, 10:30, 15:30h, 9am, 7:30 pm, às 7 e meia, às sete da noite, às vinte e duas horas, 3 da tarde, quinze para as oito, meio-dia e meia, à meia-noite |
-| Part of the day | de manhã, à tarde, à noite, de madrugada, cedo, à tardinha, tarde da noite, no fim da tarde |
+| Part of the day | de manhã, à tarde, à noite, de madrugada, cedo, à tardinha, tarde da noite, no fim da tarde, a tarde toda, a noite inteira |
 | Moment | no almoço, na janta, depois do almoço, antes de dormir, ao acordar, no café da manhã, depois do trabalho |
 | From now | daqui 2 horas, em meia hora, daqui a 20 minutos, daqui a pouco, mais tarde, logo mais |
 | Counted from a date | dois dias antes do natal, véspera do ano novo, uma semana depois do dia 10, 3 dias antes de 25/10 |
@@ -113,6 +113,16 @@ Periods and ranges also fill `end`.
 let shift = ChronoPT.interpret("plantão de segunda a sexta das 9 às 18")
 shift?.start.date  // next Monday at 9:00
 shift?.end?.date   // that Friday at 18:00
+```
+
+A whole part of the day is a range too: "a manhã toda" runs from 6:00 to
+12:00. The whole day has no hours, so it sets `isAllDay` instead, for an
+all-day event:
+
+```swift
+let offsite = ChronoPT.interpret("amanhã o dia todo")
+offsite?.isAllDay       // true
+offsite?.start.hasTime  // false
 ```
 
 ### Repeating dates
@@ -197,6 +207,7 @@ public struct ChronoPT.Match: Sendable, Hashable {
     public let start: ChronoPT.PartialDate
     public let end: ChronoPT.PartialDate?    // the end of a period or a range
     public let recurrence: ChronoPT.Recurrence?
+    public let isAllDay: Bool                // "amanhã o dia todo"
     public var interval: DateInterval?       // start to end, when there is an end
 }
 
@@ -290,6 +301,10 @@ Documentation**.
 - A holiday name with another meaning needs a preposition: "no natal" is
   Christmas, "voo para Natal" is the city, and "ovo de páscoa" is not a date.
 - Midnight of a day is the start of the next day.
+- A whole part of the day runs from 6:00 to 12:00 for the morning, 12:00 to
+  18:00 for the afternoon, 18:00 to midnight for the night, and midnight to
+  6:00 for "a madrugada toda". "o dia todo" needs a day: "choveu o dia todo"
+  is not a date.
 
 ## Not supported yet
 

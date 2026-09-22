@@ -31,6 +31,11 @@ extension TimeRules {
             if case .fromNow = value { true } else { false }
         }
 
+        /// "o dia todo": the day, with no hour.
+        var isAllDay: Bool {
+            if case .allDay = value { true } else { false }
+        }
+
         /// What the time fixes; see `ChronoPT.PartialDate.knownComponents`. A clock time
         /// gives the hour and the minute, a part of the day only the hour, and
         /// a time from now the whole date.
@@ -38,8 +43,11 @@ extension TimeRules {
             switch value {
             case .fromNow:
                 [.day, .month, .year, .hour, .minute]
+            case .allDay:
+                []
             case .between:
-                [.hour, .minute]
+                pieces.contains { if case .span = $0.value { true } else { false } }
+                    ? [.hour] : [.hour, .minute]
             case .at:
                 pieces.contains { piece in
                     if case let .clock(_, _, _, _, needsEnd) = piece.value { !needsEnd } else { false }
@@ -153,10 +161,13 @@ extension TimeRules {
 
     /// Time from now beats everything; a clock time beats a part of the day,
     /// and the part of the day settles a clock time that doesn't say morning
-    /// or evening: "de manhã, às 7" is 7:00.
+    /// or evening: "de manhã, às 7" is 7:00. A whole part of the day beats the
+    /// whole day, and both beat a part of the day.
     static func resolve(_ group: [Piece<Value>], range: Range<String.Index>) -> Expression? {
         var clock: ClockPiece?
         var period: (hour: Int, minute: Int, needsDay: Bool)?
+        var span: (from: Int, until: Int)?
+        var allDay = false
 
         for piece in group {
             switch piece.value {
@@ -167,6 +178,10 @@ extension TimeRules {
                 if clock == nil, !needsEnd { clock = (hour, minute, ambiguous, nextDay) }
             case let .period(hour, minute, needsDay):
                 if period == nil { period = (hour, minute, needsDay) }
+            case let .span(from, until):
+                if span == nil { span = (from, until) }
+            case .allDay:
+                allDay = true
             }
         }
 
@@ -179,6 +194,15 @@ extension TimeRules {
                     minutes: chosen >= 12 * 60 ? chosen - 12 * 60 : chosen + 12 * 60)
             }
             return expression
+        }
+        if let span {
+            return Expression(
+                range: range,
+                value: .between(Clock(hour: span.from, minute: 0), until: time(minutes: span.until * 60)),
+                needsDay: false, pieces: group)
+        }
+        if allDay {
+            return Expression(range: range, value: .allDay, needsDay: true, pieces: group)
         }
         if let period {
             return Expression(

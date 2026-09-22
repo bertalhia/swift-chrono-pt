@@ -27,13 +27,19 @@ extension ChronoPT {
         /// happens.
         public let recurrence: ChronoPT.Recurrence?
 
+        /// Whether the text asks for the whole day: "amanhã o dia todo",
+        /// "sexta, dia inteiro". `start` still has no time, so a
+        /// calendar app can make an all-day event.
+        public let isAllDay: Bool
+
         public init(
             range: Range<String.Index>,
             ranges: [Range<String.Index>]? = nil,
             text: String,
             start: PartialDate,
             end: PartialDate? = nil,
-            recurrence: ChronoPT.Recurrence? = nil
+            recurrence: ChronoPT.Recurrence? = nil,
+            isAllDay: Bool = false
         ) {
             self.range = range
             self.ranges = ranges ?? [range]
@@ -41,6 +47,7 @@ extension ChronoPT {
             self.start = start
             self.end = end
             self.recurrence = recurrence
+            self.isAllDay = isAllDay
         }
 
         /// From the start to the end, for an expression that has an end.
@@ -101,6 +108,7 @@ extension ChronoPT.Match: CustomDebugStringConvertible {
     public var debugDescription: String {
         let ending = end.map { " to \($0.date.ISO8601Format())" } ?? ""
         let repeating = recurrence.map { ", repeating \($0)" } ?? ""
-        return "\"\(text)\" → \(start.date.ISO8601Format())\(ending)\(repeating)"
+        let allDay = isAllDay ? ", all day" : ""
+        return "\"\(text)\" → \(start.date.ISO8601Format())\(ending)\(repeating)\(allDay)"
     }
 }

@@ -117,6 +117,10 @@ struct Context {
             case .between(let start, let until):
                 date = start.on(days.start, calendar: calendar)
                 end = until.on(days.end ?? days.start, calendar: calendar)
+            case .allDay:
+                // The whole day has no hour to give: the day as if alone.
+                date = dayOnly(days.start)
+                end = days.end.flatMap(dayOnly)
             }
             guard let date else { return nil }
             // A day and a time next to each other come out together; apart,
@@ -140,7 +144,8 @@ struct Context {
                 },
                 range: range,
                 ranges: ranges,
-                recurrence: recurrence
+                recurrence: recurrence,
+                isAllDay: time.isAllDay
             )
         }
 
@@ -172,6 +177,9 @@ struct Context {
             }
             return result(
                 ChronoPT.PartialDate(date: date, knownComponents: known), end: end, range: time.range)
+        case .allDay:
+            // Needs a day, and the guard above saw it has none.
+            return nil
         }
     }
 
@@ -191,7 +199,8 @@ struct Context {
         end: ChronoPT.PartialDate?,
         range: Range<String.Index>,
         ranges: [Range<String.Index>]? = nil,
-        recurrence: ChronoPT.Recurrence? = nil
+        recurrence: ChronoPT.Recurrence? = nil,
+        isAllDay: Bool = false
     ) -> ChronoPT.Match {
         let original = source.originalRange(range)
         return ChronoPT.Match(
@@ -200,7 +209,8 @@ struct Context {
             text: String(source.original[original]),
             start: start,
             end: end,
-            recurrence: recurrence
+            recurrence: recurrence,
+            isAllDay: isAllDay
         )
     }
 }

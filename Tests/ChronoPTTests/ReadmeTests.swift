@@ -30,6 +30,10 @@ struct ReadmeTests {
         #expect(ymd(end) == [2026, 10, 2])
         #expect(hm(end) == [18, 0])
 
+        let offsite = try #require(interpret("amanhã o dia todo"))
+        #expect(offsite.isAllDay)
+        #expect(!offsite.start.hasTime)
+
         let chore = try #require(interpret("tirar o lixo toda terça às 20h"))
         #expect(ymd(chore.start.date) == [2026, 9, 22])
         #expect(hm(chore.start.date) == [20, 0])

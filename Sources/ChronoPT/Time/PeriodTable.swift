@@ -89,14 +89,44 @@ extension TimeRules {
         Period(phrases: ["tarde da noite"], hour: 23),
     ]
 
-    /// The table by the first word of each phrase, so a parse walks the text
-    /// once instead of searching it for each of a hundred phrases.
-    static let phrasesByFirstWord: [String: [(phrase: String, period: Period)]] = {
-        var index: [String: [(phrase: String, period: Period)]] = [:]
-        for period in table {
-            for phrase in period.phrases {
+    /// Whole parts of the day, and the whole day. The longer phrase wins
+    /// over a part of the day inside it: "a tarde toda" over "a tarde".
+    static let wholeParts: [(phrases: [String], value: Value)] = [
+        (
+            [
+                "o dia todo", "o dia inteiro", "dia inteiro", "o dia todinho", "durante o dia todo",
+                "durante todo o dia", "o dia inteirinho",
+            ], .allDay
+        ),
+        (
+            ["a manha toda", "a manha inteira", "toda a manha", "a manha todinha", "durante toda a manha"],
+            .span(from: 6, until: 12)
+        ),
+        (
+            ["a tarde toda", "a tarde inteira", "toda a tarde", "a tarde todinha", "durante toda a tarde"],
+            .span(from: 12, until: 18)
+        ),
+        (
+            ["a noite toda", "a noite inteira", "toda a noite", "a noite todinha", "durante toda a noite"],
+            .span(from: 18, until: 24)
+        ),
+        (["a madrugada toda", "a madrugada inteira", "toda a madrugada"], .span(from: 0, until: 6)),
+    ]
+
+    /// Every phrase by its first word, so a parse walks the text once instead
+    /// of searching it for each of a hundred phrases.
+    static let phrasesByFirstWord: [String: [(phrase: String, value: Value)]] = {
+        let periods = table.map { period in
+            (
+                period.phrases,
+                Value.period(hour: period.hour, minute: period.minute, needsDay: period.needsDay)
+            )
+        }
+        var index: [String: [(phrase: String, value: Value)]] = [:]
+        for (phrases, value) in periods + wholeParts {
+            for phrase in phrases {
                 let first = String(phrase.prefix { $0.isLetter || $0.isNumber })
-                index[first, default: []].append((phrase, period))
+                index[first, default: []].append((phrase, value))
             }
         }
         return index
@@ -106,14 +136,7 @@ extension TimeRules {
         source.wordSpans().flatMap { word -> [Piece<Value>] in
             guard let entries = phrasesByFirstWord[String(source.normalized[word])] else { return [] }
             return entries.compactMap { entry in
-                source.phrase(entry.phrase, at: word.lowerBound).map {
-                    Piece(
-                        range: $0,
-                        value: .period(
-                            hour: entry.period.hour, minute: entry.period.minute,
-                            needsDay: entry.period.needsDay)
-                    )
-                }
+                source.phrase(entry.phrase, at: word.lowerBound).map { Piece(range: $0, value: entry.value) }
             }
         }
     }

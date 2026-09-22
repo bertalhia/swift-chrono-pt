@@ -33,6 +33,9 @@ mean more than one thing.
   meio-dia e meia.
 - Parts of the day and moments: de manhã, à tarde, à noite, de madrugada, cedo,
   no almoço, na janta, depois do trabalho, antes de dormir.
+- Whole parts of the day: a manhã toda (6:00 to 12:00), a tarde inteira, toda a
+  noite, a madrugada toda. The whole day, "o dia todo" or "dia inteiro", sets
+  ``ChronoPT/Match/isAllDay`` and needs a day.
 - From now: daqui 2 horas, em meia hora, daqui a pouco (30 minutes), mais
   tarde (2 hours).
 - Ranges: das 14h às 16h, 14h às 16h, 10h-11h, entre 10 e 11h, de segunda a
