@@ -41,10 +41,11 @@ enum DayRules {
         in source: TextSource, found: [Candidate], times: [TimeRules.Expression], reference: Date,
         calendar: Calendar
     ) -> [Piece<Value>] {
+        let near = Neighbours(found)
         let candidates =
-            (found + ranges(of: found, in: source) + weekdaysWithDates(of: found, in: source)
-            + offsets(of: found, in: source) + lengths(of: found, in: source)
-            + limits(of: found, in: source, times: times))
+            (found + ranges(of: near, in: source) + weekdaysWithDates(of: near, in: source)
+            + offsets(of: near, in: source) + lengths(of: near, in: source)
+            + limits(of: near, in: source, times: times))
             .filter { candidate in
                 switch candidate.hint {
                 case .none: return true
@@ -53,7 +54,12 @@ enum DayRules {
                     return resolve(candidate.piece.value, reference: reference, calendar: calendar) != nil
                 case .time: break
                 }
-                return times.contains { time in
+                // Only the times right before and right after can be next to
+                // it: any other has one of those two in between.
+                let after = firstIndex(in: times, from: candidate.piece.range.upperBound) {
+                    $0.range.lowerBound
+                }
+                return times[max(0, after - 1)..<min(times.count, after + 1)].contains { time in
                     guard !time.isFromNow else { return false }
                     guard source.onlyConnectors(between: candidate.piece.range, and: time.range) else {
                         return false
@@ -71,20 +77,24 @@ enum DayRules {
     /// 15", "de hoje até sexta", "segunda a sexta", "seg-sex". The range is the
     /// hint a weekday needs. With no opening word, the first day has to start
     /// right at its number or name.
-    private static func ranges(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
-        candidates.flatMap { first -> [Candidate] in
-            // Hoisted: both only depend on the first candidate, and each one
-            // used to scan the rest of the text for every pair.
+    private static func ranges(of near: Neighbours, in source: TextSource) -> [Candidate] {
+        let sorted = near.byStart
+        return sorted.indices.flatMap { index -> [Candidate] in
+            let first = sorted[index]
             let firstWord = source.words(after: first.piece.range.lowerBound, count: 1).first ?? ""
             let bareStart = source.startsWithNumber(first.piece.range) || weekdays[firstWord] != nil
-            return candidates.compactMap { second in
-                guard first.piece.range.upperBound <= second.piece.range.lowerBound else { return nil }
+            guard let opening = source.rangeOpening(of: first.piece.range, bareStart: bareStart) else {
+                return []
+            }
+            var found: [Candidate] = []
+            // Ends in text order; once the gap holds a word no range allows,
+            // no later end can close this range.
+            for second in sorted[(index + 1)...]
+            where second.piece.range.lowerBound >= first.piece.range.upperBound {
                 guard
-                    let start = source.rangeStart(
-                        from: first.piece.range, to: second.piece.range, bareStart: bareStart)
-                else {
-                    return nil
-                }
+                    let closes = source.closesRange(opening, from: first.piece.range, to: second.piece.range)
+                else { break }
+                guard closes else { continue }
                 // A day of the month takes the month of the end: "do dia 10 ao
                 // dia 15 de novembro".
                 var from = first.piece.value
@@ -99,10 +109,11 @@ enum DayRules {
                     from = .weekday(day, week: week)
                 }
                 let piece = Piece(
-                    range: start..<second.piece.range.upperBound, value: Value.range(from, second.piece.value)
-                )
-                return Candidate(piece: piece, hint: merged(first, second))
+                    range: opening.start..<second.piece.range.upperBound,
+                    value: Value.range(from, second.piece.value))
+                found.append(Candidate(piece: piece, hint: merged(first, second)))
             }
+            return found
         }
     }
 
@@ -158,7 +169,7 @@ enum DayRules {
     /// A day counted from another: "dois dias antes do natal", "uma semana
     /// depois do dia 10", "véspera do ano novo". The day it counts from sits
     /// right after the lead, and is the hint a holiday name needs.
-    private static func offsets(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
+    private static func offsets(of near: Neighbours, in source: TextSource) -> [Candidate] {
         source.matches(of: offsetLead, whenAny: offsetWords).flatMap { lead -> [Candidate] in
             let (_, countText, unit, direction, eve) = lead.output
             let shift: DateComponents
@@ -170,33 +181,35 @@ enum DayRules {
                 }
                 shift = components(direction == "antes" ? -count : count, unit: unit)
             }
-            return candidates.compactMap { base in
-                guard base.piece.range.lowerBound >= lead.range.upperBound,
-                    source.hasNoWord(in: lead.range.upperBound..<base.piece.range.lowerBound)
-                else { return nil }
+            var found: [Candidate] = []
+            for base in near.starting(from: lead.range.upperBound) {
+                guard source.hasNoWord(in: lead.range.upperBound..<base.piece.range.lowerBound) else { break }
                 let range = lead.range.lowerBound..<base.piece.range.upperBound
                 let piece = Piece(
                     range: range, value: Value.shifted(base.piece.value, by: shift), priority: 1)
-                return Candidate(piece: piece, hint: .none)
+                found.append(Candidate(piece: piece, hint: base.hint == .date ? .date : .none))
             }
+            return found
         }
     }
 
     /// A day followed by how long: "amanhã por 3 dias", "sexta, por uma
     /// semana". The length is the hint a weekday needs. A repeating day keeps
     /// its own reading: "todo dia por 10 dias" is not a span.
-    private static func lengths(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
-        candidates.flatMap { length in
-            candidates.compactMap { base in
-                guard case .lasting(.days(0), let components) = length.piece.value,
-                    base.piece.value.recurrence == nil,
-                    base.piece.range.upperBound <= length.piece.range.lowerBound,
-                    source.hasNoWord(in: base.piece.range.upperBound..<length.piece.range.lowerBound)
-                else { return nil }
+    private static func lengths(of near: Neighbours, in source: TextSource) -> [Candidate] {
+        near.byStart.flatMap { length -> [Candidate] in
+            guard case .lasting(.days(0), let components) = length.piece.value else { return [] }
+            var found: [Candidate] = []
+            for base in near.ending(by: length.piece.range.lowerBound) {
+                guard source.hasNoWord(in: base.piece.range.upperBound..<length.piece.range.lowerBound) else {
+                    break
+                }
+                guard base.piece.value.recurrence == nil else { continue }
                 let range = base.piece.range.lowerBound..<length.piece.range.upperBound
                 let piece = Piece(range: range, value: Value.lasting(base.piece.value, for: components))
-                return Candidate(piece: piece, hint: .none)
+                found.append(Candidate(piece: piece, hint: base.hint == .date ? .date : .none))
             }
+            return found
         }
     }
 
@@ -204,9 +217,9 @@ enum DayRules {
     /// dia por 10 dias", "toda segunda, 5 vezes". A time may sit between the
     /// two: "toda terça às 20h até dezembro".
     private static func limits(
-        of candidates: [Candidate], in source: TextSource, times: [TimeRules.Expression]
+        of near: Neighbours, in source: TextSource, times: [TimeRules.Expression]
     ) -> [Candidate] {
-        let repeating = candidates.filter { $0.piece.value.recurrence != nil }
+        let repeating = near.byStart.filter { $0.piece.value.recurrence != nil }
         guard !repeating.isEmpty else { return [] }
 
         // Whether the gap after the repeating day says "até", when it holds
@@ -219,8 +232,12 @@ enum DayRules {
                     saysUntil = true
                     return true
                 }
-                return ["o", "a", "os", "as"].contains(word)
-                    || times.contains { $0.range.contains(word.startIndex) }
+                if ["o", "a", "os", "as"].contains(word) { return true }
+                // Inside a time: the one that starts last at or before it.
+                let next = firstIndex(in: times, from: source.normalized.index(after: word.startIndex)) {
+                    $0.range.lowerBound
+                }
+                return next > 0 && times[next - 1].range.contains(word.startIndex)
             }
             return joins ? saysUntil : nil
         }
@@ -233,47 +250,94 @@ enum DayRules {
             return Candidate(piece: piece, hint: .none)
         }
 
-        let bounded = candidates.flatMap { end in
-            repeating.compactMap { base -> Candidate? in
-                guard end.piece.value.recurrence == nil,
-                    let until = saysUntil(after: base, before: end.piece.range.lowerBound)
-                else { return nil }
+        // Ends in text order after each repeating day, until the gap holds a
+        // word no end allows.
+        let bounded = repeating.flatMap { base -> [Candidate] in
+            var found: [Candidate] = []
+            for end in near.starting(from: base.piece.range.upperBound) {
+                guard let until = saysUntil(after: base, before: end.piece.range.lowerBound) else { break }
+                guard end.piece.value.recurrence == nil else { continue }
                 if case .lasting(.days(0), let length) = end.piece.value, !until {
-                    return joined(base, end.piece.range, .length(length))
+                    found.append(joined(base, end.piece.range, .length(length)))
+                    continue
                 }
                 // "até" once, in the gap or opening the day: "até dezembro".
                 let opens = source.words(after: end.piece.range.lowerBound, count: 1).first == "ate"
-                guard until != opens else { return nil }
-                return joined(base, end.piece.range, .day(end.piece.value))
+                guard until != opens else { continue }
+                found.append(joined(base, end.piece.range, .day(end.piece.value)))
             }
+            return found
         }
-        let counted = source.matches(of: occurrences, whenAny: ["vezes"]).flatMap { match in
-            repeating.compactMap { base -> Candidate? in
-                guard let count = SpokenNumber.value(match.output.1), count > 0,
-                    saysUntil(after: base, before: match.range.lowerBound) == false
-                else { return nil }
-                return joined(base, match.range, .count(count))
+        let counted = source.matches(of: occurrences, whenAny: ["vezes"]).flatMap { match -> [Candidate] in
+            guard let count = SpokenNumber.value(match.output.1), count > 0 else { return [] }
+            var found: [Candidate] = []
+            for base in near.ending(by: match.range.lowerBound) {
+                guard let until = saysUntil(after: base, before: match.range.lowerBound) else { break }
+                guard base.piece.value.recurrence != nil, !until else { continue }
+                found.append(joined(base, match.range, .count(count)))
             }
+            return found
         }
         return bounded + counted
     }
 
     /// A weekday followed by its date: "sexta, dia 25", "segunda-feira, 5/10".
     /// The date decides, and the date is the hint the weekday needs.
-    private static func weekdaysWithDates(of candidates: [Candidate], in source: TextSource) -> [Candidate] {
-        candidates.flatMap { weekday in
-            candidates.compactMap { date in
-                guard case .weekday = weekday.piece.value,
-                    date.piece.value.isDate,
-                    weekday.piece.range.upperBound <= date.piece.range.lowerBound,
-                    source.hasNoWord(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound)
-                else { return nil }
+    private static func weekdaysWithDates(of near: Neighbours, in source: TextSource) -> [Candidate] {
+        near.byStart.flatMap { weekday -> [Candidate] in
+            guard case .weekday = weekday.piece.value else { return [] }
+            var found: [Candidate] = []
+            for date in near.starting(from: weekday.piece.range.upperBound) {
+                guard source.hasNoWord(in: weekday.piece.range.upperBound..<date.piece.range.lowerBound)
+                else {
+                    break
+                }
+                guard date.piece.value.isDate else { continue }
                 let range = weekday.piece.range.lowerBound..<date.piece.range.upperBound
                 // "sáb - 3/10" is that date, not a range from Saturday to it.
                 let piece = Piece(range: range, value: date.piece.value, priority: 1)
-                return Candidate(piece: piece, hint: .none)
+                found.append(Candidate(piece: piece, hint: date.hint == .date ? .date : .none))
             }
+            return found
         }
+    }
+
+    /// The candidates in text order, so a joining step looks only at the
+    /// ones next to where it stands instead of at every pair.
+    struct Neighbours {
+        let byStart: [Candidate]
+        let byEnd: [Candidate]
+
+        init(_ candidates: [Candidate]) {
+            byStart = candidates.sorted { $0.piece.range.lowerBound < $1.piece.range.lowerBound }
+            byEnd = candidates.sorted { $0.piece.range.upperBound < $1.piece.range.upperBound }
+        }
+
+        /// The candidates that start at or after the position, nearest first.
+        func starting(from index: String.Index) -> ArraySlice<Candidate> {
+            byStart[firstIndex(in: byStart, from: index) { $0.piece.range.lowerBound }...]
+        }
+
+        /// The candidates that end at or before the position, nearest first.
+        func ending(by index: String.Index) -> ReversedCollection<ArraySlice<Candidate>> {
+            var end = firstIndex(in: byEnd, from: index) { $0.piece.range.upperBound }
+            while end < byEnd.count, byEnd[end].piece.range.upperBound == index { end += 1 }
+            return byEnd[..<end].reversed()
+        }
+    }
+
+    /// The first element whose key is at or after the position, in an array
+    /// sorted by that key; the count when there is none.
+    static func firstIndex<Element>(
+        in sorted: [Element], from index: String.Index, key: (Element) -> String.Index
+    ) -> Int {
+        var low = 0
+        var high = sorted.count
+        while low < high {
+            let middle = (low + high) / 2
+            if key(sorted[middle]) < index { low = middle + 1 } else { high = middle }
+        }
+        return low
     }
 
     static func candidates(in source: TextSource) -> [Candidate] {

@@ -325,28 +325,63 @@ struct TextSource {
     func rangeStart(from first: Range<String.Index>, to second: Range<String.Index>, bareStart: Bool = false)
         -> String.Index?
     {
-        guard first.upperBound <= second.lowerBound else { return nil }
-        var opening: (word: String, start: String.Index)?
+        guard first.upperBound <= second.lowerBound,
+            let opening = rangeOpening(of: first, bareStart: bareStart),
+            closesRange(opening, from: first, to: second) == true
+        else { return nil }
+        return opening.start
+    }
+
+    /// How a range that starts at `first` opens: its opening word, if any,
+    /// and where the range starts. `nil` when nothing can open one there.
+    /// It depends only on `first`, so a rule that pairs `first` with many
+    /// ends works it out once.
+    func rangeOpening(of first: Range<String.Index>, bareStart: Bool) -> RangeOpening? {
         if let word = words(after: first.lowerBound, count: 1).first, Self.rangeOpenings.contains(word) {
-            opening = (word, first.lowerBound)
-        } else if let before = wordRange(before: first.lowerBound),
+            return RangeOpening(start: first.lowerBound, entre: word == "entre")
+        }
+        if let before = wordRange(before: first.lowerBound),
             Self.rangeOpenings.contains(String(normalized[before]))
         {
-            opening = (String(normalized[before]), before.lowerBound)
+            return RangeOpening(start: before.lowerBound, entre: normalized[before] == "entre")
         }
-        guard opening != nil || bareStart else { return nil }
-        let start = opening?.start ?? first.lowerBound
-        let gap = first.upperBound..<second.lowerBound
-        // "de segunda e quarta" is two days, not a range.
-        let closings: Set<String> = opening?.word == "entre" ? ["e"] : ["a", "as", "ao", "ate"]
-        guard everyWord(in: gap, { closings.contains(String($0)) || Self.articles.contains(String($0)) })
-        else { return nil }
-        if hasNoWord(in: gap), normalized[gap].contains("-") { return start }
-        let between = words(in: gap)
-        guard (between + words(after: second.lowerBound, count: 1)).contains(where: closings.contains)
-        else { return nil }
-        return start
+        return bareStart ? RangeOpening(start: first.lowerBound, entre: false) : nil
     }
+
+    struct RangeOpening {
+        let start: String.Index
+        /// "de segunda e quarta" is two days; "entre segunda e quarta" is a range.
+        let entre: Bool
+
+        var closings: Set<String> { entre ? TextSource.entreClosings : TextSource.rangeClosings }
+    }
+
+    /// Whether `second` closes the range `opening` opened at `first`. `nil`
+    /// when the gap holds a word no range allows: every later end has that
+    /// word in its gap too, so a caller walking ends in text order can stop.
+    func closesRange(_ opening: RangeOpening, from first: Range<String.Index>, to second: Range<String.Index>)
+        -> Bool?
+    {
+        let gap = first.upperBound..<second.lowerBound
+        let closings = opening.closings
+        var closed = false
+        guard
+            everyWord(
+                in: gap,
+                { word in
+                    let word = String(word)
+                    if closings.contains(word) { closed = true }
+                    return closed && Self.articles.contains(word) || closings.contains(word)
+                        || Self.articles.contains(word)
+                })
+        else { return nil }
+        if closed { return true }
+        if hasNoWord(in: gap), normalized[gap].contains("-") { return true }
+        return words(after: second.lowerBound, count: 1).first.map(closings.contains) ?? false
+    }
+
+    private static let rangeClosings: Set<String> = ["a", "as", "ao", "ate"]
+    private static let entreClosings: Set<String> = ["e"]
 
     /// Whether a phrase can end at the position: the text ends, a
     /// punctuation mark follows, or the next word is a connector. In "sexta,

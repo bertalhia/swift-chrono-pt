@@ -101,6 +101,21 @@ struct RobustnessTests {
     func minutesBeforeTwelve() throws {
         #expect(hm(try #require(interpret("dez para as 12 da manhã")).start.date) == [23, 50])
     }
+
+    @Test(
+        "Joining days stays close to linear on repeated dates",
+        arguments: [
+            String(repeating: "amanhã ", count: 2000), String(repeating: "sexta 25, ", count: 1000),
+            String(repeating: "toda segunda ", count: 1000),
+            String(repeating: "de segunda a sexta ", count: 500),
+            String(repeating: "2 dias antes do natal ", count: 500),
+        ])
+    func repeatedDates(_ text: String) {
+        // Quadratic joining took seconds on each of these; now tens of
+        // milliseconds in a debug build.
+        let elapsed = ContinuousClock().measure { _ = parse(text) }
+        #expect(elapsed < .seconds(1))
+    }
 }
 
 /// SplitMix64: the same seed gives the same text on every run.

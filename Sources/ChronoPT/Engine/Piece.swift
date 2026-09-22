@@ -21,9 +21,13 @@ struct Piece<Value: Sendable>: Sendable {
             if left != right { return left > right }
             return lhs.priority > rhs.priority
         }
+        // Sorted by start, a piece overlaps a kept one exactly when it starts
+        // before the furthest kept end.
         var kept: [Self] = []
-        for piece in sorted where !kept.contains(where: { $0.range.overlaps(piece.range) }) {
+        var end = source.normalized.startIndex
+        for piece in sorted where kept.isEmpty || piece.range.lowerBound >= end {
             kept.append(piece)
+            end = max(end, piece.range.upperBound)
         }
         return kept
     }
